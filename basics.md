@@ -83,7 +83,7 @@ class MyApp extends StatelessWidget {
                 'Colored Italic Text',
                 style: TextStyle(
                   fontSize: 18,
-                  color: Colors.blue,
+                  color: Colors.lightBlueAccent,
                   fontStyle: FontStyle.italic,
                 ),
               ),
@@ -132,11 +132,11 @@ class MyApp extends StatelessWidget {
             padding: const EdgeInsets.all(16),
             margin: const EdgeInsets.all(20),
             decoration: BoxDecoration(
-              color: Colors.blue,
+              color: Colors.blue[800],
               borderRadius: BorderRadius.circular(12),
               boxShadow: const [
                 BoxShadow(
-                  color: Colors.grey,
+                  color: Colors.black26,
                   blurRadius: 5,
                   offset: Offset(2, 2),
                 ),
@@ -192,9 +192,9 @@ class MyApp extends StatelessWidget {
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceAround,
               children: [
-                Icon(Icons.home, size: 50, color: Colors.blue),
-                Icon(Icons.favorite, size: 50, color: Colors.red),
-                Icon(Icons.settings, size: 50, color: Colors.green),
+                Icon(Icons.home, size: 50, color: Colors.lightBlueAccent),
+                Icon(Icons.favorite, size: 50, color: Colors.redAccent),
+                Icon(Icons.settings, size: 50, color: Colors.greenAccent),
               ],
             ),
             Row(
@@ -856,7 +856,7 @@ class _SliderPageState extends State<SliderPage> {
             Container(
               width: _sliderValue * 2,
               height: 50,
-              color: Colors.blue,
+              color: Colors.blueAccent,
             ),
           ],
         ),
@@ -963,9 +963,14 @@ class MyApp extends StatelessWidget {
           ),
           itemCount: 20,
           itemBuilder: (context, index) {
+            final List<Color> colors = [
+              Colors.redAccent, Colors.greenAccent, Colors.blueAccent, Colors.yellowAccent,
+              Colors.orangeAccent, Colors.purpleAccent, Colors.pinkAccent, Colors.tealAccent,
+              Colors.indigoAccent, Colors.cyanAccent
+            ];
             return Container(
               decoration: BoxDecoration(
-                color: Colors.blue[(index % 9) * 100] ?? Colors.blue,
+                color: colors[index % colors.length],
                 borderRadius: BorderRadius.circular(8.0),
               ),
               child: Center(
@@ -1028,6 +1033,7 @@ class MyApp extends StatelessWidget {
               ),
             ),
             Card(
+              color: Colors.blueGrey[800],
               child: Padding(
                 padding: const EdgeInsets.all(16.0),
                 child: Column(
@@ -1038,10 +1044,14 @@ class MyApp extends StatelessWidget {
                       style: TextStyle(
                         fontSize: 20,
                         fontWeight: FontWeight.bold,
+                        color: Colors.white,
                       ),
                     ),
                     const SizedBox(height: 8),
-                    const Text('This is some content inside the card.'),
+                    const Text(
+                      'This is some content inside the card.',
+                      style: TextStyle(color: Colors.white70),
+                    ),
                     const SizedBox(height: 8),
                     Row(
                       mainAxisAlignment: MainAxisAlignment.end,
@@ -1144,7 +1154,7 @@ class _BottomNavPageState extends State<BottomNavPage> {
           ),
         ],
         currentIndex: _selectedIndex,
-        selectedItemColor: Colors.amber[800],
+        selectedItemColor: Colors.amberAccent,
         onTap: _onItemTapped,
       ),
     );
@@ -1392,7 +1402,7 @@ class AnimationPage extends StatefulWidget {
 class _AnimationPageState extends State<AnimationPage> {
   double _width = 100;
   double _height = 100;
-  Color _color = Colors.blue;
+  Color _color = Colors.lightBlueAccent;
   BorderRadiusGeometry _borderRadius = BorderRadius.circular(8);
 
   final Random _random = Random();
@@ -2020,9 +2030,9 @@ class _DrawerPageState extends State<DrawerPage> {
         child: ListView(
           padding: EdgeInsets.zero,
           children: [
-            const DrawerHeader(
+            DrawerHeader(
               decoration: BoxDecoration(
-                color: Colors.blue,
+                color: Colors.blue[800],
               ),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -2159,7 +2169,7 @@ class SnackBarPage extends StatelessWidget {
               onPressed: () => _showSnackBar(
                 context,
                 'Success message',
-                backgroundColor: Colors.green,
+                backgroundColor: Colors.greenAccent,
               ),
               child: const Text('Show Success SnackBar'),
             ),
@@ -2168,7 +2178,7 @@ class SnackBarPage extends StatelessWidget {
               onPressed: () => _showSnackBar(
                 context,
                 'Error occurred',
-                backgroundColor: Colors.red,
+                backgroundColor: Colors.red[700],
               ),
               child: const Text('Show Error SnackBar'),
             ),
@@ -2361,40 +2371,40 @@ class GesturePage extends StatefulWidget {
 
 class _GesturePageState extends State<GesturePage> {
   String _gestureText = 'Tap, double-tap, or long press the container';
-  Color _containerColor = Colors.blue;
+  Color _containerColor = Colors.lightBlueAccent;
 
   void _onTap() {
     setState(() {
       _gestureText = 'Container was tapped';
-      _containerColor = Colors.green;
+      _containerColor = Colors.greenAccent;
     });
   }
 
   void _onDoubleTap() {
     setState(() {
       _gestureText = 'Container was double-tapped';
-      _containerColor = Colors.orange;
+      _containerColor = Colors.orangeAccent;
     });
   }
 
   void _onLongPress() {
     setState(() {
       _gestureText = 'Container was long pressed';
-      _containerColor = Colors.red;
+      _containerColor = Colors.redAccent;
     });
   }
 
   void _onPanUpdate(DragUpdateDetails details) {
     setState(() {
       _gestureText = 'Container is being dragged';
-      _containerColor = Colors.purple;
+      _containerColor = Colors.purpleAccent;
     });
   }
 
   void _onPanEnd(DragEndDetails details) {
     setState(() {
       _gestureText = 'Container drag ended';
-      _containerColor = Colors.blue;
+      _containerColor = Colors.lightBlueAccent;
     });
   }
 
@@ -2497,7 +2507,7 @@ class StackPage extends StatelessWidget {
                 width: 300,
                 height: 300,
                 decoration: BoxDecoration(
-                  color: Colors.blue,
+                  color: Colors.blue[800],
                   borderRadius: BorderRadius.circular(20),
                 ),
               ),
@@ -2508,7 +2518,7 @@ class StackPage extends StatelessWidget {
                   width: 100,
                   height: 100,
                   decoration: BoxDecoration(
-                    color: Colors.red,
+                    color: Colors.redAccent,
                     borderRadius: BorderRadius.circular(10),
                   ),
                   child: const Center(
@@ -2526,7 +2536,7 @@ class StackPage extends StatelessWidget {
                   width: 100,
                   height: 100,
                   decoration: BoxDecoration(
-                    color: Colors.green,
+                    color: Colors.greenAccent,
                     borderRadius: BorderRadius.circular(10),
                   ),
                   child: const Center(
@@ -2542,7 +2552,7 @@ class StackPage extends StatelessWidget {
                 left: 100,
                 child: CircleAvatar(
                   radius: 30,
-                  backgroundColor: Colors.orange,
+                  backgroundColor: Colors.orangeAccent,
                   child: Icon(
                     Icons.star,
                     color: Colors.white,
