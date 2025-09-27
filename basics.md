@@ -21,6 +21,8 @@ class MyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
+      darkTheme: ThemeData.dark(),
+      themeMode: ThemeMode.dark,
       title: 'Hello World',
       home: Scaffold(
         appBar: AppBar(
@@ -56,6 +58,8 @@ class MyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
+      darkTheme: ThemeData.dark(),
+      themeMode: ThemeMode.dark,
       title: 'Text Styling',
       home: Scaffold(
         appBar: AppBar(
@@ -114,6 +118,8 @@ class MyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
+      darkTheme: ThemeData.dark(),
+      themeMode: ThemeMode.dark,
       title: 'Container Example',
       home: Scaffold(
         appBar: AppBar(
@@ -173,6 +179,8 @@ class MyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
+      darkTheme: ThemeData.dark(),
+      themeMode: ThemeMode.dark,
       title: 'Row and Column',
       home: Scaffold(
         appBar: AppBar(
@@ -232,6 +240,8 @@ class MyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
+      darkTheme: ThemeData.dark(),
+      themeMode: ThemeMode.dark,
       title: 'Buttons',
       home: Scaffold(
         appBar: AppBar(
@@ -299,6 +309,8 @@ class MyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
+      darkTheme: ThemeData.dark(),
+      themeMode: ThemeMode.dark,
       title: 'Counter App',
       home: const CounterPage(),
     );
@@ -370,6 +382,8 @@ class MyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
+      darkTheme: ThemeData.dark(),
+      themeMode: ThemeMode.dark,
       title: 'Images',
       home: Scaffold(
         appBar: AppBar(
@@ -427,6 +441,8 @@ class MyApp extends StatelessWidget {
     final List<String> items = List.generate(20, (index) => 'Item ${index + 1}');
 
     return MaterialApp(
+      darkTheme: ThemeData.dark(),
+      themeMode: ThemeMode.dark,
       title: 'List Example',
       home: Scaffold(
         appBar: AppBar(
@@ -473,6 +489,8 @@ class MyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
+      darkTheme: ThemeData.dark(),
+      themeMode: ThemeMode.dark,
       title: 'Text Input',
       home: const TextInputPage(),
     );
@@ -556,6 +574,8 @@ class MyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
+      darkTheme: ThemeData.dark(),
+      themeMode: ThemeMode.dark,
       title: 'Navigation',
       home: const FirstPage(),
     );
@@ -629,6 +649,8 @@ class MyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
+      darkTheme: ThemeData.dark(),
+      themeMode: ThemeMode.dark,
       title: 'Dialog Example',
       home: const DialogPage(),
     );
@@ -705,6 +727,8 @@ class MyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
+      darkTheme: ThemeData.dark(),
+      themeMode: ThemeMode.dark,
       title: 'Switch and Checkbox',
       home: const InteractivePage(),
     );
@@ -782,6 +806,8 @@ class MyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
+      darkTheme: ThemeData.dark(),
+      themeMode: ThemeMode.dark,
       title: 'Slider Example',
       home: const SliderPage(),
     );
@@ -861,6 +887,8 @@ class MyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
+      darkTheme: ThemeData.dark(),
+      themeMode: ThemeMode.dark,
       title: 'TabBar Example',
       home: const TabBarPage(),
     );
@@ -919,6 +947,8 @@ class MyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
+      darkTheme: ThemeData.dark(),
+      themeMode: ThemeMode.dark,
       title: 'GridView Example',
       home: Scaffold(
         appBar: AppBar(
@@ -978,6 +1008,8 @@ class MyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
+      darkTheme: ThemeData.dark(),
+      themeMode: ThemeMode.dark,
       title: 'Card Example',
       home: Scaffold(
         appBar: AppBar(
@@ -1057,6 +1089,8 @@ class MyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
+      darkTheme: ThemeData.dark(),
+      themeMode: ThemeMode.dark,
       title: 'Bottom Navigation',
       home: const BottomNavPage(),
     );
@@ -1139,6 +1173,8 @@ class MyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
+      darkTheme: ThemeData.dark(),
+      themeMode: ThemeMode.dark,
       title: 'Form Validation',
       home: const FormPage(),
     );
@@ -1247,6 +1283,8 @@ class MyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
+      darkTheme: ThemeData.dark(),
+      themeMode: ThemeMode.dark,
       title: 'Loading Indicators',
       home: const LoadingPage(),
     );
@@ -1336,6 +1374,8 @@ class MyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
+      darkTheme: ThemeData.dark(),
+      themeMode: ThemeMode.dark,
       title: 'Animated Container',
       home: const AnimationPage(),
     );
@@ -1428,6 +1468,8 @@ class MyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
+      darkTheme: ThemeData.dark(),
+      themeMode: ThemeMode.dark,
       title: 'HTTP Request',
       home: const HttpPage(),
     );
@@ -1525,6 +1567,8 @@ class MyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
+      darkTheme: ThemeData.dark(),
+      themeMode: ThemeMode.dark,
       title: 'SharedPreferences',
       home: const PreferencesPage(),
     );
@@ -1632,6 +1676,8 @@ class MyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
+      darkTheme: ThemeData.dark(),
+      themeMode: ThemeMode.dark,
       title: 'Date Picker',
       home: const DatePickerPage(),
     );
@@ -1711,6 +1757,8 @@ class MyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
+      darkTheme: ThemeData.dark(),
+      themeMode: ThemeMode.dark,
       title: 'Stopwatch',
       home: const StopwatchPage(),
     );
@@ -1828,6 +1876,8 @@ class MyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
+      darkTheme: ThemeData.dark(),
+      themeMode: ThemeMode.dark,
       title: 'Floating Action Button',
       home: const FabPage(),
     );
@@ -1935,6 +1985,8 @@ class MyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
+      darkTheme: ThemeData.dark(),
+      themeMode: ThemeMode.dark,
       title: 'Drawer Navigation',
       home: const DrawerPage(),
     );
@@ -2056,6 +2108,8 @@ class MyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
+      darkTheme: ThemeData.dark(),
+      themeMode: ThemeMode.dark,
       title: 'SnackBar Messages',
       home: const SnackBarPage(),
     );
@@ -2290,6 +2344,8 @@ class MyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
+      darkTheme: ThemeData.dark(),
+      themeMode: ThemeMode.dark,
       title: 'Gesture Detector',
       home: const GesturePage(),
     );
@@ -2414,6 +2470,8 @@ class MyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
+      darkTheme: ThemeData.dark(),
+      themeMode: ThemeMode.dark,
       title: 'Stack Widget',
       home: const StackPage(),
     );
