@@ -21,6 +21,8 @@ class MyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
+      darkTheme: ThemeData.dark(),
+      themeMode: ThemeMode.dark,
       title: 'Hello World',
       home: Scaffold(
         appBar: AppBar(
@@ -56,6 +58,8 @@ class MyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
+      darkTheme: ThemeData.dark(),
+      themeMode: ThemeMode.dark,
       title: 'Text Styling',
       home: Scaffold(
         appBar: AppBar(
@@ -79,7 +83,7 @@ class MyApp extends StatelessWidget {
                 'Colored Italic Text',
                 style: TextStyle(
                   fontSize: 18,
-                  color: Colors.blue,
+                  color: Colors.lightBlueAccent,
                   fontStyle: FontStyle.italic,
                 ),
               ),
@@ -114,6 +118,8 @@ class MyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
+      darkTheme: ThemeData.dark(),
+      themeMode: ThemeMode.dark,
       title: 'Container Example',
       home: Scaffold(
         appBar: AppBar(
@@ -126,11 +132,11 @@ class MyApp extends StatelessWidget {
             padding: const EdgeInsets.all(16),
             margin: const EdgeInsets.all(20),
             decoration: BoxDecoration(
-              color: Colors.blue,
+              color: Colors.blue[800],
               borderRadius: BorderRadius.circular(12),
               boxShadow: const [
                 BoxShadow(
-                  color: Colors.grey,
+                  color: Colors.black26,
                   blurRadius: 5,
                   offset: Offset(2, 2),
                 ),
@@ -173,6 +179,8 @@ class MyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
+      darkTheme: ThemeData.dark(),
+      themeMode: ThemeMode.dark,
       title: 'Row and Column',
       home: Scaffold(
         appBar: AppBar(
@@ -184,9 +192,9 @@ class MyApp extends StatelessWidget {
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceAround,
               children: [
-                Icon(Icons.home, size: 50, color: Colors.blue),
-                Icon(Icons.favorite, size: 50, color: Colors.red),
-                Icon(Icons.settings, size: 50, color: Colors.green),
+                Icon(Icons.home, size: 50, color: Colors.lightBlueAccent),
+                Icon(Icons.favorite, size: 50, color: Colors.redAccent),
+                Icon(Icons.settings, size: 50, color: Colors.greenAccent),
               ],
             ),
             Row(
@@ -232,6 +240,8 @@ class MyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
+      darkTheme: ThemeData.dark(),
+      themeMode: ThemeMode.dark,
       title: 'Buttons',
       home: Scaffold(
         appBar: AppBar(
@@ -299,6 +309,8 @@ class MyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
+      darkTheme: ThemeData.dark(),
+      themeMode: ThemeMode.dark,
       title: 'Counter App',
       home: const CounterPage(),
     );
@@ -370,6 +382,8 @@ class MyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
+      darkTheme: ThemeData.dark(),
+      themeMode: ThemeMode.dark,
       title: 'Images',
       home: Scaffold(
         appBar: AppBar(
@@ -427,6 +441,8 @@ class MyApp extends StatelessWidget {
     final List<String> items = List.generate(20, (index) => 'Item ${index + 1}');
 
     return MaterialApp(
+      darkTheme: ThemeData.dark(),
+      themeMode: ThemeMode.dark,
       title: 'List Example',
       home: Scaffold(
         appBar: AppBar(
@@ -473,6 +489,8 @@ class MyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
+      darkTheme: ThemeData.dark(),
+      themeMode: ThemeMode.dark,
       title: 'Text Input',
       home: const TextInputPage(),
     );
@@ -556,6 +574,8 @@ class MyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
+      darkTheme: ThemeData.dark(),
+      themeMode: ThemeMode.dark,
       title: 'Navigation',
       home: const FirstPage(),
     );
@@ -629,6 +649,8 @@ class MyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
+      darkTheme: ThemeData.dark(),
+      themeMode: ThemeMode.dark,
       title: 'Dialog Example',
       home: const DialogPage(),
     );
@@ -705,6 +727,8 @@ class MyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
+      darkTheme: ThemeData.dark(),
+      themeMode: ThemeMode.dark,
       title: 'Switch and Checkbox',
       home: const InteractivePage(),
     );
@@ -782,6 +806,8 @@ class MyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
+      darkTheme: ThemeData.dark(),
+      themeMode: ThemeMode.dark,
       title: 'Slider Example',
       home: const SliderPage(),
     );
@@ -830,7 +856,7 @@ class _SliderPageState extends State<SliderPage> {
             Container(
               width: _sliderValue * 2,
               height: 50,
-              color: Colors.blue,
+              color: Colors.blueAccent,
             ),
           ],
         ),
@@ -861,6 +887,8 @@ class MyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
+      darkTheme: ThemeData.dark(),
+      themeMode: ThemeMode.dark,
       title: 'TabBar Example',
       home: const TabBarPage(),
     );
@@ -919,6 +947,8 @@ class MyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
+      darkTheme: ThemeData.dark(),
+      themeMode: ThemeMode.dark,
       title: 'GridView Example',
       home: Scaffold(
         appBar: AppBar(
@@ -933,9 +963,14 @@ class MyApp extends StatelessWidget {
           ),
           itemCount: 20,
           itemBuilder: (context, index) {
+            final List<Color> colors = [
+              Colors.redAccent, Colors.greenAccent, Colors.blueAccent, Colors.yellowAccent,
+              Colors.orangeAccent, Colors.purpleAccent, Colors.pinkAccent, Colors.tealAccent,
+              Colors.indigoAccent, Colors.cyanAccent
+            ];
             return Container(
               decoration: BoxDecoration(
-                color: Colors.blue[(index % 9) * 100] ?? Colors.blue,
+                color: colors[index % colors.length],
                 borderRadius: BorderRadius.circular(8.0),
               ),
               child: Center(
@@ -978,6 +1013,8 @@ class MyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
+      darkTheme: ThemeData.dark(),
+      themeMode: ThemeMode.dark,
       title: 'Card Example',
       home: Scaffold(
         appBar: AppBar(
@@ -996,6 +1033,7 @@ class MyApp extends StatelessWidget {
               ),
             ),
             Card(
+              color: Colors.blueGrey[800],
               child: Padding(
                 padding: const EdgeInsets.all(16.0),
                 child: Column(
@@ -1006,10 +1044,14 @@ class MyApp extends StatelessWidget {
                       style: TextStyle(
                         fontSize: 20,
                         fontWeight: FontWeight.bold,
+                        color: Colors.white,
                       ),
                     ),
                     const SizedBox(height: 8),
-                    const Text('This is some content inside the card.'),
+                    const Text(
+                      'This is some content inside the card.',
+                      style: TextStyle(color: Colors.white70),
+                    ),
                     const SizedBox(height: 8),
                     Row(
                       mainAxisAlignment: MainAxisAlignment.end,
@@ -1057,6 +1099,8 @@ class MyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
+      darkTheme: ThemeData.dark(),
+      themeMode: ThemeMode.dark,
       title: 'Bottom Navigation',
       home: const BottomNavPage(),
     );
@@ -1110,7 +1154,7 @@ class _BottomNavPageState extends State<BottomNavPage> {
           ),
         ],
         currentIndex: _selectedIndex,
-        selectedItemColor: Colors.amber[800],
+        selectedItemColor: Colors.amberAccent,
         onTap: _onItemTapped,
       ),
     );
@@ -1139,6 +1183,8 @@ class MyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
+      darkTheme: ThemeData.dark(),
+      themeMode: ThemeMode.dark,
       title: 'Form Validation',
       home: const FormPage(),
     );
@@ -1247,6 +1293,8 @@ class MyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
+      darkTheme: ThemeData.dark(),
+      themeMode: ThemeMode.dark,
       title: 'Loading Indicators',
       home: const LoadingPage(),
     );
@@ -1336,6 +1384,8 @@ class MyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
+      darkTheme: ThemeData.dark(),
+      themeMode: ThemeMode.dark,
       title: 'Animated Container',
       home: const AnimationPage(),
     );
@@ -1352,7 +1402,7 @@ class AnimationPage extends StatefulWidget {
 class _AnimationPageState extends State<AnimationPage> {
   double _width = 100;
   double _height = 100;
-  Color _color = Colors.blue;
+  Color _color = Colors.lightBlueAccent;
   BorderRadiusGeometry _borderRadius = BorderRadius.circular(8);
 
   final Random _random = Random();
@@ -1428,6 +1478,8 @@ class MyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
+      darkTheme: ThemeData.dark(),
+      themeMode: ThemeMode.dark,
       title: 'HTTP Request',
       home: const HttpPage(),
     );
@@ -1525,6 +1577,8 @@ class MyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
+      darkTheme: ThemeData.dark(),
+      themeMode: ThemeMode.dark,
       title: 'SharedPreferences',
       home: const PreferencesPage(),
     );
@@ -1632,6 +1686,8 @@ class MyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
+      darkTheme: ThemeData.dark(),
+      themeMode: ThemeMode.dark,
       title: 'Date Picker',
       home: const DatePickerPage(),
     );
@@ -1711,6 +1767,8 @@ class MyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
+      darkTheme: ThemeData.dark(),
+      themeMode: ThemeMode.dark,
       title: 'Stopwatch',
       home: const StopwatchPage(),
     );
@@ -1828,6 +1886,8 @@ class MyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
+      darkTheme: ThemeData.dark(),
+      themeMode: ThemeMode.dark,
       title: 'Floating Action Button',
       home: const FabPage(),
     );
@@ -1935,6 +1995,8 @@ class MyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
+      darkTheme: ThemeData.dark(),
+      themeMode: ThemeMode.dark,
       title: 'Drawer Navigation',
       home: const DrawerPage(),
     );
@@ -1968,9 +2030,9 @@ class _DrawerPageState extends State<DrawerPage> {
         child: ListView(
           padding: EdgeInsets.zero,
           children: [
-            const DrawerHeader(
+            DrawerHeader(
               decoration: BoxDecoration(
-                color: Colors.blue,
+                color: Colors.blue[800],
               ),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -2056,6 +2118,8 @@ class MyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
+      darkTheme: ThemeData.dark(),
+      themeMode: ThemeMode.dark,
       title: 'SnackBar Messages',
       home: const SnackBarPage(),
     );
@@ -2105,7 +2169,7 @@ class SnackBarPage extends StatelessWidget {
               onPressed: () => _showSnackBar(
                 context,
                 'Success message',
-                backgroundColor: Colors.green,
+                backgroundColor: Colors.greenAccent,
               ),
               child: const Text('Show Success SnackBar'),
             ),
@@ -2114,7 +2178,7 @@ class SnackBarPage extends StatelessWidget {
               onPressed: () => _showSnackBar(
                 context,
                 'Error occurred',
-                backgroundColor: Colors.red,
+                backgroundColor: Colors.red[700],
               ),
               child: const Text('Show Error SnackBar'),
             ),
@@ -2290,6 +2354,8 @@ class MyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
+      darkTheme: ThemeData.dark(),
+      themeMode: ThemeMode.dark,
       title: 'Gesture Detector',
       home: const GesturePage(),
     );
@@ -2305,40 +2371,40 @@ class GesturePage extends StatefulWidget {
 
 class _GesturePageState extends State<GesturePage> {
   String _gestureText = 'Tap, double-tap, or long press the container';
-  Color _containerColor = Colors.blue;
+  Color _containerColor = Colors.lightBlueAccent;
 
   void _onTap() {
     setState(() {
       _gestureText = 'Container was tapped';
-      _containerColor = Colors.green;
+      _containerColor = Colors.greenAccent;
     });
   }
 
   void _onDoubleTap() {
     setState(() {
       _gestureText = 'Container was double-tapped';
-      _containerColor = Colors.orange;
+      _containerColor = Colors.orangeAccent;
     });
   }
 
   void _onLongPress() {
     setState(() {
       _gestureText = 'Container was long pressed';
-      _containerColor = Colors.red;
+      _containerColor = Colors.redAccent;
     });
   }
 
   void _onPanUpdate(DragUpdateDetails details) {
     setState(() {
       _gestureText = 'Container is being dragged';
-      _containerColor = Colors.purple;
+      _containerColor = Colors.purpleAccent;
     });
   }
 
   void _onPanEnd(DragEndDetails details) {
     setState(() {
       _gestureText = 'Container drag ended';
-      _containerColor = Colors.blue;
+      _containerColor = Colors.lightBlueAccent;
     });
   }
 
@@ -2414,6 +2480,8 @@ class MyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
+      darkTheme: ThemeData.dark(),
+      themeMode: ThemeMode.dark,
       title: 'Stack Widget',
       home: const StackPage(),
     );
@@ -2439,7 +2507,7 @@ class StackPage extends StatelessWidget {
                 width: 300,
                 height: 300,
                 decoration: BoxDecoration(
-                  color: Colors.blue,
+                  color: Colors.blue[800],
                   borderRadius: BorderRadius.circular(20),
                 ),
               ),
@@ -2450,7 +2518,7 @@ class StackPage extends StatelessWidget {
                   width: 100,
                   height: 100,
                   decoration: BoxDecoration(
-                    color: Colors.red,
+                    color: Colors.redAccent,
                     borderRadius: BorderRadius.circular(10),
                   ),
                   child: const Center(
@@ -2468,7 +2536,7 @@ class StackPage extends StatelessWidget {
                   width: 100,
                   height: 100,
                   decoration: BoxDecoration(
-                    color: Colors.green,
+                    color: Colors.greenAccent,
                     borderRadius: BorderRadius.circular(10),
                   ),
                   child: const Center(
@@ -2484,7 +2552,7 @@ class StackPage extends StatelessWidget {
                 left: 100,
                 child: CircleAvatar(
                   radius: 30,
-                  backgroundColor: Colors.orange,
+                  backgroundColor: Colors.orangeAccent,
                   child: Icon(
                     Icons.star,
                     color: Colors.white,
