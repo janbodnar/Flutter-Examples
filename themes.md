@@ -570,7 +570,7 @@ class MyApp extends StatelessWidget {
         navigationBarTheme: const NavigationBarThemeData(
           labelBehavior: NavigationDestinationLabelBehavior.onlyShowSelected,
         ),
-        cardTheme: const CardTheme(
+        cardTheme: const CardThemeData(
           elevation: 1,
           margin: EdgeInsets.all(8),
         ),
@@ -625,7 +625,7 @@ class _Material3HomePageState extends State<Material3HomePage> {
           _buildProfileContent(),
         ],
       ),
-      navigationBar: NavigationBar(
+      bottomNavigationBar: NavigationBar(
         selectedIndex: _selectedIndex,
         onDestinationSelected: (index) {
           setState(() {
@@ -685,13 +685,14 @@ class _Material3HomePageState extends State<Material3HomePage> {
             ),
           ),
           const SizedBox(height: 16),
-          Row(
+          Wrap(
+            spacing: 12,
+            runSpacing: 8,
             children: [
               FilledButton(
                 onPressed: () {},
                 child: const Text('Filled Button'),
               ),
-              const SizedBox(width: 12),
               FilledButton.tonal(
                 onPressed: () {},
                 child: const Text('Tonal Button'),
@@ -699,13 +700,14 @@ class _Material3HomePageState extends State<Material3HomePage> {
             ],
           ),
           const SizedBox(height: 12),
-          Row(
+          Wrap(
+            spacing: 12,
+            runSpacing: 8,
             children: [
               ElevatedButton(
                 onPressed: () {},
                 child: const Text('Elevated Button'),
               ),
-              const SizedBox(width: 12),
               OutlinedButton(
                 onPressed: () {},
                 child: const Text('Outlined Button'),
