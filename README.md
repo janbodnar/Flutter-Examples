@@ -14,6 +14,7 @@ to learn about Flutter's history, installation, and basic concepts.
 - [Basics](basics.md) - 30 essential Flutter examples for beginners  
 - [Layout](layout.md) - Comprehensive layout widgets and techniques  
 - [Animation](anim.md) - Animation examples and techniques  
+- [Platform Integration](platform.md) - 25 examples covering native device features  
 
 ## Examples
 
