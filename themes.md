@@ -3636,3 +3636,5478 @@ Icon themes provide consistent styling for icons throughout your app.
 The global iconTheme affects most icons, while primaryIconTheme applies  
 to icons in primary-colored contexts like AppBars. Local IconTheme  
 widgets can override global settings for specific sections or components.  
+
+## Theme Extensions
+
+Creating custom theme extensions for app-specific design tokens.  
+
+```dart
+import 'package:flutter/material.dart';
+
+void main() {
+  runApp(const MyApp());
+}
+
+@immutable
+class CustomColors extends ThemeExtension<CustomColors> {
+  final Color? brandPrimary;
+  final Color? brandSecondary;
+  final Color? brandAccent;
+  final Color? success;
+  final Color? warning;
+  final Color? info;
+  final Color? neutral;
+
+  const CustomColors({
+    this.brandPrimary,
+    this.brandSecondary,
+    this.brandAccent,
+    this.success,
+    this.warning,
+    this.info,
+    this.neutral,
+  });
+
+  @override
+  CustomColors copyWith({
+    Color? brandPrimary,
+    Color? brandSecondary,
+    Color? brandAccent,
+    Color? success,
+    Color? warning,
+    Color? info,
+    Color? neutral,
+  }) {
+    return CustomColors(
+      brandPrimary: brandPrimary ?? this.brandPrimary,
+      brandSecondary: brandSecondary ?? this.brandSecondary,
+      brandAccent: brandAccent ?? this.brandAccent,
+      success: success ?? this.success,
+      warning: warning ?? this.warning,
+      info: info ?? this.info,
+      neutral: neutral ?? this.neutral,
+    );
+  }
+
+  @override
+  CustomColors lerp(ThemeExtension<CustomColors>? other, double t) {
+    if (other is! CustomColors) {
+      return this;
+    }
+    return CustomColors(
+      brandPrimary: Color.lerp(brandPrimary, other.brandPrimary, t),
+      brandSecondary: Color.lerp(brandSecondary, other.brandSecondary, t),
+      brandAccent: Color.lerp(brandAccent, other.brandAccent, t),
+      success: Color.lerp(success, other.success, t),
+      warning: Color.lerp(warning, other.warning, t),
+      info: Color.lerp(info, other.info, t),
+      neutral: Color.lerp(neutral, other.neutral, t),
+    );
+  }
+
+  static const light = CustomColors(
+    brandPrimary: Color(0xFF6B46C1),
+    brandSecondary: Color(0xFF EC4899),
+    brandAccent: Color(0xFF F59E0B),
+    success: Color(0xFF10B981),
+    warning: Color(0xFF F59E0B),
+    info: Color(0xFF3B82F6),
+    neutral: Color(0xFF6B7280),
+  );
+
+  static const dark = CustomColors(
+    brandPrimary: Color(0xFF8B5CF6),
+    brandSecondary: Color(0xFFF472B6),
+    brandAccent: Color(0xFFFBBF24),
+    success: Color(0xFF34D399),
+    warning: Color(0xFFFBBF24),
+    info: Color(0xFF60A5FA),
+    neutral: Color(0xFF9CA3AF),
+  );
+}
+
+@immutable
+class CustomSpacing extends ThemeExtension<CustomSpacing> {
+  final double? xs;
+  final double? sm;
+  final double? md;
+  final double? lg;
+  final double? xl;
+  final double? xxl;
+
+  const CustomSpacing({
+    this.xs,
+    this.sm,
+    this.md,
+    this.lg,
+    this.xl,
+    this.xxl,
+  });
+
+  @override
+  CustomSpacing copyWith({
+    double? xs,
+    double? sm,
+    double? md,
+    double? lg,
+    double? xl,
+    double? xxl,
+  }) {
+    return CustomSpacing(
+      xs: xs ?? this.xs,
+      sm: sm ?? this.sm,
+      md: md ?? this.md,
+      lg: lg ?? this.lg,
+      xl: xl ?? this.xl,
+      xxl: xxl ?? this.xxl,
+    );
+  }
+
+  @override
+  CustomSpacing lerp(ThemeExtension<CustomSpacing>? other, double t) {
+    if (other is! CustomSpacing) {
+      return this;
+    }
+    return CustomSpacing(
+      xs: lerpDouble(xs, other.xs, t),
+      sm: lerpDouble(sm, other.sm, t),
+      md: lerpDouble(md, other.md, t),
+      lg: lerpDouble(lg, other.lg, t),
+      xl: lerpDouble(xl, other.xl, t),
+      xxl: lerpDouble(xxl, other.xxl, t),
+    );
+  }
+
+  static const spacing = CustomSpacing(
+    xs: 4.0,
+    sm: 8.0,
+    md: 16.0,
+    lg: 24.0,
+    xl: 32.0,
+    xxl: 48.0,
+  );
+}
+
+double? lerpDouble(double? a, double? b, double t) {
+  if (a == null && b == null) return null;
+  a ??= 0.0;
+  b ??= 0.0;
+  return a + (b - a) * t;
+}
+
+class MyApp extends StatelessWidget {
+  const MyApp({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return MaterialApp(
+      title: 'Theme Extensions',
+      theme: ThemeData(
+        useMaterial3: true,
+        colorScheme: ColorScheme.fromSeed(seedColor: const Color(0xFF6B46C1)),
+        extensions: const [
+          CustomColors.light,
+          CustomSpacing.spacing,
+        ],
+      ),
+      darkTheme: ThemeData(
+        useMaterial3: true,
+        colorScheme: ColorScheme.fromSeed(
+          seedColor: const Color(0xFF6B46C1),
+          brightness: Brightness.dark,
+        ),
+        extensions: const [
+          CustomColors.dark,
+          CustomSpacing.spacing,
+        ],
+      ),
+      home: const ThemeExtensionsPage(),
+    );
+  }
+}
+
+class ThemeExtensionsPage extends StatefulWidget {
+  const ThemeExtensionsPage({super.key});
+
+  @override
+  State<ThemeExtensionsPage> createState() => _ThemeExtensionsPageState();
+}
+
+class _ThemeExtensionsPageState extends State<ThemeExtensionsPage> {
+  bool _isDarkMode = false;
+
+  @override
+  Widget build(BuildContext context) {
+    final customColors = Theme.of(context).extension<CustomColors>()!;
+    final customSpacing = Theme.of(context).extension<CustomSpacing>()!;
+
+    return Theme(
+      data: _isDarkMode
+          ? ThemeData(
+              useMaterial3: true,
+              colorScheme: ColorScheme.fromSeed(
+                seedColor: const Color(0xFF6B46C1),
+                brightness: Brightness.dark,
+              ),
+              extensions: const [
+                CustomColors.dark,
+                CustomSpacing.spacing,
+              ],
+            )
+          : ThemeData(
+              useMaterial3: true,
+              colorScheme: ColorScheme.fromSeed(seedColor: const Color(0xFF6B46C1)),
+              extensions: const [
+                CustomColors.light,
+                CustomSpacing.spacing,
+              ],
+            ),
+      child: Scaffold(
+        appBar: AppBar(
+          title: const Text('Theme Extensions'),
+          actions: [
+            Switch(
+              value: _isDarkMode,
+              onChanged: (value) {
+                setState(() {
+                  _isDarkMode = value;
+                });
+              },
+            ),
+          ],
+        ),
+        body: SingleChildScrollView(
+          padding: EdgeInsets.all(customSpacing.md!),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                'Custom Colors',
+                style: Theme.of(context).textTheme.headlineSmall,
+              ),
+              SizedBox(height: customSpacing.lg!),
+              _buildColorPalette(customColors, customSpacing),
+              SizedBox(height: customSpacing.xl!),
+              Text(
+                'Custom Spacing',
+                style: Theme.of(context).textTheme.headlineSmall,
+              ),
+              SizedBox(height: customSpacing.lg!),
+              _buildSpacingExamples(customSpacing),
+              SizedBox(height: customSpacing.xl!),
+              Text(
+                'Component Usage',
+                style: Theme.of(context).textTheme.headlineSmall,
+              ),
+              SizedBox(height: customSpacing.lg!),
+              _buildComponentExamples(customColors, customSpacing),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildColorPalette(CustomColors colors, CustomSpacing spacing) {
+    return Card(
+      child: Padding(
+        padding: EdgeInsets.all(spacing.md!),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              'Brand Colors',
+              style: Theme.of(context).textTheme.titleMedium,
+            ),
+            SizedBox(height: spacing.md!),
+            Wrap(
+              spacing: spacing.sm!,
+              runSpacing: spacing.sm!,
+              children: [
+                _buildColorSwatch('Primary', colors.brandPrimary!),
+                _buildColorSwatch('Secondary', colors.brandSecondary!),
+                _buildColorSwatch('Accent', colors.brandAccent!),
+              ],
+            ),
+            SizedBox(height: spacing.lg!),
+            Text(
+              'Semantic Colors',
+              style: Theme.of(context).textTheme.titleMedium,
+            ),
+            SizedBox(height: spacing.md!),
+            Wrap(
+              spacing: spacing.sm!,
+              runSpacing: spacing.sm!,
+              children: [
+                _buildColorSwatch('Success', colors.success!),
+                _buildColorSwatch('Warning', colors.warning!),
+                _buildColorSwatch('Info', colors.info!),
+                _buildColorSwatch('Neutral', colors.neutral!),
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildColorSwatch(String name, Color color) {
+    return Container(
+      width: 80,
+      height: 60,
+      decoration: BoxDecoration(
+        color: color,
+        borderRadius: BorderRadius.circular(8),
+        boxShadow: [
+          BoxShadow(
+            color: color.withOpacity(0.3),
+            blurRadius: 4,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.end,
+        children: [
+          Container(
+            width: double.infinity,
+            padding: const EdgeInsets.symmetric(vertical: 4),
+            decoration: BoxDecoration(
+              color: Colors.black.withOpacity(0.7),
+              borderRadius: const BorderRadius.only(
+                bottomLeft: Radius.circular(8),
+                bottomRight: Radius.circular(8),
+              ),
+            ),
+            child: Text(
+              name,
+              style: const TextStyle(
+                color: Colors.white,
+                fontSize: 10,
+                fontWeight: FontWeight.bold,
+              ),
+              textAlign: TextAlign.center,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildSpacingExamples(CustomSpacing spacing) {
+    return Card(
+      child: Padding(
+        padding: EdgeInsets.all(spacing.md!),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              'Spacing Scale',
+              style: Theme.of(context).textTheme.titleMedium,
+            ),
+            SizedBox(height: spacing.md!),
+            _buildSpacingItem('XS', spacing.xs!),
+            _buildSpacingItem('SM', spacing.sm!),
+            _buildSpacingItem('MD', spacing.md!),
+            _buildSpacingItem('LG', spacing.lg!),
+            _buildSpacingItem('XL', spacing.xl!),
+            _buildSpacingItem('XXL', spacing.xxl!),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildSpacingItem(String label, double value) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 4),
+      child: Row(
+        children: [
+          SizedBox(
+            width: 40,
+            child: Text(
+              label,
+              style: const TextStyle(fontWeight: FontWeight.bold),
+            ),
+          ),
+          Container(
+            width: value * 4, // Scale for visibility
+            height: 20,
+            decoration: BoxDecoration(
+              color: Theme.of(context).primaryColor,
+              borderRadius: BorderRadius.circular(2),
+            ),
+          ),
+          const SizedBox(width: 12),
+          Text('${value.toInt()}px'),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildComponentExamples(CustomColors colors, CustomSpacing spacing) {
+    return Column(
+      children: [
+        Card(
+          child: Padding(
+            padding: EdgeInsets.all(spacing.lg!),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    Container(
+                      width: 40,
+                      height: 40,
+                      decoration: BoxDecoration(
+                        color: colors.success,
+                        shape: BoxShape.circle,
+                      ),
+                      child: const Icon(Icons.check, color: Colors.white),
+                    ),
+                    SizedBox(width: spacing.md!),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            'Success Message',
+                            style: TextStyle(
+                              fontWeight: FontWeight.bold,
+                              color: colors.success,
+                            ),
+                          ),
+                          SizedBox(height: spacing.xs!),
+                          const Text('Operation completed successfully.'),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+        ),
+        SizedBox(height: spacing.md!),
+        Card(
+          child: Padding(
+            padding: EdgeInsets.all(spacing.lg!),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    Container(
+                      width: 40,
+                      height: 40,
+                      decoration: BoxDecoration(
+                        color: colors.warning,
+                        shape: BoxShape.circle,
+                      ),
+                      child: const Icon(Icons.warning, color: Colors.white),
+                    ),
+                    SizedBox(width: spacing.md!),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            'Warning Alert',
+                            style: TextStyle(
+                              fontWeight: FontWeight.bold,
+                              color: colors.warning,
+                            ),
+                          ),
+                          SizedBox(height: spacing.xs!),
+                          const Text('Please check your input.'),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+}
+```
+
+Theme extensions allow you to define custom design tokens beyond what  
+ThemeData provides. Extensions must implement copyWith and lerp methods  
+for theme switching and animations. Access extensions using  
+Theme.of(context).extension<T>() for consistent app-wide styling.  
+
+## Custom Theme Data
+
+Creating comprehensive custom themes with specialized styling systems.  
+
+```dart
+import 'package:flutter/material.dart';
+
+void main() {
+  runApp(const MyApp());
+}
+
+class AppTheme {
+  static const Color _primaryLight = Color(0xFF2196F3);
+  static const Color _primaryDark = Color(0xFF1976D2);
+  static const Color _secondaryLight = Color(0xFFFF9800);
+  static const Color _secondaryDark = Color(0xFFF57C00);
+
+  static ThemeData get lightTheme {
+    return ThemeData(
+      useMaterial3: true,
+      brightness: Brightness.light,
+      colorScheme: const ColorScheme.light(
+        primary: _primaryLight,
+        secondary: _secondaryLight,
+        surface: Color(0xFFFAFAFA),
+        background: Color(0xFFFFFFFF),
+        error: Color(0xFFD32F2F),
+      ),
+      appBarTheme: const AppBarTheme(
+        backgroundColor: _primaryLight,
+        foregroundColor: Colors.white,
+        elevation: 4,
+        centerTitle: true,
+        titleTextStyle: TextStyle(
+          fontSize: 20,
+          fontWeight: FontWeight.w600,
+          color: Colors.white,
+        ),
+      ),
+      cardTheme: CardTheme(
+        elevation: 2,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(16),
+        ),
+        margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      ),
+      elevatedButtonTheme: ElevatedButtonThemeData(
+        style: ElevatedButton.styleFrom(
+          backgroundColor: _primaryLight,
+          foregroundColor: Colors.white,
+          elevation: 2,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12),
+          ),
+          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+        ),
+      ),
+      textTheme: _buildTextTheme(Brightness.light),
+      inputDecorationTheme: _buildInputDecorationTheme(Brightness.light),
+    );
+  }
+
+  static ThemeData get darkTheme {
+    return ThemeData(
+      useMaterial3: true,
+      brightness: Brightness.dark,
+      colorScheme: const ColorScheme.dark(
+        primary: _primaryDark,
+        secondary: _secondaryDark,
+        surface: Color(0xFF1E1E1E),
+        background: Color(0xFF121212),
+        error: Color(0xFFF44336),
+      ),
+      appBarTheme: const AppBarTheme(
+        backgroundColor: Color(0xFF1F1F1F),
+        foregroundColor: Colors.white,
+        elevation: 4,
+        centerTitle: true,
+        titleTextStyle: TextStyle(
+          fontSize: 20,
+          fontWeight: FontWeight.w600,
+          color: Colors.white,
+        ),
+      ),
+      cardTheme: CardTheme(
+        elevation: 4,
+        color: const Color(0xFF2C2C2C),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(16),
+        ),
+        margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      ),
+      elevatedButtonTheme: ElevatedButtonThemeData(
+        style: ElevatedButton.styleFrom(
+          backgroundColor: _primaryDark,
+          foregroundColor: Colors.white,
+          elevation: 3,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12),
+          ),
+          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+        ),
+      ),
+      textTheme: _buildTextTheme(Brightness.dark),
+      inputDecorationTheme: _buildInputDecorationTheme(Brightness.dark),
+    );
+  }
+
+  static TextTheme _buildTextTheme(Brightness brightness) {
+    final Color textColor = brightness == Brightness.light
+        ? const Color(0xFF212121)
+        : Colors.white;
+    final Color subtitleColor = brightness == Brightness.light
+        ? const Color(0xFF757575)
+        : const Color(0xFFBDBDBD);
+
+    return TextTheme(
+      displayLarge: TextStyle(
+        fontSize: 57,
+        fontWeight: FontWeight.w400,
+        color: textColor,
+        letterSpacing: -0.25,
+      ),
+      displayMedium: TextStyle(
+        fontSize: 45,
+        fontWeight: FontWeight.w400,
+        color: textColor,
+      ),
+      headlineLarge: TextStyle(
+        fontSize: 32,
+        fontWeight: FontWeight.w600,
+        color: textColor,
+      ),
+      headlineMedium: TextStyle(
+        fontSize: 28,
+        fontWeight: FontWeight.w600,
+        color: textColor,
+      ),
+      titleLarge: TextStyle(
+        fontSize: 22,
+        fontWeight: FontWeight.w500,
+        color: textColor,
+      ),
+      titleMedium: TextStyle(
+        fontSize: 16,
+        fontWeight: FontWeight.w600,
+        color: textColor,
+        letterSpacing: 0.15,
+      ),
+      bodyLarge: TextStyle(
+        fontSize: 16,
+        fontWeight: FontWeight.w400,
+        color: textColor,
+        letterSpacing: 0.5,
+      ),
+      bodyMedium: TextStyle(
+        fontSize: 14,
+        fontWeight: FontWeight.w400,
+        color: subtitleColor,
+        letterSpacing: 0.25,
+      ),
+    );
+  }
+
+  static InputDecorationTheme _buildInputDecorationTheme(Brightness brightness) {
+    final Color fillColor = brightness == Brightness.light
+        ? const Color(0xFFF5F5F5)
+        : const Color(0xFF2C2C2C);
+    final Color borderColor = brightness == Brightness.light
+        ? const Color(0xFFE0E0E0)
+        : const Color(0xFF424242);
+
+    return InputDecorationTheme(
+      filled: true,
+      fillColor: fillColor,
+      border: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(12),
+        borderSide: BorderSide(color: borderColor),
+      ),
+      enabledBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(12),
+        borderSide: BorderSide(color: borderColor),
+      ),
+      focusedBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(12),
+        borderSide: BorderSide(
+          color: brightness == Brightness.light ? _primaryLight : _primaryDark,
+          width: 2,
+        ),
+      ),
+      contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+    );
+  }
+
+  // Utility methods for consistent styling
+  static BoxDecoration getGradientDecoration(Brightness brightness) {
+    return BoxDecoration(
+      gradient: LinearGradient(
+        begin: Alignment.topLeft,
+        end: Alignment.bottomRight,
+        colors: brightness == Brightness.light
+            ? [_primaryLight, _primaryLight.withOpacity(0.8)]
+            : [_primaryDark, _primaryDark.withOpacity(0.8)],
+      ),
+    );
+  }
+
+  static BoxShadow getElevationShadow(double elevation) {
+    return BoxShadow(
+      color: Colors.black.withOpacity(0.1),
+      blurRadius: elevation * 2,
+      offset: Offset(0, elevation),
+    );
+  }
+}
+
+class MyApp extends StatelessWidget {
+  const MyApp({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return MaterialApp(
+      title: 'Custom Theme Data',
+      theme: AppTheme.lightTheme,
+      darkTheme: AppTheme.darkTheme,
+      home: const CustomThemeDataPage(),
+    );
+  }
+}
+
+class CustomThemeDataPage extends StatefulWidget {
+  const CustomThemeDataPage({super.key});
+
+  @override
+  State<CustomThemeDataPage> createState() => _CustomThemeDataPageState();
+}
+
+class _CustomThemeDataPageState extends State<CustomThemeDataPage> {
+  int _selectedIndex = 0;
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      body: CustomScrollView(
+        slivers: [
+          SliverAppBar(
+            expandedHeight: 200,
+            floating: false,
+            pinned: true,
+            flexibleSpace: FlexibleSpaceBar(
+              title: const Text('Custom Theme System'),
+              background: Container(
+                decoration: AppTheme.getGradientDecoration(
+                  Theme.of(context).brightness,
+                ),
+              ),
+            ),
+          ),
+          SliverPadding(
+            padding: const EdgeInsets.all(16),
+            sliver: SliverList(
+              delegate: SliverChildListDelegate([
+                _buildThemeOverview(),
+                const SizedBox(height: 16),
+                _buildComponentShowcase(),
+                const SizedBox(height: 16),
+                _buildFormExample(),
+                const SizedBox(height: 16),
+                _buildCustomStyling(),
+              ]),
+            ),
+          ),
+        ],
+      ),
+      bottomNavigationBar: NavigationBar(
+        selectedIndex: _selectedIndex,
+        onDestinationSelected: (index) {
+          setState(() {
+            _selectedIndex = index;
+          });
+        },
+        destinations: const [
+          NavigationDestination(
+            icon: Icon(Icons.home),
+            label: 'Home',
+          ),
+          NavigationDestination(
+            icon: Icon(Icons.palette),
+            label: 'Theme',
+          ),
+          NavigationDestination(
+            icon: Icon(Icons.settings),
+            label: 'Settings',
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildThemeOverview() {
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              'Theme Overview',
+              style: Theme.of(context).textTheme.titleLarge,
+            ),
+            const SizedBox(height: 12),
+            Text(
+              'This app uses a custom theme system built on top of Flutter\'s '
+              'ThemeData. It provides consistent styling across all components '
+              'with support for both light and dark modes.',
+              style: Theme.of(context).textTheme.bodyMedium,
+            ),
+            const SizedBox(height: 16),
+            Wrap(
+              spacing: 8,
+              children: [
+                Chip(
+                  label: Text('Material 3'),
+                  backgroundColor: Theme.of(context).colorScheme.primaryContainer,
+                ),
+                Chip(
+                  label: Text('Custom Colors'),
+                  backgroundColor: Theme.of(context).colorScheme.secondaryContainer,
+                ),
+                Chip(
+                  label: Text('Consistent Typography'),
+                  backgroundColor: Theme.of(context).colorScheme.tertiaryContainer,
+                ),
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildComponentShowcase() {
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              'Component Showcase',
+              style: Theme.of(context).textTheme.titleLarge,
+            ),
+            const SizedBox(height: 16),
+            Row(
+              children: [
+                Expanded(
+                  child: ElevatedButton(
+                    onPressed: () {},
+                    child: const Text('Primary Button'),
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: OutlinedButton(
+                    onPressed: () {},
+                    child: const Text('Secondary'),
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 12),
+            Row(
+              children: [
+                Expanded(
+                  child: FilledButton(
+                    onPressed: () {},
+                    child: const Text('Filled Button'),
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: TextButton(
+                    onPressed: () {},
+                    child: const Text('Text Button'),
+                  ),
+                ),
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildFormExample() {
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              'Form Styling',
+              style: Theme.of(context).textTheme.titleLarge,
+            ),
+            const SizedBox(height: 16),
+            const TextField(
+              decoration: InputDecoration(
+                labelText: 'Name',
+                prefixIcon: Icon(Icons.person),
+              ),
+            ),
+            const SizedBox(height: 16),
+            const TextField(
+              decoration: InputDecoration(
+                labelText: 'Email',
+                prefixIcon: Icon(Icons.email),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildCustomStyling() {
+    return Card(
+      child: Column(
+        children: [
+          Container(
+            width: double.infinity,
+            height: 100,
+            decoration: AppTheme.getGradientDecoration(
+              Theme.of(context).brightness,
+            ).copyWith(
+              borderRadius: const BorderRadius.only(
+                topLeft: Radius.circular(12),
+                topRight: Radius.circular(12),
+              ),
+              boxShadow: [AppTheme.getElevationShadow(4)],
+            ),
+            child: const Center(
+              child: Text(
+                'Custom Gradient Background',
+                style: TextStyle(
+                  color: Colors.white,
+                  fontSize: 18,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ),
+          ),
+          Padding(
+            padding: const EdgeInsets.all(16),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Custom Styling Methods',
+                  style: Theme.of(context).textTheme.titleMedium,
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  'The AppTheme class provides utility methods for consistent '
+                  'custom styling like gradients and shadows.',
+                  style: Theme.of(context).textTheme.bodyMedium,
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+```
+
+Custom theme data systems provide complete control over your app's  
+appearance. Creating a dedicated AppTheme class centralizes all styling  
+decisions and provides utility methods for consistent custom styling.  
+This approach scales well for large applications with complex design  
+requirements.  
+
+## Theme Animations
+
+Creating smooth transitions between different themes with animations.  
+
+```dart
+import 'package:flutter/material.dart';
+
+void main() {
+  runApp(const MyApp());
+}
+
+class MyApp extends StatelessWidget {
+  const MyApp({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return MaterialApp(
+      title: 'Theme Animations',
+      theme: ThemeData(
+        useMaterial3: true,
+        colorScheme: ColorScheme.fromSeed(seedColor: Colors.blue),
+      ),
+      home: const ThemeAnimationsPage(),
+    );
+  }
+}
+
+class ThemeAnimationsPage extends StatefulWidget {
+  const ThemeAnimationsPage({super.key});
+
+  @override
+  State<ThemeAnimationsPage> createState() => _ThemeAnimationsPageState();
+}
+
+class _ThemeAnimationsPageState extends State<ThemeAnimationsPage>
+    with TickerProviderStateMixin {
+  late AnimationController _colorController;
+  late AnimationController _scaleController;
+  late AnimationController _rotationController;
+  
+  late Animation<Color?> _primaryColorAnimation;
+  late Animation<Color?> _secondaryColorAnimation;
+  late Animation<Color?> _backgroundColorAnimation;
+  late Animation<double> _scaleAnimation;
+  late Animation<double> _rotationAnimation;
+
+  int _currentThemeIndex = 0;
+  final List<ThemeData> _themes = [
+    _buildTheme(Colors.blue, Colors.lightBlue, Colors.blue.shade50),
+    _buildTheme(Colors.purple, Colors.deepPurple, Colors.purple.shade50),
+    _buildTheme(Colors.green, Colors.lightGreen, Colors.green.shade50),
+    _buildTheme(Colors.orange, Colors.deepOrange, Colors.orange.shade50),
+    _buildTheme(Colors.red, Colors.pink, Colors.red.shade50),
+  ];
+
+  @override
+  void initState() {
+    super.initState();
+    
+    _colorController = AnimationController(
+      duration: const Duration(milliseconds: 800),
+      vsync: this,
+    );
+    
+    _scaleController = AnimationController(
+      duration: const Duration(milliseconds: 600),
+      vsync: this,
+    );
+    
+    _rotationController = AnimationController(
+      duration: const Duration(milliseconds: 1200),
+      vsync: this,
+    );
+
+    _updateAnimations();
+    
+    _scaleAnimation = Tween<double>(
+      begin: 0.8,
+      end: 1.0,
+    ).animate(CurvedAnimation(
+      parent: _scaleController,
+      curve: Curves.elasticOut,
+    ));
+    
+    _rotationAnimation = Tween<double>(
+      begin: 0.0,
+      end: 1.0,
+    ).animate(CurvedAnimation(
+      parent: _rotationController,
+      curve: Curves.easeInOutCubic,
+    ));
+  }
+
+  @override
+  void dispose() {
+    _colorController.dispose();
+    _scaleController.dispose();
+    _rotationController.dispose();
+    super.dispose();
+  }
+
+  void _updateAnimations() {
+    final currentTheme = _themes[_currentThemeIndex];
+    final nextIndex = (_currentThemeIndex + 1) % _themes.length;
+    final nextTheme = _themes[nextIndex];
+
+    _primaryColorAnimation = ColorTween(
+      begin: currentTheme.colorScheme.primary,
+      end: nextTheme.colorScheme.primary,
+    ).animate(CurvedAnimation(
+      parent: _colorController,
+      curve: Curves.easeInOutCubic,
+    ));
+
+    _secondaryColorAnimation = ColorTween(
+      begin: currentTheme.colorScheme.secondary,
+      end: nextTheme.colorScheme.secondary,
+    ).animate(CurvedAnimation(
+      parent: _colorController,
+      curve: Curves.easeInOutCubic,
+    ));
+
+    _backgroundColorAnimation = ColorTween(
+      begin: currentTheme.colorScheme.surface,
+      end: nextTheme.colorScheme.surface,
+    ).animate(CurvedAnimation(
+      parent: _colorController,
+      curve: Curves.easeInOutCubic,
+    ));
+  }
+
+  void _changeTheme() {
+    _updateAnimations();
+    
+    _colorController.forward().then((_) {
+      setState(() {
+        _currentThemeIndex = (_currentThemeIndex + 1) % _themes.length;
+      });
+      _colorController.reset();
+    });
+    
+    _scaleController.reset();
+    _scaleController.forward();
+    
+    _rotationController.reset();
+    _rotationController.forward();
+  }
+
+  static ThemeData _buildTheme(Color primary, Color secondary, Color surface) {
+    return ThemeData(
+      useMaterial3: true,
+      colorScheme: ColorScheme.fromSeed(
+        seedColor: primary,
+        secondary: secondary,
+        surface: surface,
+      ),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AnimatedBuilder(
+      animation: Listenable.merge([
+        _colorController,
+        _scaleController,
+        _rotationController,
+      ]),
+      builder: (context, child) {
+        final currentTheme = _themes[_currentThemeIndex];
+        final animatedTheme = currentTheme.copyWith(
+          colorScheme: currentTheme.colorScheme.copyWith(
+            primary: _primaryColorAnimation.value ?? currentTheme.colorScheme.primary,
+            secondary: _secondaryColorAnimation.value ?? currentTheme.colorScheme.secondary,
+            surface: _backgroundColorAnimation.value ?? currentTheme.colorScheme.surface,
+          ),
+        );
+
+        return Theme(
+          data: animatedTheme,
+          child: Scaffold(
+            appBar: AppBar(
+              title: const Text('Theme Animations'),
+              backgroundColor: _primaryColorAnimation.value,
+              foregroundColor: Colors.white,
+            ),
+            body: SingleChildScrollView(
+              padding: const EdgeInsets.all(16),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  _buildAnimatedHeader(),
+                  const SizedBox(height: 24),
+                  _buildColorTransitions(),
+                  const SizedBox(height: 24),
+                  _buildAnimatedCards(),
+                  const SizedBox(height: 24),
+                  _buildControlPanel(),
+                ],
+              ),
+            ),
+            floatingActionButton: Transform.scale(
+              scale: _scaleAnimation.value,
+              child: Transform.rotate(
+                angle: _rotationAnimation.value * 2 * 3.14159,
+                child: FloatingActionButton(
+                  onPressed: _changeTheme,
+                  backgroundColor: _primaryColorAnimation.value,
+                  child: const Icon(Icons.palette, color: Colors.white),
+                ),
+              ),
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _buildAnimatedHeader() {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(24),
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          colors: [
+            _primaryColorAnimation.value ?? Theme.of(context).colorScheme.primary,
+            _secondaryColorAnimation.value ?? Theme.of(context).colorScheme.secondary,
+          ],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
+        borderRadius: BorderRadius.circular(16),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Transform.scale(
+            scale: _scaleAnimation.value,
+            child: const Text(
+              'Animated Themes',
+              style: TextStyle(
+                fontSize: 28,
+                fontWeight: FontWeight.bold,
+                color: Colors.white,
+              ),
+            ),
+          ),
+          const SizedBox(height: 8),
+          const Text(
+            'Watch colors transition smoothly between themes',
+            style: TextStyle(
+              fontSize: 16,
+              color: Colors.white70,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildColorTransitions() {
+    return Card(
+      color: _backgroundColorAnimation.value,
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              'Color Transitions',
+              style: Theme.of(context).textTheme.titleLarge,
+            ),
+            const SizedBox(height: 16),
+            Row(
+              children: [
+                Expanded(
+                  child: _buildColorBox(
+                    'Primary',
+                    _primaryColorAnimation.value ?? Theme.of(context).colorScheme.primary,
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: _buildColorBox(
+                    'Secondary',
+                    _secondaryColorAnimation.value ?? Theme.of(context).colorScheme.secondary,
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 12),
+            _buildColorBox(
+              'Background',
+              _backgroundColorAnimation.value ?? Theme.of(context).colorScheme.surface,
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildColorBox(String label, Color color) {
+    return Container(
+      height: 80,
+      decoration: BoxDecoration(
+        color: color,
+        borderRadius: BorderRadius.circular(8),
+        boxShadow: [
+          BoxShadow(
+            color: color.withOpacity(0.3),
+            blurRadius: 8,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      child: Center(
+        child: Text(
+          label,
+          style: TextStyle(
+            color: color.computeLuminance() > 0.5 ? Colors.black : Colors.white,
+            fontWeight: FontWeight.bold,
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildAnimatedCards() {
+    return Column(
+      children: List.generate(3, (index) {
+        return AnimatedContainer(
+          duration: Duration(milliseconds: 600 + (index * 200)),
+          curve: Curves.easeOutBack,
+          margin: const EdgeInsets.only(bottom: 12),
+          child: Transform.scale(
+            scale: _scaleAnimation.value,
+            child: Card(
+              elevation: 4,
+              child: ListTile(
+                leading: CircleAvatar(
+                  backgroundColor: _primaryColorAnimation.value,
+                  child: Text(
+                    '${index + 1}',
+                    style: const TextStyle(color: Colors.white),
+                  ),
+                ),
+                title: Text('Animated Item ${index + 1}'),
+                subtitle: const Text('This card animates with theme changes'),
+                trailing: Icon(
+                  Icons.arrow_forward_ios,
+                  color: _secondaryColorAnimation.value,
+                ),
+              ),
+            ),
+          ),
+        );
+      }),
+    );
+  }
+
+  Widget _buildControlPanel() {
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              'Animation Controls',
+              style: Theme.of(context).textTheme.titleLarge,
+            ),
+            const SizedBox(height: 16),
+            Row(
+              children: [
+                Expanded(
+                  child: ElevatedButton.icon(
+                    onPressed: _changeTheme,
+                    icon: const Icon(Icons.palette),
+                    label: const Text('Change Theme'),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: _primaryColorAnimation.value,
+                      foregroundColor: Colors.white,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 12),
+            Text(
+              'Current Theme: ${_getThemeName(_currentThemeIndex)}',
+              style: Theme.of(context).textTheme.bodyMedium,
+            ),
+            const SizedBox(height: 8),
+            LinearProgressIndicator(
+              value: _colorController.value,
+              backgroundColor: Colors.grey.shade300,
+              valueColor: AlwaysStoppedAnimation<Color>(
+                _primaryColorAnimation.value ?? Theme.of(context).colorScheme.primary,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  String _getThemeName(int index) {
+    const names = ['Blue', 'Purple', 'Green', 'Orange', 'Red'];
+    return names[index];
+  }
+}
+```
+
+Theme animations create smooth transitions when switching between  
+different themes. Using ColorTween and AnimationController, you can  
+animate color changes, scale transformations, and rotations. This  
+creates a polished user experience when users toggle theme settings.  
+
+## Inherited Theme Widgets
+
+Building theme-aware widgets that automatically respond to theme changes.  
+
+```dart
+import 'package:flutter/material.dart';
+
+void main() {
+  runApp(const MyApp());
+}
+
+// Custom inherited theme for app-specific styling
+class AppThemeData {
+  final Color brandColor;
+  final Color accentColor;
+  final double borderRadius;
+  final double elevation;
+  final EdgeInsets spacing;
+
+  const AppThemeData({
+    required this.brandColor,
+    required this.accentColor,
+    required this.borderRadius,
+    required this.elevation,
+    required this.spacing,
+  });
+
+  AppThemeData copyWith({
+    Color? brandColor,
+    Color? accentColor,
+    double? borderRadius,
+    double? elevation,
+    EdgeInsets? spacing,
+  }) {
+    return AppThemeData(
+      brandColor: brandColor ?? this.brandColor,
+      accentColor: accentColor ?? this.accentColor,
+      borderRadius: borderRadius ?? this.borderRadius,
+      elevation: elevation ?? this.elevation,
+      spacing: spacing ?? this.spacing,
+    );
+  }
+
+  static const AppThemeData light = AppThemeData(
+    brandColor: Color(0xFF6B73FF),
+    accentColor: Color(0xFF9B59B6),
+    borderRadius: 12.0,
+    elevation: 2.0,
+    spacing: EdgeInsets.all(16.0),
+  );
+
+  static const AppThemeData dark = AppThemeData(
+    brandColor: Color(0xFF8B9CFF),
+    accentColor: Color(0xFFBB8FCE),
+    borderRadius: 16.0,
+    elevation: 4.0,
+    spacing: EdgeInsets.all(20.0),
+  );
+}
+
+class AppTheme extends InheritedWidget {
+  final AppThemeData themeData;
+
+  const AppTheme({
+    super.key,
+    required this.themeData,
+    required super.child,
+  });
+
+  static AppThemeData of(BuildContext context) {
+    final appTheme = context.dependOnInheritedWidgetOfExactType<AppTheme>();
+    return appTheme?.themeData ?? AppThemeData.light;
+  }
+
+  static AppThemeData? maybeOf(BuildContext context) {
+    final appTheme = context.dependOnInheritedWidgetOfExactType<AppTheme>();
+    return appTheme?.themeData;
+  }
+
+  @override
+  bool updateShouldNotify(AppTheme oldWidget) {
+    return themeData.brandColor != oldWidget.themeData.brandColor ||
+           themeData.accentColor != oldWidget.themeData.accentColor ||
+           themeData.borderRadius != oldWidget.themeData.borderRadius ||
+           themeData.elevation != oldWidget.themeData.elevation ||
+           themeData.spacing != oldWidget.themeData.spacing;
+  }
+}
+
+// Custom theme-aware widgets
+class BrandCard extends StatelessWidget {
+  final String title;
+  final String subtitle;
+  final Widget? leading;
+  final VoidCallback? onTap;
+
+  const BrandCard({
+    super.key,
+    required this.title,
+    required this.subtitle,
+    this.leading,
+    this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final appTheme = AppTheme.of(context);
+    
+    return Container(
+      margin: appTheme.spacing,
+      decoration: BoxDecoration(
+        color: Theme.of(context).cardColor,
+        borderRadius: BorderRadius.circular(appTheme.borderRadius),
+        border: Border.all(
+          color: appTheme.brandColor.withOpacity(0.2),
+          width: 1,
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: appTheme.brandColor.withOpacity(0.1),
+            blurRadius: appTheme.elevation * 2,
+            offset: Offset(0, appTheme.elevation),
+          ),
+        ],
+      ),
+      child: Material(
+        color: Colors.transparent,
+        borderRadius: BorderRadius.circular(appTheme.borderRadius),
+        child: InkWell(
+          onTap: onTap,
+          borderRadius: BorderRadius.circular(appTheme.borderRadius),
+          child: Padding(
+            padding: appTheme.spacing,
+            child: Row(
+              children: [
+                if (leading != null) ...[
+                  leading!,
+                  SizedBox(width: appTheme.spacing.left),
+                ],
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        title,
+                        style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                          color: appTheme.brandColor,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        subtitle,
+                        style: Theme.of(context).textTheme.bodyMedium,
+                      ),
+                    ],
+                  ),
+                ),
+                Icon(
+                  Icons.arrow_forward_ios,
+                  size: 16,
+                  color: appTheme.accentColor,
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class BrandButton extends StatelessWidget {
+  final String text;
+  final VoidCallback? onPressed;
+  final bool isPrimary;
+
+  const BrandButton({
+    super.key,
+    required this.text,
+    this.onPressed,
+    this.isPrimary = true,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final appTheme = AppTheme.of(context);
+    
+    return Container(
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(appTheme.borderRadius),
+        boxShadow: isPrimary
+            ? [
+                BoxShadow(
+                  color: appTheme.brandColor.withOpacity(0.3),
+                  blurRadius: appTheme.elevation * 2,
+                  offset: Offset(0, appTheme.elevation),
+                ),
+              ]
+            : null,
+      ),
+      child: ElevatedButton(
+        onPressed: onPressed,
+        style: ElevatedButton.styleFrom(
+          backgroundColor: isPrimary ? appTheme.brandColor : Colors.transparent,
+          foregroundColor: isPrimary ? Colors.white : appTheme.brandColor,
+          side: isPrimary
+              ? null
+              : BorderSide(color: appTheme.brandColor, width: 2),
+          elevation: isPrimary ? appTheme.elevation : 0,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(appTheme.borderRadius),
+          ),
+          padding: appTheme.spacing,
+        ),
+        child: Text(
+          text,
+          style: const TextStyle(fontWeight: FontWeight.w600),
+        ),
+      ),
+    );
+  }
+}
+
+class BrandChip extends StatelessWidget {
+  final String label;
+  final bool isSelected;
+  final VoidCallback? onTap;
+
+  const BrandChip({
+    super.key,
+    required this.label,
+    this.isSelected = false,
+    this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final appTheme = AppTheme.of(context);
+    
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        padding: EdgeInsets.symmetric(
+          horizontal: appTheme.spacing.left,
+          vertical: appTheme.spacing.top * 0.5,
+        ),
+        decoration: BoxDecoration(
+          color: isSelected ? appTheme.brandColor : Colors.transparent,
+          border: Border.all(
+            color: appTheme.brandColor,
+            width: 1.5,
+          ),
+          borderRadius: BorderRadius.circular(appTheme.borderRadius * 2),
+        ),
+        child: Text(
+          label,
+          style: TextStyle(
+            color: isSelected ? Colors.white : appTheme.brandColor,
+            fontWeight: FontWeight.w500,
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class MyApp extends StatelessWidget {
+  const MyApp({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return MaterialApp(
+      title: 'Inherited Theme Widgets',
+      theme: ThemeData(
+        useMaterial3: true,
+        colorScheme: ColorScheme.fromSeed(seedColor: Colors.blue),
+      ),
+      darkTheme: ThemeData(
+        useMaterial3: true,
+        colorScheme: ColorScheme.fromSeed(
+          seedColor: Colors.blue,
+          brightness: Brightness.dark,
+        ),
+      ),
+      home: const InheritedThemeWidgetsPage(),
+    );
+  }
+}
+
+class InheritedThemeWidgetsPage extends StatefulWidget {
+  const InheritedThemeWidgetsPage({super.key});
+
+  @override
+  State<InheritedThemeWidgetsPage> createState() => _InheritedThemeWidgetsPageState();
+}
+
+class _InheritedThemeWidgetsPageState extends State<InheritedThemeWidgetsPage> {
+  bool _useCustomTheme = true;
+  int _selectedChip = 0;
+
+  @override
+  Widget build(BuildContext context) {
+    final isDarkMode = Theme.of(context).brightness == Brightness.dark;
+    final customTheme = _useCustomTheme
+        ? (isDarkMode ? AppThemeData.dark : AppThemeData.light)
+        : AppThemeData.light;
+
+    return AppTheme(
+      themeData: customTheme,
+      child: Scaffold(
+        appBar: AppBar(
+          title: const Text('Inherited Theme Widgets'),
+          actions: [
+            Switch(
+              value: _useCustomTheme,
+              onChanged: (value) {
+                setState(() {
+                  _useCustomTheme = value;
+                });
+              },
+            ),
+          ],
+        ),
+        body: SingleChildScrollView(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              _buildThemeInfo(),
+              _buildBrandCards(),
+              _buildButtons(),
+              _buildChips(),
+              _buildNestedTheme(),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildThemeInfo() {
+    final appTheme = AppTheme.of(context);
+    
+    return Container(
+      margin: appTheme.spacing,
+      padding: appTheme.spacing,
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          colors: [
+            appTheme.brandColor.withOpacity(0.1),
+            appTheme.accentColor.withOpacity(0.1),
+          ],
+        ),
+        borderRadius: BorderRadius.circular(appTheme.borderRadius),
+        border: Border.all(
+          color: appTheme.brandColor.withOpacity(0.3),
+        ),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            'Inherited Theme Status',
+            style: Theme.of(context).textTheme.titleLarge?.copyWith(
+              color: appTheme.brandColor,
+            ),
+          ),
+          const SizedBox(height: 8),
+          Text(
+            'Custom Theme: ${_useCustomTheme ? 'Enabled' : 'Disabled'}',
+            style: Theme.of(context).textTheme.bodyMedium,
+          ),
+          Text(
+            'Border Radius: ${appTheme.borderRadius}px',
+            style: Theme.of(context).textTheme.bodyMedium,
+          ),
+          Text(
+            'Elevation: ${appTheme.elevation}px',
+            style: Theme.of(context).textTheme.bodyMedium,
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildBrandCards() {
+    return Column(
+      children: [
+        BrandCard(
+          title: 'Theme-Aware Card',
+          subtitle: 'This card adapts to the inherited theme automatically',
+          leading: const CircleAvatar(
+            child: Icon(Icons.palette),
+          ),
+          onTap: () {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(content: Text('Brand card tapped!')),
+            );
+          },
+        ),
+        BrandCard(
+          title: 'Custom Styling',
+          subtitle: 'Colors, borders, and spacing from AppTheme',
+          leading: const CircleAvatar(
+            child: Icon(Icons.brush),
+          ),
+        ),
+        BrandCard(
+          title: 'Inherited Behavior',
+          subtitle: 'Changes automatically when theme updates',
+          leading: const CircleAvatar(
+            child: Icon(Icons.auto_awesome),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildButtons() {
+    final appTheme = AppTheme.of(context);
+    
+    return Container(
+      margin: appTheme.spacing,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            'Brand Buttons',
+            style: Theme.of(context).textTheme.titleLarge,
+          ),
+          const SizedBox(height: 12),
+          Row(
+            children: [
+              Expanded(
+                child: BrandButton(
+                  text: 'Primary Action',
+                  onPressed: () {},
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: BrandButton(
+                  text: 'Secondary',
+                  isPrimary: false,
+                  onPressed: () {},
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildChips() {
+    final appTheme = AppTheme.of(context);
+    final chipLabels = ['Option 1', 'Option 2', 'Option 3', 'Option 4'];
+    
+    return Container(
+      margin: appTheme.spacing,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            'Brand Chips',
+            style: Theme.of(context).textTheme.titleLarge,
+          ),
+          const SizedBox(height: 12),
+          Wrap(
+            spacing: 8,
+            runSpacing: 8,
+            children: chipLabels.asMap().entries.map((entry) {
+              final index = entry.key;
+              final label = entry.value;
+              return BrandChip(
+                label: label,
+                isSelected: _selectedChip == index,
+                onTap: () {
+                  setState(() {
+                    _selectedChip = index;
+                  });
+                },
+              );
+            }).toList(),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildNestedTheme() {
+    final appTheme = AppTheme.of(context);
+    
+    return AppTheme(
+      themeData: appTheme.copyWith(
+        brandColor: Colors.green,
+        accentColor: Colors.lightGreen,
+        borderRadius: 8.0,
+      ),
+      child: Container(
+        margin: appTheme.spacing,
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              'Nested Theme Override',
+              style: Theme.of(context).textTheme.titleLarge,
+            ),
+            const SizedBox(height: 12),
+            BrandCard(
+              title: 'Overridden Theme',
+              subtitle: 'This card uses a different theme configuration',
+              leading: const CircleAvatar(
+                child: Icon(Icons.layers),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+```
+
+Inherited theme widgets automatically respond to theme changes and  
+provide custom styling beyond standard ThemeData. By creating custom  
+InheritedWidget classes, you can distribute app-specific design tokens  
+throughout the widget tree, ensuring consistent styling and automatic  
+updates when themes change.  
+
+## Theme-Aware Custom Widgets
+
+Building reusable widgets that intelligently adapt to theme changes.  
+
+```dart
+import 'package:flutter/material.dart';
+
+void main() {
+  runApp(const MyApp());
+}
+
+// Base class for theme-aware widgets
+abstract class ThemeAwareWidget extends StatelessWidget {
+  const ThemeAwareWidget({super.key});
+
+  // Helper methods for theme-aware styling
+  Color getAdaptiveTextColor(BuildContext context) {
+    return Theme.of(context).brightness == Brightness.dark
+        ? Colors.white
+        : Colors.black87;
+  }
+
+  Color getAdaptiveBackgroundColor(BuildContext context) {
+    return Theme.of(context).brightness == Brightness.dark
+        ? const Color(0xFF1E1E1E)
+        : Colors.white;
+  }
+
+  Color getAdaptiveBorderColor(BuildContext context) {
+    return Theme.of(context).brightness == Brightness.dark
+        ? Colors.white24
+        : Colors.black12;
+  }
+
+  double getAdaptiveElevation(BuildContext context) {
+    return Theme.of(context).brightness == Brightness.dark ? 8.0 : 4.0;
+  }
+}
+
+// Smart status card that adapts to theme
+class StatusCard extends ThemeAwareWidget {
+  final String title;
+  final String value;
+  final IconData icon;
+  final StatusType status;
+
+  const StatusCard({
+    super.key,
+    required this.title,
+    required this.value,
+    required this.icon,
+    required this.status,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final statusColor = _getStatusColor(context);
+    final backgroundColor = _getStatusBackgroundColor(context);
+
+    return Card(
+      elevation: getAdaptiveElevation(context),
+      child: Container(
+        padding: const EdgeInsets.all(20),
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(12),
+          gradient: LinearGradient(
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+            colors: [
+              backgroundColor,
+              backgroundColor.withOpacity(0.7),
+            ],
+          ),
+          border: Border.all(
+            color: statusColor.withOpacity(0.3),
+            width: 1,
+          ),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(8),
+                  decoration: BoxDecoration(
+                    color: statusColor.withOpacity(0.1),
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: Icon(
+                    icon,
+                    color: statusColor,
+                    size: 24,
+                  ),
+                ),
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                  decoration: BoxDecoration(
+                    color: statusColor.withOpacity(0.2),
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Text(
+                    _getStatusText(),
+                    style: TextStyle(
+                      color: statusColor,
+                      fontSize: 12,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 16),
+            Text(
+              value,
+              style: Theme.of(context).textTheme.headlineMedium?.copyWith(
+                fontWeight: FontWeight.bold,
+                color: getAdaptiveTextColor(context),
+              ),
+            ),
+            const SizedBox(height: 4),
+            Text(
+              title,
+              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                color: getAdaptiveTextColor(context).withOpacity(0.7),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Color _getStatusColor(BuildContext context) {
+    switch (status) {
+      case StatusType.success:
+        return Theme.of(context).brightness == Brightness.dark
+            ? Colors.green.shade400
+            : Colors.green.shade600;
+      case StatusType.warning:
+        return Theme.of(context).brightness == Brightness.dark
+            ? Colors.orange.shade400
+            : Colors.orange.shade600;
+      case StatusType.error:
+        return Theme.of(context).brightness == Brightness.dark
+            ? Colors.red.shade400
+            : Colors.red.shade600;
+      case StatusType.info:
+        return Theme.of(context).brightness == Brightness.dark
+            ? Colors.blue.shade400
+            : Colors.blue.shade600;
+    }
+  }
+
+  Color _getStatusBackgroundColor(BuildContext context) {
+    final statusColor = _getStatusColor(context);
+    return Theme.of(context).brightness == Brightness.dark
+        ? statusColor.withOpacity(0.1)
+        : statusColor.withOpacity(0.05);
+  }
+
+  String _getStatusText() {
+    switch (status) {
+      case StatusType.success:
+        return 'SUCCESS';
+      case StatusType.warning:
+        return 'WARNING';
+      case StatusType.error:
+        return 'ERROR';
+      case StatusType.info:
+        return 'INFO';
+    }
+  }
+}
+
+enum StatusType { success, warning, error, info }
+
+// Smart notification widget
+class SmartNotification extends ThemeAwareWidget {
+  final String title;
+  final String message;
+  final NotificationType type;
+  final VoidCallback? onDismiss;
+  final VoidCallback? onAction;
+  final String? actionLabel;
+
+  const SmartNotification({
+    super.key,
+    required this.title,
+    required this.message,
+    required this.type,
+    this.onDismiss,
+    this.onAction,
+    this.actionLabel,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final typeColor = _getTypeColor(context);
+    final isDarkMode = Theme.of(context).brightness == Brightness.dark;
+
+    return Container(
+      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      decoration: BoxDecoration(
+        color: getAdaptiveBackgroundColor(context),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(
+          color: typeColor.withOpacity(0.3),
+          width: 1,
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: isDarkMode
+                ? Colors.black.withOpacity(0.3)
+                : Colors.grey.withOpacity(0.2),
+            blurRadius: 8,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      child: Stack(
+        children: [
+          // Color indicator
+          Positioned(
+            left: 0,
+            top: 0,
+            bottom: 0,
+            child: Container(
+              width: 4,
+              decoration: BoxDecoration(
+                color: typeColor,
+                borderRadius: const BorderRadius.only(
+                  topLeft: Radius.circular(12),
+                  bottomLeft: Radius.circular(12),
+                ),
+              ),
+            ),
+          ),
+          Padding(
+            padding: const EdgeInsets.only(left: 16, right: 12, top: 16, bottom: 16),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Row(
+                  children: [
+                    Icon(
+                      _getTypeIcon(),
+                      color: typeColor,
+                      size: 20,
+                    ),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Text(
+                        title,
+                        style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                          fontWeight: FontWeight.w600,
+                          color: getAdaptiveTextColor(context),
+                        ),
+                      ),
+                    ),
+                    if (onDismiss != null)
+                      GestureDetector(
+                        onTap: onDismiss,
+                        child: Icon(
+                          Icons.close,
+                          color: getAdaptiveTextColor(context).withOpacity(0.6),
+                          size: 18,
+                        ),
+                      ),
+                  ],
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  message,
+                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                    color: getAdaptiveTextColor(context).withOpacity(0.8),
+                  ),
+                ),
+                if (onAction != null && actionLabel != null) ...[
+                  const SizedBox(height: 12),
+                  Align(
+                    alignment: Alignment.centerRight,
+                    child: TextButton(
+                      onPressed: onAction,
+                      style: TextButton.styleFrom(
+                        foregroundColor: typeColor,
+                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                      ),
+                      child: Text(
+                        actionLabel!,
+                        style: const TextStyle(fontWeight: FontWeight.w600),
+                      ),
+                    ),
+                  ),
+                ],
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Color _getTypeColor(BuildContext context) {
+    final isDarkMode = Theme.of(context).brightness == Brightness.dark;
+    switch (type) {
+      case NotificationType.success:
+        return isDarkMode ? Colors.green.shade400 : Colors.green.shade600;
+      case NotificationType.warning:
+        return isDarkMode ? Colors.orange.shade400 : Colors.orange.shade600;
+      case NotificationType.error:
+        return isDarkMode ? Colors.red.shade400 : Colors.red.shade600;
+      case NotificationType.info:
+        return isDarkMode ? Colors.blue.shade400 : Colors.blue.shade600;
+    }
+  }
+
+  IconData _getTypeIcon() {
+    switch (type) {
+      case NotificationType.success:
+        return Icons.check_circle_outline;
+      case NotificationType.warning:
+        return Icons.warning_amber_outlined;
+      case NotificationType.error:
+        return Icons.error_outline;
+      case NotificationType.info:
+        return Icons.info_outline;
+    }
+  }
+}
+
+enum NotificationType { success, warning, error, info }
+
+// Adaptive progress indicator
+class AdaptiveProgressIndicator extends ThemeAwareWidget {
+  final double value;
+  final String label;
+  final bool showPercentage;
+
+  const AdaptiveProgressIndicator({
+    super.key,
+    required this.value,
+    required this.label,
+    this.showPercentage = true,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final primaryColor = Theme.of(context).colorScheme.primary;
+    final backgroundColor = getAdaptiveBorderColor(context);
+
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: getAdaptiveBackgroundColor(context),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: getAdaptiveBorderColor(context)),
+        boxShadow: [
+          BoxShadow(
+            color: primaryColor.withOpacity(0.1),
+            blurRadius: 4,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text(
+                label,
+                style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                  color: getAdaptiveTextColor(context),
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+              if (showPercentage)
+                Text(
+                  '${(value * 100).toInt()}%',
+                  style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                    color: primaryColor,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          ClipRRect(
+            borderRadius: BorderRadius.circular(8),
+            child: LinearProgressIndicator(
+              value: value,
+              backgroundColor: backgroundColor,
+              valueColor: AlwaysStoppedAnimation<Color>(primaryColor),
+              minHeight: 8,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class MyApp extends StatelessWidget {
+  const MyApp({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return MaterialApp(
+      title: 'Theme-Aware Custom Widgets',
+      theme: ThemeData(
+        useMaterial3: true,
+        colorScheme: ColorScheme.fromSeed(seedColor: Colors.blue),
+      ),
+      darkTheme: ThemeData(
+        useMaterial3: true,
+        colorScheme: ColorScheme.fromSeed(
+          seedColor: Colors.blue,
+          brightness: Brightness.dark,
+        ),
+      ),
+      home: const ThemeAwareWidgetsPage(),
+    );
+  }
+}
+
+class ThemeAwareWidgetsPage extends StatefulWidget {
+  const ThemeAwareWidgetsPage({super.key});
+
+  @override
+  State<ThemeAwareWidgetsPage> createState() => _ThemeAwareWidgetsPageState();
+}
+
+class _ThemeAwareWidgetsPageState extends State<ThemeAwareWidgetsPage> {
+  final List<SmartNotification> _notifications = [];
+  double _progressValue = 0.7;
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text('Theme-Aware Custom Widgets'),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.brightness_6),
+            onPressed: () {
+              // Theme switching would be handled by parent widget
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(
+                  content: Text('Theme switching demo - these widgets adapt automatically!'),
+                ),
+              );
+            },
+          ),
+        ],
+      ),
+      body: SingleChildScrollView(
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            _buildStatusCards(),
+            const SizedBox(height: 24),
+            _buildProgressIndicators(),
+            const SizedBox(height: 24),
+            _buildNotifications(),
+            const SizedBox(height: 24),
+            _buildControlPanel(),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildStatusCards() {
+    return Padding(
+      padding: const EdgeInsets.all(16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            'Status Cards',
+            style: Theme.of(context).textTheme.titleLarge,
+          ),
+          const SizedBox(height: 16),
+          const GridView.count(
+            shrinkWrap: true,
+            physics: NeverScrollableScrollPhysics(),
+            crossAxisCount: 2,
+            crossAxisSpacing: 12,
+            mainAxisSpacing: 12,
+            childAspectRatio: 1.2,
+            children: [
+              StatusCard(
+                title: 'Sales',
+                value: '1,234',
+                icon: Icons.trending_up,
+                status: StatusType.success,
+              ),
+              StatusCard(
+                title: 'Pending',
+                value: '56',
+                icon: Icons.pending,
+                status: StatusType.warning,
+              ),
+              StatusCard(
+                title: 'Errors',
+                value: '3',
+                icon: Icons.error,
+                status: StatusType.error,
+              ),
+              StatusCard(
+                title: 'Info',
+                value: '89',
+                icon: Icons.info,
+                status: StatusType.info,
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildProgressIndicators() {
+    return Padding(
+      padding: const EdgeInsets.all(16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            'Progress Indicators',
+            style: Theme.of(context).textTheme.titleLarge,
+          ),
+          const SizedBox(height: 16),
+          AdaptiveProgressIndicator(
+            value: _progressValue,
+            label: 'Project Completion',
+          ),
+          const SizedBox(height: 12),
+          const AdaptiveProgressIndicator(
+            value: 0.45,
+            label: 'Storage Used',
+          ),
+          const SizedBox(height: 12),
+          const AdaptiveProgressIndicator(
+            value: 0.9,
+            label: 'Loading Progress',
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildNotifications() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Padding(
+          padding: const EdgeInsets.all(16),
+          child: Text(
+            'Smart Notifications',
+            style: Theme.of(context).textTheme.titleLarge,
+          ),
+        ),
+        const SmartNotification(
+          title: 'Success',
+          message: 'Your data has been saved successfully.',
+          type: NotificationType.success,
+        ),
+        SmartNotification(
+          title: 'Warning',
+          message: 'Your storage is almost full. Consider upgrading.',
+          type: NotificationType.warning,
+          actionLabel: 'UPGRADE',
+          onAction: () {},
+        ),
+        const SmartNotification(
+          title: 'Error',
+          message: 'Failed to sync data. Please check your connection.',
+          type: NotificationType.error,
+        ),
+        ..._notifications,
+      ],
+    );
+  }
+
+  Widget _buildControlPanel() {
+    return Padding(
+      padding: const EdgeInsets.all(16),
+      child: Card(
+        child: Padding(
+          padding: const EdgeInsets.all(16),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                'Controls',
+                style: Theme.of(context).textTheme.titleLarge,
+              ),
+              const SizedBox(height: 16),
+              Text('Progress Value: ${(_progressValue * 100).toInt()}%'),
+              Slider(
+                value: _progressValue,
+                onChanged: (value) {
+                  setState(() {
+                    _progressValue = value;
+                  });
+                },
+              ),
+              const SizedBox(height: 16),
+              ElevatedButton(
+                onPressed: () {
+                  setState(() {
+                    _notifications.add(
+                      SmartNotification(
+                        title: 'New Notification',
+                        message: 'This notification was added dynamically.',
+                        type: NotificationType.info,
+                        onDismiss: () {
+                          setState(() {
+                            _notifications.removeLast();
+                          });
+                        },
+                      ),
+                    );
+                  });
+                },
+                child: const Text('Add Notification'),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+```
+
+Theme-aware custom widgets automatically adapt their appearance based  
+on the current theme. By implementing helper methods and using theme  
+properties consistently, these widgets provide seamless integration  
+with both light and dark modes while maintaining proper contrast and  
+accessibility standards.  
+
+## Platform-Adaptive Themes
+
+Creating themes that adapt to different platforms (iOS, Android, Web, Desktop).  
+
+```dart
+import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart';
+import 'dart:io' show Platform;
+
+void main() {
+  runApp(const MyApp());
+}
+
+class PlatformThemes {
+  static ThemeData get androidTheme {
+    return ThemeData(
+      useMaterial3: true,
+      colorScheme: ColorScheme.fromSeed(seedColor: Colors.green),
+      appBarTheme: const AppBarTheme(
+        backgroundColor: Colors.green,
+        foregroundColor: Colors.white,
+        elevation: 4,
+      ),
+      elevatedButtonTheme: ElevatedButtonThemeData(
+        style: ElevatedButton.styleFrom(
+          backgroundColor: Colors.green,
+          foregroundColor: Colors.white,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(8),
+          ),
+        ),
+      ),
+      cardTheme: const CardTheme(
+        elevation: 2,
+        margin: EdgeInsets.all(8),
+      ),
+      floatingActionButtonTheme: const FloatingActionButtonThemeData(
+        backgroundColor: Colors.green,
+        foregroundColor: Colors.white,
+      ),
+    );
+  }
+
+  static ThemeData get iosTheme {
+    return ThemeData(
+      useMaterial3: true,
+      colorScheme: ColorScheme.fromSeed(seedColor: Colors.blue),
+      appBarTheme: const AppBarTheme(
+        backgroundColor: Colors.transparent,
+        foregroundColor: Colors.blue,
+        elevation: 0,
+        centerTitle: true,
+        titleTextStyle: TextStyle(
+          fontSize: 17,
+          fontWeight: FontWeight.w600,
+          color: Colors.black,
+        ),
+      ),
+      elevatedButtonTheme: ElevatedButtonThemeData(
+        style: ElevatedButton.styleFrom(
+          backgroundColor: Colors.blue,
+          foregroundColor: Colors.white,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(8),
+          ),
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+        ),
+      ),
+      cardTheme: const CardTheme(
+        elevation: 1,
+        margin: EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.all(Radius.circular(12)),
+        ),
+      ),
+      inputDecorationTheme: const InputDecorationTheme(
+        border: OutlineInputBorder(
+          borderRadius: BorderRadius.all(Radius.circular(8)),
+        ),
+      ),
+    );
+  }
+
+  static ThemeData get webTheme {
+    return ThemeData(
+      useMaterial3: true,
+      colorScheme: ColorScheme.fromSeed(seedColor: Colors.purple),
+      appBarTheme: const AppBarTheme(
+        backgroundColor: Colors.purple,
+        foregroundColor: Colors.white,
+        elevation: 2,
+        toolbarHeight: 64,
+      ),
+      elevatedButtonTheme: ElevatedButtonThemeData(
+        style: ElevatedButton.styleFrom(
+          backgroundColor: Colors.purple,
+          foregroundColor: Colors.white,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(4),
+          ),
+          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
+          textStyle: const TextStyle(fontSize: 16),
+        ),
+      ),
+      cardTheme: const CardTheme(
+        elevation: 4,
+        margin: EdgeInsets.all(12),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.all(Radius.circular(8)),
+        ),
+      ),
+      textTheme: const TextTheme(
+        headlineLarge: TextStyle(fontSize: 36, fontWeight: FontWeight.w300),
+        headlineMedium: TextStyle(fontSize: 24, fontWeight: FontWeight.w400),
+      ),
+    );
+  }
+
+  static ThemeData get desktopTheme {
+    return ThemeData(
+      useMaterial3: true,
+      colorScheme: ColorScheme.fromSeed(seedColor: Colors.indigo),
+      appBarTheme: const AppBarTheme(
+        backgroundColor: Colors.indigo,
+        foregroundColor: Colors.white,
+        elevation: 1,
+        toolbarHeight: 72,
+      ),
+      elevatedButtonTheme: ElevatedButtonThemeData(
+        style: ElevatedButton.styleFrom(
+          backgroundColor: Colors.indigo,
+          foregroundColor: Colors.white,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(6),
+          ),
+          padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 18),
+          textStyle: const TextStyle(fontSize: 16),
+        ),
+      ),
+      cardTheme: const CardTheme(
+        elevation: 3,
+        margin: EdgeInsets.all(16),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.all(Radius.circular(12)),
+        ),
+      ),
+      textTheme: const TextTheme(
+        headlineLarge: TextStyle(fontSize: 48, fontWeight: FontWeight.w300),
+        headlineMedium: TextStyle(fontSize: 32, fontWeight: FontWeight.w400),
+        bodyLarge: TextStyle(fontSize: 18),
+        bodyMedium: TextStyle(fontSize: 16),
+      ),
+    );
+  }
+
+  static ThemeData getCurrentPlatformTheme() {
+    if (kIsWeb) {
+      return webTheme;
+    } else if (Platform.isIOS) {
+      return iosTheme;
+    } else if (Platform.isWindows || Platform.isMacOS || Platform.isLinux) {
+      return desktopTheme;
+    } else {
+      return androidTheme; // Default for Android and other platforms
+    }
+  }
+
+  static String getCurrentPlatformName() {
+    if (kIsWeb) {
+      return 'Web';
+    } else if (Platform.isIOS) {
+      return 'iOS';
+    } else if (Platform.isAndroid) {
+      return 'Android';
+    } else if (Platform.isWindows) {
+      return 'Windows';
+    } else if (Platform.isMacOS) {
+      return 'macOS';
+    } else if (Platform.isLinux) {
+      return 'Linux';
+    } else {
+      return 'Unknown';
+    }
+  }
+}
+
+class MyApp extends StatelessWidget {
+  const MyApp({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return MaterialApp(
+      title: 'Platform-Adaptive Themes',
+      theme: PlatformThemes.getCurrentPlatformTheme(),
+      home: const PlatformAdaptiveThemePage(),
+    );
+  }
+}
+
+class PlatformAdaptiveThemePage extends StatefulWidget {
+  const PlatformAdaptiveThemePage({super.key});
+
+  @override
+  State<PlatformAdaptiveThemePage> createState() => _PlatformAdaptiveThemePageState();
+}
+
+class _PlatformAdaptiveThemePageState extends State<PlatformAdaptiveThemePage> {
+  String _selectedPlatform = PlatformThemes.getCurrentPlatformName();
+  late ThemeData _currentTheme;
+
+  @override
+  void initState() {
+    super.initState();
+    _currentTheme = PlatformThemes.getCurrentPlatformTheme();
+  }
+
+  void _changePlatformTheme(String platform) {
+    setState(() {
+      _selectedPlatform = platform;
+      switch (platform) {
+        case 'Android':
+          _currentTheme = PlatformThemes.androidTheme;
+          break;
+        case 'iOS':
+          _currentTheme = PlatformThemes.iosTheme;
+          break;
+        case 'Web':
+          _currentTheme = PlatformThemes.webTheme;
+          break;
+        case 'Desktop':
+          _currentTheme = PlatformThemes.desktopTheme;
+          break;
+        default:
+          _currentTheme = PlatformThemes.androidTheme;
+      }
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Theme(
+      data: _currentTheme,
+      child: Scaffold(
+        appBar: AppBar(
+          title: Text('Platform: $_selectedPlatform'),
+          actions: [
+            PopupMenuButton<String>(
+              icon: const Icon(Icons.phone_android),
+              onSelected: _changePlatformTheme,
+              itemBuilder: (context) => [
+                const PopupMenuItem(
+                  value: 'Android',
+                  child: Row(
+                    children: [
+                      Icon(Icons.android, color: Colors.green),
+                      SizedBox(width: 8),
+                      Text('Android'),
+                    ],
+                  ),
+                ),
+                const PopupMenuItem(
+                  value: 'iOS',
+                  child: Row(
+                    children: [
+                      Icon(Icons.phone_iphone, color: Colors.blue),
+                      SizedBox(width: 8),
+                      Text('iOS'),
+                    ],
+                  ),
+                ),
+                const PopupMenuItem(
+                  value: 'Web',
+                  child: Row(
+                    children: [
+                      Icon(Icons.web, color: Colors.purple),
+                      SizedBox(width: 8),
+                      Text('Web'),
+                    ],
+                  ),
+                ),
+                const PopupMenuItem(
+                  value: 'Desktop',
+                  child: Row(
+                    children: [
+                      Icon(Icons.desktop_windows, color: Colors.indigo),
+                      SizedBox(width: 8),
+                      Text('Desktop'),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ],
+        ),
+        body: SingleChildScrollView(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              _buildPlatformInfo(),
+              _buildComponentShowcase(),
+              _buildFormExample(),
+              _buildThemeComparison(),
+            ],
+          ),
+        ),
+        floatingActionButton: FloatingActionButton(
+          onPressed: () {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(content: Text('$_selectedPlatform FAB pressed!')),
+            );
+          },
+          child: const Icon(Icons.add),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildPlatformInfo() {
+    final currentPlatform = PlatformThemes.getCurrentPlatformName();
+    
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              'Platform Information',
+              style: Theme.of(context).textTheme.titleLarge,
+            ),
+            const SizedBox(height: 12),
+            Row(
+              children: [
+                const Icon(Icons.info_outline),
+                const SizedBox(width: 8),
+                Text('Detected Platform: $currentPlatform'),
+              ],
+            ),
+            const SizedBox(height: 8),
+            Row(
+              children: [
+                const Icon(Icons.palette),
+                const SizedBox(width: 8),
+                Text('Current Theme: $_selectedPlatform'),
+              ],
+            ),
+            const SizedBox(height: 12),
+            Text(
+              'This app automatically adapts its theme based on the platform. '
+              'Each platform has distinct styling characteristics that follow '
+              'platform conventions.',
+              style: Theme.of(context).textTheme.bodyMedium,
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildComponentShowcase() {
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              'Platform-Specific Components',
+              style: Theme.of(context).textTheme.titleLarge,
+            ),
+            const SizedBox(height: 16),
+            Row(
+              children: [
+                Expanded(
+                  child: ElevatedButton(
+                    onPressed: () {},
+                    child: const Text('Primary Button'),
+                  ),
+                ),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: OutlinedButton(
+                    onPressed: () {},
+                    child: const Text('Secondary'),
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 12),
+            Row(
+              children: [
+                Expanded(
+                  child: TextButton(
+                    onPressed: () {},
+                    child: const Text('Text Button'),
+                  ),
+                ),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: FilledButton(
+                    onPressed: () {},
+                    child: const Text('Filled Button'),
+                  ),
+                ),
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildFormExample() {
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              'Form Styling',
+              style: Theme.of(context).textTheme.titleLarge,
+            ),
+            const SizedBox(height: 16),
+            const TextField(
+              decoration: InputDecoration(
+                labelText: 'Username',
+                prefixIcon: Icon(Icons.person),
+              ),
+            ),
+            const SizedBox(height: 12),
+            const TextField(
+              decoration: InputDecoration(
+                labelText: 'Email',
+                prefixIcon: Icon(Icons.email),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildThemeComparison() {
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              'Platform Theme Characteristics',
+              style: Theme.of(context).textTheme.titleLarge,
+            ),
+            const SizedBox(height: 16),
+            _buildPlatformCharacteristic(
+              'Android',
+              'Material Design with vibrant colors and prominent shadows',
+              Icons.android,
+              Colors.green,
+            ),
+            _buildPlatformCharacteristic(
+              'iOS',
+              'Clean, minimalist design with subtle elevations',
+              Icons.phone_iphone,
+              Colors.blue,
+            ),
+            _buildPlatformCharacteristic(
+              'Web',
+              'Optimized for larger screens with web conventions',
+              Icons.web,
+              Colors.purple,
+            ),
+            _buildPlatformCharacteristic(
+              'Desktop',
+              'Spacious layouts with larger touch targets',
+              Icons.desktop_windows,
+              Colors.indigo,
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildPlatformCharacteristic(
+    String platform,
+    String description,
+    IconData icon,
+    Color color,
+  ) {
+    return Container(
+      margin: const EdgeInsets.only(bottom: 12),
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        border: Border.all(
+          color: _selectedPlatform == platform ? color : Colors.grey.shade300,
+          width: _selectedPlatform == platform ? 2 : 1,
+        ),
+        borderRadius: BorderRadius.circular(8),
+        color: _selectedPlatform == platform
+            ? color.withOpacity(0.1)
+            : Colors.transparent,
+      ),
+      child: Row(
+        children: [
+          Icon(icon, color: color, size: 24),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  platform,
+                  style: TextStyle(
+                    fontWeight: FontWeight.w600,
+                    color: color,
+                  ),
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  description,
+                  style: Theme.of(context).textTheme.bodySmall,
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+```
+
+Platform-adaptive themes automatically adjust styling based on the  
+target platform. Android themes emphasize Material Design principles,  
+iOS themes follow Apple's design guidelines, web themes optimize for  
+browser interfaces, and desktop themes provide spacious layouts for  
+mouse and keyboard interaction.  
+
+## High Contrast Themes
+
+Implementing accessibility-focused high contrast themes for better visibility.  
+
+```dart
+import 'package:flutter/material.dart';
+
+void main() {
+  runApp(const MyApp());
+}
+
+class HighContrastThemes {
+  // High contrast light theme
+  static ThemeData get highContrastLight {
+    return ThemeData(
+      brightness: Brightness.light,
+      colorScheme: const ColorScheme.light(
+        primary: Color(0xFF000000),
+        onPrimary: Color(0xFFFFFFFF),
+        secondary: Color(0xFF000000),
+        onSecondary: Color(0xFFFFFFFF),
+        background: Color(0xFFFFFFFF),
+        onBackground: Color(0xFF000000),
+        surface: Color(0xFFFFFFFF),
+        onSurface: Color(0xFF000000),
+        error: Color(0xFF000000),
+        onError: Color(0xFFFFFFFF),
+        outline: Color(0xFF000000),
+      ),
+      appBarTheme: const AppBarTheme(
+        backgroundColor: Color(0xFF000000),
+        foregroundColor: Color(0xFFFFFFFF),
+        elevation: 0,
+        iconTheme: IconThemeData(color: Color(0xFFFFFFFF)),
+      ),
+      elevatedButtonTheme: ElevatedButtonThemeData(
+        style: ElevatedButton.styleFrom(
+          backgroundColor: const Color(0xFF000000),
+          foregroundColor: const Color(0xFFFFFFFF),
+          side: const BorderSide(color: Color(0xFF000000), width: 2),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(4),
+          ),
+        ),
+      ),
+      outlinedButtonTheme: OutlinedButtonThemeData(
+        style: OutlinedButton.styleFrom(
+          foregroundColor: const Color(0xFF000000),
+          side: const BorderSide(color: Color(0xFF000000), width: 2),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(4),
+          ),
+        ),
+      ),
+      textButtonTheme: TextButtonThemeData(
+        style: TextButton.styleFrom(
+          foregroundColor: const Color(0xFF000000),
+        ),
+      ),
+      cardTheme: const CardTheme(
+        color: Color(0xFFFFFFFF),
+        elevation: 0,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.all(Radius.circular(4)),
+          side: BorderSide(color: Color(0xFF000000), width: 2),
+        ),
+      ),
+      inputDecorationTheme: const InputDecorationTheme(
+        filled: true,
+        fillColor: Color(0xFFFFFFFF),
+        border: OutlineInputBorder(
+          borderSide: BorderSide(color: Color(0xFF000000), width: 2),
+        ),
+        enabledBorder: OutlineInputBorder(
+          borderSide: BorderSide(color: Color(0xFF000000), width: 2),
+        ),
+        focusedBorder: OutlineInputBorder(
+          borderSide: BorderSide(color: Color(0xFF000000), width: 3),
+        ),
+      ),
+      textTheme: const TextTheme(
+        displayLarge: TextStyle(color: Color(0xFF000000), fontWeight: FontWeight.bold),
+        displayMedium: TextStyle(color: Color(0xFF000000), fontWeight: FontWeight.bold),
+        displaySmall: TextStyle(color: Color(0xFF000000), fontWeight: FontWeight.bold),
+        headlineLarge: TextStyle(color: Color(0xFF000000), fontWeight: FontWeight.bold),
+        headlineMedium: TextStyle(color: Color(0xFF000000), fontWeight: FontWeight.bold),
+        headlineSmall: TextStyle(color: Color(0xFF000000), fontWeight: FontWeight.bold),
+        titleLarge: TextStyle(color: Color(0xFF000000), fontWeight: FontWeight.bold),
+        titleMedium: TextStyle(color: Color(0xFF000000), fontWeight: FontWeight.bold),
+        titleSmall: TextStyle(color: Color(0xFF000000), fontWeight: FontWeight.bold),
+        bodyLarge: TextStyle(color: Color(0xFF000000), fontWeight: FontWeight.w500),
+        bodyMedium: TextStyle(color: Color(0xFF000000), fontWeight: FontWeight.w500),
+        bodySmall: TextStyle(color: Color(0xFF000000), fontWeight: FontWeight.w500),
+      ),
+    );
+  }
+
+  // High contrast dark theme
+  static ThemeData get highContrastDark {
+    return ThemeData(
+      brightness: Brightness.dark,
+      colorScheme: const ColorScheme.dark(
+        primary: Color(0xFFFFFFFF),
+        onPrimary: Color(0xFF000000),
+        secondary: Color(0xFFFFFFFF),
+        onSecondary: Color(0xFF000000),
+        background: Color(0xFF000000),
+        onBackground: Color(0xFFFFFFFF),
+        surface: Color(0xFF000000),
+        onSurface: Color(0xFFFFFFFF),
+        error: Color(0xFFFFFFFF),
+        onError: Color(0xFF000000),
+        outline: Color(0xFFFFFFFF),
+      ),
+      scaffoldBackgroundColor: const Color(0xFF000000),
+      appBarTheme: const AppBarTheme(
+        backgroundColor: Color(0xFF000000),
+        foregroundColor: Color(0xFFFFFFFF),
+        elevation: 0,
+        iconTheme: IconThemeData(color: Color(0xFFFFFFFF)),
+      ),
+      elevatedButtonTheme: ElevatedButtonThemeData(
+        style: ElevatedButton.styleFrom(
+          backgroundColor: const Color(0xFFFFFFFF),
+          foregroundColor: const Color(0xFF000000),
+          side: const BorderSide(color: Color(0xFFFFFFFF), width: 2),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(4),
+          ),
+        ),
+      ),
+      outlinedButtonTheme: OutlinedButtonThemeData(
+        style: OutlinedButton.styleFrom(
+          foregroundColor: const Color(0xFFFFFFFF),
+          side: const BorderSide(color: Color(0xFFFFFFFF), width: 2),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(4),
+          ),
+        ),
+      ),
+      textButtonTheme: TextButtonThemeData(
+        style: TextButton.styleFrom(
+          foregroundColor: const Color(0xFFFFFFFF),
+        ),
+      ),
+      cardTheme: const CardTheme(
+        color: Color(0xFF000000),
+        elevation: 0,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.all(Radius.circular(4)),
+          side: BorderSide(color: Color(0xFFFFFFFF), width: 2),
+        ),
+      ),
+      inputDecorationTheme: const InputDecorationTheme(
+        filled: true,
+        fillColor: Color(0xFF000000),
+        border: OutlineInputBorder(
+          borderSide: BorderSide(color: Color(0xFFFFFFFF), width: 2),
+        ),
+        enabledBorder: OutlineInputBorder(
+          borderSide: BorderSide(color: Color(0xFFFFFFFF), width: 2),
+        ),
+        focusedBorder: OutlineInputBorder(
+          borderSide: BorderSide(color: Color(0xFFFFFFFF), width: 3),
+        ),
+      ),
+      textTheme: const TextTheme(
+        displayLarge: TextStyle(color: Color(0xFFFFFFFF), fontWeight: FontWeight.bold),
+        displayMedium: TextStyle(color: Color(0xFFFFFFFF), fontWeight: FontWeight.bold),
+        displaySmall: TextStyle(color: Color(0xFFFFFFFF), fontWeight: FontWeight.bold),
+        headlineLarge: TextStyle(color: Color(0xFFFFFFFF), fontWeight: FontWeight.bold),
+        headlineMedium: TextStyle(color: Color(0xFFFFFFFF), fontWeight: FontWeight.bold),
+        headlineSmall: TextStyle(color: Color(0xFFFFFFFF), fontWeight: FontWeight.bold),
+        titleLarge: TextStyle(color: Color(0xFFFFFFFF), fontWeight: FontWeight.bold),
+        titleMedium: TextStyle(color: Color(0xFFFFFFFF), fontWeight: FontWeight.bold),
+        titleSmall: TextStyle(color: Color(0xFFFFFFFF), fontWeight: FontWeight.bold),
+        bodyLarge: TextStyle(color: Color(0xFFFFFFFF), fontWeight: FontWeight.w500),
+        bodyMedium: TextStyle(color: Color(0xFFFFFFFF), fontWeight: FontWeight.w500),
+        bodySmall: TextStyle(color: Color(0xFFFFFFFF), fontWeight: FontWeight.w500),
+      ),
+    );
+  }
+
+  // Standard light theme for comparison
+  static ThemeData get standardLight {
+    return ThemeData(
+      useMaterial3: true,
+      colorScheme: ColorScheme.fromSeed(seedColor: Colors.blue),
+    );
+  }
+
+  // Standard dark theme for comparison
+  static ThemeData get standardDark {
+    return ThemeData(
+      useMaterial3: true,
+      colorScheme: ColorScheme.fromSeed(
+        seedColor: Colors.blue,
+        brightness: Brightness.dark,
+      ),
+    );
+  }
+}
+
+class MyApp extends StatelessWidget {
+  const MyApp({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return MaterialApp(
+      title: 'High Contrast Themes',
+      theme: HighContrastThemes.standardLight,
+      darkTheme: HighContrastThemes.standardDark,
+      highContrastTheme: HighContrastThemes.highContrastLight,
+      highContrastDarkTheme: HighContrastThemes.highContrastDark,
+      home: const HighContrastThemePage(),
+    );
+  }
+}
+
+class HighContrastThemePage extends StatefulWidget {
+  const HighContrastThemePage({super.key});
+
+  @override
+  State<HighContrastThemePage> createState() => _HighContrastThemePageState();
+}
+
+class _HighContrastThemePageState extends State<HighContrastThemePage> {
+  ThemeMode _themeMode = ThemeMode.system;
+  bool _useHighContrast = false;
+
+  @override
+  Widget build(BuildContext context) {
+    return Theme(
+      data: _getSelectedTheme(),
+      child: Scaffold(
+        appBar: AppBar(
+          title: const Text('High Contrast Themes'),
+          actions: [
+            IconButton(
+              icon: const Icon(Icons.accessibility),
+              onPressed: () {
+                _showAccessibilityDialog();
+              },
+            ),
+          ],
+        ),
+        body: SingleChildScrollView(
+          padding: const EdgeInsets.all(16),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              _buildThemeControls(),
+              const SizedBox(height: 24),
+              _buildContrastComparison(),
+              const SizedBox(height: 24),
+              _buildComponentShowcase(),
+              const SizedBox(height: 24),
+              _buildAccessibilityInfo(),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  ThemeData _getSelectedTheme() {
+    if (_useHighContrast) {
+      return _themeMode == ThemeMode.dark
+          ? HighContrastThemes.highContrastDark
+          : HighContrastThemes.highContrastLight;
+    } else {
+      return _themeMode == ThemeMode.dark
+          ? HighContrastThemes.standardDark
+          : HighContrastThemes.standardLight;
+    }
+  }
+
+  Widget _buildThemeControls() {
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              'Theme Controls',
+              style: Theme.of(context).textTheme.titleLarge,
+            ),
+            const SizedBox(height: 16),
+            SwitchListTile(
+              title: const Text('High Contrast Mode'),
+              subtitle: const Text('Enable for better visibility'),
+              value: _useHighContrast,
+              onChanged: (value) {
+                setState(() {
+                  _useHighContrast = value;
+                });
+              },
+            ),
+            const SizedBox(height: 8),
+            Text(
+              'Theme Mode',
+              style: Theme.of(context).textTheme.titleMedium,
+            ),
+            const SizedBox(height: 8),
+            SegmentedButton<ThemeMode>(
+              segments: const [
+                ButtonSegment(
+                  value: ThemeMode.light,
+                  label: Text('Light'),
+                  icon: Icon(Icons.light_mode),
+                ),
+                ButtonSegment(
+                  value: ThemeMode.dark,
+                  label: Text('Dark'),
+                  icon: Icon(Icons.dark_mode),
+                ),
+                ButtonSegment(
+                  value: ThemeMode.system,
+                  label: Text('System'),
+                  icon: Icon(Icons.auto_mode),
+                ),
+              ],
+              selected: {_themeMode},
+              onSelectionChanged: (Set<ThemeMode> selection) {
+                setState(() {
+                  _themeMode = selection.first;
+                });
+              },
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildContrastComparison() {
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              'Contrast Comparison',
+              style: Theme.of(context).textTheme.titleLarge,
+            ),
+            const SizedBox(height: 16),
+            Row(
+              children: [
+                Expanded(
+                  child: Column(
+                    children: [
+                      Text(
+                        'Standard Contrast',
+                        style: Theme.of(context).textTheme.titleSmall,
+                      ),
+                      const SizedBox(height: 8),
+                      Container(
+                        height: 100,
+                        decoration: BoxDecoration(
+                          color: _useHighContrast ? Colors.grey.shade300 : Colors.blue,
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child: Center(
+                          child: Text(
+                            'Sample Text',
+                            style: TextStyle(
+                              color: _useHighContrast ? Colors.black : Colors.white,
+                              fontWeight: FontWeight.w500,
+                            ),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(width: 16),
+                Expanded(
+                  child: Column(
+                    children: [
+                      Text(
+                        'High Contrast',
+                        style: Theme.of(context).textTheme.titleSmall,
+                      ),
+                      const SizedBox(height: 8),
+                      Container(
+                        height: 100,
+                        decoration: BoxDecoration(
+                          color: _useHighContrast
+                              ? (_themeMode == ThemeMode.dark ? Colors.white : Colors.black)
+                              : Colors.grey.shade600,
+                          borderRadius: BorderRadius.circular(8),
+                          border: Border.all(
+                            color: _useHighContrast
+                                ? (_themeMode == ThemeMode.dark ? Colors.black : Colors.white)
+                                : Colors.grey,
+                            width: 2,
+                          ),
+                        ),
+                        child: Center(
+                          child: Text(
+                            'Sample Text',
+                            style: TextStyle(
+                              color: _useHighContrast
+                                  ? (_themeMode == ThemeMode.dark ? Colors.black : Colors.white)
+                                  : Colors.white,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildComponentShowcase() {
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              'Component Showcase',
+              style: Theme.of(context).textTheme.titleLarge,
+            ),
+            const SizedBox(height: 16),
+            Row(
+              children: [
+                Expanded(
+                  child: ElevatedButton(
+                    onPressed: () {},
+                    child: const Text('Primary Button'),
+                  ),
+                ),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: OutlinedButton(
+                    onPressed: () {},
+                    child: const Text('Outlined'),
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 12),
+            TextButton(
+              onPressed: () {},
+              child: const Text('Text Button'),
+            ),
+            const SizedBox(height: 16),
+            const TextField(
+              decoration: InputDecoration(
+                labelText: 'Input Field',
+                hintText: 'Enter text here',
+              ),
+            ),
+            const SizedBox(height: 16),
+            CheckboxListTile(
+              title: const Text('Checkbox Option'),
+              value: true,
+              onChanged: (value) {},
+            ),
+            SwitchListTile(
+              title: const Text('Switch Option'),
+              value: false,
+              onChanged: (value) {},
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildAccessibilityInfo() {
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                const Icon(Icons.accessibility),
+                const SizedBox(width: 8),
+                Text(
+                  'Accessibility Features',
+                  style: Theme.of(context).textTheme.titleLarge,
+                ),
+              ],
+            ),
+            const SizedBox(height: 16),
+            _buildAccessibilityFeature(
+              'Maximum Contrast',
+              'Pure black and white colors for highest visibility',
+            ),
+            _buildAccessibilityFeature(
+              'Bold Typography',
+              'Heavier font weights for improved readability',
+            ),
+            _buildAccessibilityFeature(
+              'Prominent Borders',
+              'Thick borders to clearly define interactive elements',
+            ),
+            _buildAccessibilityFeature(
+              'Reduced Visual Noise',
+              'Minimal shadows and gradients for cleaner appearance',
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildAccessibilityFeature(String title, String description) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 8),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Container(
+            width: 6,
+            height: 6,
+            margin: const EdgeInsets.only(top: 6),
+            decoration: BoxDecoration(
+              color: Theme.of(context).colorScheme.primary,
+              shape: BoxShape.circle,
+            ),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  title,
+                  style: Theme.of(context).textTheme.titleSmall,
+                ),
+                Text(
+                  description,
+                  style: Theme.of(context).textTheme.bodySmall,
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _showAccessibilityDialog() {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Accessibility Settings'),
+        content: const Text(
+          'High contrast themes improve visibility for users with visual '
+          'impairments. They use maximum contrast ratios and bold typography '
+          'for better readability.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(),
+            child: const Text('OK'),
+          ),
+        ],
+      ),
+    );
+  }
+}
+```
+
+High contrast themes provide maximum accessibility by using pure black  
+and white colors with bold typography and prominent borders. These  
+themes help users with visual impairments by eliminating subtle color  
+differences and providing clear visual boundaries between interface  
+elements.  
+
+## System Theme Following
+
+Automatically following the system's theme preferences and settings.  
+
+```dart
+import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+
+void main() {
+  runApp(const MyApp());
+}
+
+class MyApp extends StatelessWidget {
+  const MyApp({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return MaterialApp(
+      title: 'System Theme Following',
+      theme: ThemeData(
+        useMaterial3: true,
+        colorScheme: ColorScheme.fromSeed(seedColor: Colors.blue),
+      ),
+      darkTheme: ThemeData(
+        useMaterial3: true,
+        colorScheme: ColorScheme.fromSeed(
+          seedColor: Colors.blue,
+          brightness: Brightness.dark,
+        ),
+      ),
+      highContrastTheme: ThemeData(
+        brightness: Brightness.light,
+        colorScheme: const ColorScheme.light(
+          primary: Colors.black,
+          onPrimary: Colors.white,
+          background: Colors.white,
+          onBackground: Colors.black,
+        ),
+      ),
+      highContrastDarkTheme: ThemeData(
+        brightness: Brightness.dark,
+        colorScheme: const ColorScheme.dark(
+          primary: Colors.white,
+          onPrimary: Colors.black,
+          background: Colors.black,
+          onBackground: Colors.white,
+        ),
+      ),
+      themeMode: ThemeMode.system, // Follows system preference
+      home: const SystemThemeFollowingPage(),
+    );
+  }
+}
+
+class SystemThemeFollowingPage extends StatefulWidget {
+  const SystemThemeFollowingPage({super.key});
+
+  @override
+  State<SystemThemeFollowingPage> createState() => _SystemThemeFollowingPageState();
+}
+
+class _SystemThemeFollowingPageState extends State<SystemThemeFollowingPage>
+    with WidgetsBindingObserver {
+  Brightness? _systemBrightness;
+  bool _highContrast = false;
+  late ThemeMode _currentThemeMode;
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addObserver(this);
+    _currentThemeMode = ThemeMode.system;
+    _updateSystemThemeInfo();
+  }
+
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    super.dispose();
+  }
+
+  @override
+  void didChangePlatformBrightness() {
+    super.didChangePlatformBrightness();
+    _updateSystemThemeInfo();
+  }
+
+  @override
+  void didChangeAccessibilityFeatures() {
+    super.didChangeAccessibilityFeatures();
+    _updateSystemThemeInfo();
+  }
+
+  void _updateSystemThemeInfo() {
+    setState(() {
+      _systemBrightness = WidgetsBinding.instance.platformDispatcher.platformBrightness;
+      _highContrast = MediaQuery.of(context).highContrast;
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final mediaQuery = MediaQuery.of(context);
+    final platformBrightness = mediaQuery.platformBrightness;
+    final isHighContrast = mediaQuery.highContrast;
+    final textScale = mediaQuery.textScaleFactor;
+    final accessibilityFeatures = mediaQuery.accessibilityFeatures;
+
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text('System Theme Following'),
+        systemOverlayStyle: SystemUiOverlayStyle(
+          statusBarBrightness: Theme.of(context).brightness,
+          statusBarIconBrightness: Theme.of(context).brightness == Brightness.dark
+              ? Brightness.light
+              : Brightness.dark,
+        ),
+      ),
+      body: SingleChildScrollView(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            _buildSystemInfo(platformBrightness, isHighContrast, textScale),
+            const SizedBox(height: 24),
+            _buildThemeModeSelector(),
+            const SizedBox(height: 24),
+            _buildAccessibilityInfo(accessibilityFeatures),
+            const SizedBox(height: 24),
+            _buildAdaptiveComponents(),
+            const SizedBox(height: 24),
+            _buildSystemStatusOverview(),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildSystemInfo(Brightness brightness, bool highContrast, double textScale) {
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Icon(
+                  brightness == Brightness.dark ? Icons.dark_mode : Icons.light_mode,
+                  color: Theme.of(context).colorScheme.primary,
+                ),
+                const SizedBox(width: 8),
+                Text(
+                  'System Theme Information',
+                  style: Theme.of(context).textTheme.titleLarge,
+                ),
+              ],
+            ),
+            const SizedBox(height: 16),
+            _buildInfoRow('Platform Brightness', brightness.name.toUpperCase()),
+            _buildInfoRow('High Contrast', highContrast ? 'ENABLED' : 'DISABLED'),
+            _buildInfoRow('Text Scale Factor', '${(textScale * 100).toInt()}%'),
+            _buildInfoRow('Current Theme', _getCurrentThemeDescription()),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildInfoRow(String label, String value) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 4),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          Text(
+            label,
+            style: Theme.of(context).textTheme.bodyMedium,
+          ),
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+            decoration: BoxDecoration(
+              color: Theme.of(context).colorScheme.primaryContainer,
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: Text(
+              value,
+              style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                color: Theme.of(context).colorScheme.onPrimaryContainer,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildThemeModeSelector() {
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              'Theme Mode Selection',
+              style: Theme.of(context).textTheme.titleLarge,
+            ),
+            const SizedBox(height: 16),
+            SegmentedButton<ThemeMode>(
+              segments: const [
+                ButtonSegment(
+                  value: ThemeMode.system,
+                  label: Text('System'),
+                  icon: Icon(Icons.auto_mode),
+                ),
+                ButtonSegment(
+                  value: ThemeMode.light,
+                  label: Text('Light'),
+                  icon: Icon(Icons.light_mode),
+                ),
+                ButtonSegment(
+                  value: ThemeMode.dark,
+                  label: Text('Dark'),
+                  icon: Icon(Icons.dark_mode),
+                ),
+              ],
+              selected: {_currentThemeMode},
+              onSelectionChanged: (Set<ThemeMode> selection) {
+                setState(() {
+                  _currentThemeMode = selection.first;
+                });
+                // In a real app, you would propagate this change up to MaterialApp
+                _showThemeChangeInfo(_currentThemeMode);
+              },
+            ),
+            const SizedBox(height: 12),
+            Text(
+              _currentThemeMode == ThemeMode.system
+                  ? 'Following system preference automatically'
+                  : 'Using manual override: ${_currentThemeMode.name}',
+              style: Theme.of(context).textTheme.bodySmall,
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildAccessibilityInfo(AccessibilityFeatures features) {
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                const Icon(Icons.accessibility),
+                const SizedBox(width: 8),
+                Text(
+                  'Accessibility Features',
+                  style: Theme.of(context).textTheme.titleLarge,
+                ),
+              ],
+            ),
+            const SizedBox(height: 16),
+            _buildAccessibilityFeature('High Contrast', features.highContrast),
+            _buildAccessibilityFeature('Large Text', features.accessibleNavigation),
+            _buildAccessibilityFeature('Bold Text', features.boldText),
+            _buildAccessibilityFeature('Reduce Motion', features.reduceMotion),
+            _buildAccessibilityFeature('Invert Colors', features.invertColors),
+            _buildAccessibilityFeature('Disable Animations', features.disableAnimations),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildAccessibilityFeature(String name, bool enabled) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 4),
+      child: Row(
+        children: [
+          Icon(
+            enabled ? Icons.check_circle : Icons.cancel,
+            color: enabled ? Colors.green : Colors.grey,
+            size: 20,
+          ),
+          const SizedBox(width: 8),
+          Expanded(
+            child: Text(
+              name,
+              style: Theme.of(context).textTheme.bodyMedium,
+            ),
+          ),
+          Text(
+            enabled ? 'ON' : 'OFF',
+            style: Theme.of(context).textTheme.bodySmall?.copyWith(
+              color: enabled ? Colors.green : Colors.grey,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildAdaptiveComponents() {
+    final mediaQuery = MediaQuery.of(context);
+    final isHighContrast = mediaQuery.highContrast;
+    final reduceMotions = mediaQuery.accessibilityFeatures.reduceMotion;
+
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              'Adaptive Components',
+              style: Theme.of(context).textTheme.titleLarge,
+            ),
+            const SizedBox(height: 16),
+            Text(
+              'These components adapt based on system settings:',
+              style: Theme.of(context).textTheme.bodyMedium,
+            ),
+            const SizedBox(height: 12),
+            
+            // Button adapts to high contrast
+            ElevatedButton(
+              style: ElevatedButton.styleFrom(
+                side: isHighContrast
+                    ? BorderSide(
+                        color: Theme.of(context).colorScheme.outline,
+                        width: 2,
+                      )
+                    : null,
+              ),
+              onPressed: () {},
+              child: Text(isHighContrast ? 'High Contrast Button' : 'Normal Button'),
+            ),
+            
+            const SizedBox(height: 12),
+            
+            // Animation respects reduce motion
+            AnimatedContainer(
+              duration: reduceMotions
+                  ? const Duration(milliseconds: 1)
+                  : const Duration(milliseconds: 300),
+              height: 60,
+              decoration: BoxDecoration(
+                color: Theme.of(context).colorScheme.primaryContainer,
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: Center(
+                child: Text(
+                  reduceMotions ? 'Animations Reduced' : 'Normal Animations',
+                  style: TextStyle(
+                    color: Theme.of(context).colorScheme.onPrimaryContainer,
+                  ),
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildSystemStatusOverview() {
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              'System Integration Status',
+              style: Theme.of(context).textTheme.titleLarge,
+            ),
+            const SizedBox(height: 16),
+            _buildStatusItem(
+              Icons.smartphone,
+              'Platform Theme Sync',
+              'Active',
+              Colors.green,
+            ),
+            _buildStatusItem(
+              Icons.accessibility,
+              'Accessibility Features',
+              'Monitored',
+              Colors.blue,
+            ),
+            _buildStatusItem(
+              Icons.palette,
+              'Dynamic Color Support',
+              'Available',
+              Colors.orange,
+            ),
+            _buildStatusItem(
+              Icons.auto_mode,
+              'Automatic Switching',
+              'Enabled',
+              Colors.green,
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildStatusItem(IconData icon, String title, String status, Color color) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 6),
+      child: Row(
+        children: [
+          Container(
+            padding: const EdgeInsets.all(8),
+            decoration: BoxDecoration(
+              color: color.withOpacity(0.1),
+              borderRadius: BorderRadius.circular(8),
+            ),
+            child: Icon(icon, color: color, size: 20),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Text(
+              title,
+              style: Theme.of(context).textTheme.bodyMedium,
+            ),
+          ),
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+            decoration: BoxDecoration(
+              color: color.withOpacity(0.2),
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: Text(
+              status,
+              style: TextStyle(
+                color: color,
+                fontSize: 12,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  String _getCurrentThemeDescription() {
+    if (_currentThemeMode == ThemeMode.system) {
+      final brightness = MediaQuery.of(context).platformBrightness;
+      final isHighContrast = MediaQuery.of(context).highContrast;
+      
+      String base = brightness == Brightness.dark ? 'DARK' : 'LIGHT';
+      if (isHighContrast) base += ' + HIGH CONTRAST';
+      
+      return base;
+    } else {
+      return _currentThemeMode.name.toUpperCase();
+    }
+  }
+
+  void _showThemeChangeInfo(ThemeMode mode) {
+    String message;
+    switch (mode) {
+      case ThemeMode.system:
+        message = 'Now following system theme preferences';
+        break;
+      case ThemeMode.light:
+        message = 'Switched to light theme (overriding system)';
+        break;
+      case ThemeMode.dark:
+        message = 'Switched to dark theme (overriding system)';
+        break;
+    }
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(message),
+        action: SnackBarAction(
+          label: 'OK',
+          onPressed: () {},
+        ),
+      ),
+    );
+  }
+}
+```
+
+System theme following ensures your app automatically adapts to user  
+preferences set at the OS level. By using ThemeMode.system and  
+monitoring MediaQuery changes, your app seamlessly responds to dark  
+mode toggles, high contrast settings, and other accessibility  
+preferences without requiring manual configuration.  
+
+## Theme Persistence
+
+Saving and restoring user theme preferences across app sessions.  
+
+```dart
+import 'package:flutter/material.dart';
+import 'dart:convert';
+
+void main() {
+  runApp(const MyApp());
+}
+
+// Mock storage service - replace with actual SharedPreferences or secure storage
+class ThemeStorageService {
+  static const String _themeKey = 'app_theme_preferences';
+  static final Map<String, String> _mockStorage = {};
+
+  static Future<void> saveThemePreferences(ThemePreferences preferences) async {
+    // Simulate async storage operation
+    await Future.delayed(const Duration(milliseconds: 100));
+    _mockStorage[_themeKey] = jsonEncode(preferences.toMap());
+  }
+
+  static Future<ThemePreferences?> loadThemePreferences() async {
+    // Simulate async storage operation
+    await Future.delayed(const Duration(milliseconds: 100));
+    
+    final jsonString = _mockStorage[_themeKey];
+    if (jsonString == null) return null;
+    
+    try {
+      final Map<String, dynamic> map = jsonDecode(jsonString);
+      return ThemePreferences.fromMap(map);
+    } catch (e) {
+      return null;
+    }
+  }
+
+  static Future<void> clearThemePreferences() async {
+    await Future.delayed(const Duration(milliseconds: 100));
+    _mockStorage.remove(_themeKey);
+  }
+}
+
+class ThemePreferences {
+  final ThemeMode themeMode;
+  final String primaryColorName;
+  final bool useHighContrast;
+  final double textScaleFactor;
+  final bool reduceAnimations;
+  final String fontFamily;
+
+  const ThemePreferences({
+    required this.themeMode,
+    required this.primaryColorName,
+    required this.useHighContrast,
+    required this.textScaleFactor,
+    required this.reduceAnimations,
+    required this.fontFamily,
+  });
+
+  factory ThemePreferences.defaultPrefs() {
+    return const ThemePreferences(
+      themeMode: ThemeMode.system,
+      primaryColorName: 'blue',
+      useHighContrast: false,
+      textScaleFactor: 1.0,
+      reduceAnimations: false,
+      fontFamily: 'Roboto',
+    );
+  }
+
+  Color get primaryColor {
+    switch (primaryColorName) {
+      case 'blue':
+        return Colors.blue;
+      case 'green':
+        return Colors.green;
+      case 'purple':
+        return Colors.purple;
+      case 'orange':
+        return Colors.orange;
+      case 'red':
+        return Colors.red;
+      default:
+        return Colors.blue;
+    }
+  }
+
+  ThemePreferences copyWith({
+    ThemeMode? themeMode,
+    String? primaryColorName,
+    bool? useHighContrast,
+    double? textScaleFactor,
+    bool? reduceAnimations,
+    String? fontFamily,
+  }) {
+    return ThemePreferences(
+      themeMode: themeMode ?? this.themeMode,
+      primaryColorName: primaryColorName ?? this.primaryColorName,
+      useHighContrast: useHighContrast ?? this.useHighContrast,
+      textScaleFactor: textScaleFactor ?? this.textScaleFactor,
+      reduceAnimations: reduceAnimations ?? this.reduceAnimations,
+      fontFamily: fontFamily ?? this.fontFamily,
+    );
+  }
+
+  Map<String, dynamic> toMap() {
+    return {
+      'themeMode': themeMode.index,
+      'primaryColorName': primaryColorName,
+      'useHighContrast': useHighContrast,
+      'textScaleFactor': textScaleFactor,
+      'reduceAnimations': reduceAnimations,
+      'fontFamily': fontFamily,
+    };
+  }
+
+  factory ThemePreferences.fromMap(Map<String, dynamic> map) {
+    return ThemePreferences(
+      themeMode: ThemeMode.values[map['themeMode'] ?? 0],
+      primaryColorName: map['primaryColorName'] ?? 'blue',
+      useHighContrast: map['useHighContrast'] ?? false,
+      textScaleFactor: (map['textScaleFactor'] ?? 1.0).toDouble(),
+      reduceAnimations: map['reduceAnimations'] ?? false,
+      fontFamily: map['fontFamily'] ?? 'Roboto',
+    );
+  }
+}
+
+class ThemeController extends ChangeNotifier {
+  ThemePreferences _preferences = ThemePreferences.defaultPrefs();
+  bool _isLoading = true;
+
+  ThemePreferences get preferences => _preferences;
+  bool get isLoading => _isLoading;
+
+  ThemeController() {
+    _loadPreferences();
+  }
+
+  Future<void> _loadPreferences() async {
+    try {
+      final savedPrefs = await ThemeStorageService.loadThemePreferences();
+      if (savedPrefs != null) {
+        _preferences = savedPrefs;
+      }
+    } catch (e) {
+      // Handle error - use defaults
+      _preferences = ThemePreferences.defaultPrefs();
+    } finally {
+      _isLoading = false;
+      notifyListeners();
+    }
+  }
+
+  Future<void> updatePreferences(ThemePreferences newPreferences) async {
+    _preferences = newPreferences;
+    notifyListeners();
+    
+    try {
+      await ThemeStorageService.saveThemePreferences(newPreferences);
+    } catch (e) {
+      // Handle save error
+      debugPrint('Failed to save theme preferences: $e');
+    }
+  }
+
+  Future<void> resetToDefaults() async {
+    await updatePreferences(ThemePreferences.defaultPrefs());
+    await ThemeStorageService.clearThemePreferences();
+  }
+
+  ThemeData buildTheme({required Brightness brightness}) {
+    final baseTheme = ThemeData(
+      useMaterial3: true,
+      colorScheme: ColorScheme.fromSeed(
+        seedColor: _preferences.primaryColor,
+        brightness: brightness,
+      ),
+      fontFamily: _preferences.fontFamily,
+    );
+
+    if (_preferences.useHighContrast) {
+      return _buildHighContrastTheme(baseTheme, brightness);
+    }
+
+    return baseTheme;
+  }
+
+  ThemeData _buildHighContrastTheme(ThemeData base, Brightness brightness) {
+    final isLight = brightness == Brightness.light;
+    
+    return base.copyWith(
+      colorScheme: base.colorScheme.copyWith(
+        primary: isLight ? Colors.black : Colors.white,
+        onPrimary: isLight ? Colors.white : Colors.black,
+        background: isLight ? Colors.white : Colors.black,
+        onBackground: isLight ? Colors.black : Colors.white,
+        surface: isLight ? Colors.white : Colors.black,
+        onSurface: isLight ? Colors.black : Colors.white,
+      ),
+      textTheme: base.textTheme.copyWith(
+        displayLarge: base.textTheme.displayLarge?.copyWith(fontWeight: FontWeight.bold),
+        displayMedium: base.textTheme.displayMedium?.copyWith(fontWeight: FontWeight.bold),
+        headlineLarge: base.textTheme.headlineLarge?.copyWith(fontWeight: FontWeight.bold),
+        titleLarge: base.textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
+      ),
+    );
+  }
+}
+
+class MyApp extends StatelessWidget {
+  final ThemeController themeController;
+
+  const MyApp({super.key, required this.themeController});
+
+  @override
+  Widget build(BuildContext context) {
+    return AnimatedBuilder(
+      animation: themeController,
+      builder: (context, child) {
+        if (themeController.isLoading) {
+          return MaterialApp(
+            home: Scaffold(
+              body: Center(
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    const CircularProgressIndicator(),
+                    const SizedBox(height: 16),
+                    Text(
+                      'Loading theme preferences...',
+                      style: Theme.of(context).textTheme.bodyLarge,
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          );
+        }
+
+        return MediaQuery(
+          data: MediaQuery.of(context).copyWith(
+            textScaleFactor: themeController.preferences.textScaleFactor,
+          ),
+          child: MaterialApp(
+            title: 'Theme Persistence',
+            theme: themeController.buildTheme(brightness: Brightness.light),
+            darkTheme: themeController.buildTheme(brightness: Brightness.dark),
+            themeMode: themeController.preferences.themeMode,
+            home: ThemePersistencePage(themeController: themeController),
+          ),
+        );
+      },
+    );
+  }
+}
+
+class ThemePersistencePage extends StatelessWidget {
+  final ThemeController themeController;
+
+  const ThemePersistencePage({super.key, required this.themeController});
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text('Theme Persistence'),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.refresh),
+            onPressed: () => themeController.resetToDefaults(),
+            tooltip: 'Reset to defaults',
+          ),
+        ],
+      ),
+      body: SingleChildScrollView(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            _buildThemeModeSelector(context),
+            const SizedBox(height: 16),
+            _buildColorSelector(context),
+            const SizedBox(height: 16),
+            _buildAccessibilityOptions(context),
+            const SizedBox(height: 16),
+            _buildTextOptions(context),
+            const SizedBox(height: 16),
+            _buildPreferencesPreview(context),
+            const SizedBox(height: 16),
+            _buildStorageInfo(context),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildThemeModeSelector(BuildContext context) {
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              'Theme Mode',
+              style: Theme.of(context).textTheme.titleLarge,
+            ),
+            const SizedBox(height: 16),
+            SegmentedButton<ThemeMode>(
+              segments: const [
+                ButtonSegment(
+                  value: ThemeMode.system,
+                  label: Text('System'),
+                  icon: Icon(Icons.auto_mode),
+                ),
+                ButtonSegment(
+                  value: ThemeMode.light,
+                  label: Text('Light'),
+                  icon: Icon(Icons.light_mode),
+                ),
+                ButtonSegment(
+                  value: ThemeMode.dark,
+                  label: Text('Dark'),
+                  icon: Icon(Icons.dark_mode),
+                ),
+              ],
+              selected: {themeController.preferences.themeMode},
+              onSelectionChanged: (Set<ThemeMode> selection) {
+                themeController.updatePreferences(
+                  themeController.preferences.copyWith(themeMode: selection.first),
+                );
+              },
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildColorSelector(BuildContext context) {
+    final colors = {
+      'blue': Colors.blue,
+      'green': Colors.green,
+      'purple': Colors.purple,
+      'orange': Colors.orange,
+      'red': Colors.red,
+    };
+
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              'Primary Color',
+              style: Theme.of(context).textTheme.titleLarge,
+            ),
+            const SizedBox(height: 16),
+            Wrap(
+              spacing: 8,
+              children: colors.entries.map((entry) {
+                final isSelected = themeController.preferences.primaryColorName == entry.key;
+                return GestureDetector(
+                  onTap: () {
+                    themeController.updatePreferences(
+                      themeController.preferences.copyWith(primaryColorName: entry.key),
+                    );
+                  },
+                  child: Container(
+                    width: 48,
+                    height: 48,
+                    decoration: BoxDecoration(
+                      color: entry.value,
+                      shape: BoxShape.circle,
+                      border: Border.all(
+                        color: isSelected ? Colors.white : Colors.transparent,
+                        width: 3,
+                      ),
+                      boxShadow: isSelected
+                          ? [
+                              BoxShadow(
+                                color: entry.value.withOpacity(0.5),
+                                blurRadius: 8,
+                                spreadRadius: 2,
+                              ),
+                            ]
+                          : null,
+                    ),
+                    child: isSelected
+                        ? const Icon(Icons.check, color: Colors.white)
+                        : null,
+                  ),
+                );
+              }).toList(),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildAccessibilityOptions(BuildContext context) {
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              'Accessibility',
+              style: Theme.of(context).textTheme.titleLarge,
+            ),
+            const SizedBox(height: 16),
+            SwitchListTile(
+              title: const Text('High Contrast'),
+              subtitle: const Text('Increase color contrast for better visibility'),
+              value: themeController.preferences.useHighContrast,
+              onChanged: (value) {
+                themeController.updatePreferences(
+                  themeController.preferences.copyWith(useHighContrast: value),
+                );
+              },
+            ),
+            SwitchListTile(
+              title: const Text('Reduce Animations'),
+              subtitle: const Text('Minimize motion for comfort'),
+              value: themeController.preferences.reduceAnimations,
+              onChanged: (value) {
+                themeController.updatePreferences(
+                  themeController.preferences.copyWith(reduceAnimations: value),
+                );
+              },
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildTextOptions(BuildContext context) {
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              'Text Settings',
+              style: Theme.of(context).textTheme.titleLarge,
+            ),
+            const SizedBox(height: 16),
+            Text('Text Scale: ${(themeController.preferences.textScaleFactor * 100).toInt()}%'),
+            Slider(
+              value: themeController.preferences.textScaleFactor,
+              min: 0.8,
+              max: 2.0,
+              divisions: 12,
+              onChanged: (value) {
+                themeController.updatePreferences(
+                  themeController.preferences.copyWith(textScaleFactor: value),
+                );
+              },
+            ),
+            const SizedBox(height: 16),
+            Text('Font Family', style: Theme.of(context).textTheme.titleMedium),
+            const SizedBox(height: 8),
+            DropdownButtonFormField<String>(
+              value: themeController.preferences.fontFamily,
+              decoration: const InputDecoration(border: OutlineInputBorder()),
+              items: const [
+                DropdownMenuItem(value: 'Roboto', child: Text('Roboto')),
+                DropdownMenuItem(value: 'Open Sans', child: Text('Open Sans')),
+                DropdownMenuItem(value: 'Lato', child: Text('Lato')),
+                DropdownMenuItem(value: 'Montserrat', child: Text('Montserrat')),
+              ],
+              onChanged: (value) {
+                if (value != null) {
+                  themeController.updatePreferences(
+                    themeController.preferences.copyWith(fontFamily: value),
+                  );
+                }
+              },
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildPreferencesPreview(BuildContext context) {
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              'Preview',
+              style: Theme.of(context).textTheme.titleLarge,
+            ),
+            const SizedBox(height: 16),
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: Theme.of(context).colorScheme.primaryContainer,
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'Sample Headline',
+                    style: Theme.of(context).textTheme.headlineSmall,
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    'This is sample body text that demonstrates the current theme settings including color, typography, and contrast.',
+                    style: Theme.of(context).textTheme.bodyMedium,
+                  ),
+                  const SizedBox(height: 12),
+                  ElevatedButton(
+                    onPressed: () {},
+                    child: const Text('Sample Button'),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildStorageInfo(BuildContext context) {
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                const Icon(Icons.save),
+                const SizedBox(width: 8),
+                Text(
+                  'Storage Information',
+                  style: Theme.of(context).textTheme.titleLarge,
+                ),
+              ],
+            ),
+            const SizedBox(height: 16),
+            const Text('✓ Preferences are automatically saved'),
+            const SizedBox(height: 4),
+            const Text('✓ Settings persist across app restarts'),
+            const SizedBox(height: 4),
+            const Text('✓ Instant synchronization across screens'),
+            const SizedBox(height: 16),
+            OutlinedButton(
+              onPressed: () {
+                showDialog(
+                  context: context,
+                  builder: (context) => AlertDialog(
+                    title: const Text('Reset Theme Settings'),
+                    content: const Text(
+                      'This will reset all theme preferences to their default values. This action cannot be undone.',
+                    ),
+                    actions: [
+                      TextButton(
+                        onPressed: () => Navigator.pop(context),
+                        child: const Text('Cancel'),
+                      ),
+                      ElevatedButton(
+                        onPressed: () {
+                          Navigator.pop(context);
+                          themeController.resetToDefaults();
+                        },
+                        child: const Text('Reset'),
+                      ),
+                    ],
+                  ),
+                );
+              },
+              child: const Text('Reset All Settings'),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+// Entry point with theme controller initialization
+void main() {
+  runApp(MyApp(themeController: ThemeController()));
+}
+```
+
+Theme persistence ensures user preferences are maintained across app  
+sessions using local storage. The ThemeController manages state changes  
+and storage operations, while ThemePreferences encapsulates all theme  
+settings. This creates a seamless user experience where customizations  
+are automatically restored when the app launches.  
+
+## Multiple Theme Variants
+
+Managing multiple theme variants and allowing users to switch between them.  
+
+```dart
+import 'package:flutter/material.dart';
+
+void main() {
+  runApp(const MyApp());
+}
+
+enum ThemeVariant {
+  classic,
+  modern,
+  vibrant,
+  minimal,
+  nature,
+}
+
+extension ThemeVariantExtension on ThemeVariant {
+  String get displayName {
+    switch (this) {
+      case ThemeVariant.classic:
+        return 'Classic';
+      case ThemeVariant.modern:
+        return 'Modern';
+      case ThemeVariant.vibrant:
+        return 'Vibrant';
+      case ThemeVariant.minimal:
+        return 'Minimal';
+      case ThemeVariant.nature:
+        return 'Nature';
+    }
+  }
+
+  String get description {
+    switch (this) {
+      case ThemeVariant.classic:
+        return 'Traditional and elegant design with subtle colors';
+      case ThemeVariant.modern:
+        return 'Contemporary styling with bold contrasts';
+      case ThemeVariant.vibrant:
+        return 'Bright and energetic color palette';
+      case ThemeVariant.minimal:
+        return 'Clean and simple with minimal visual elements';
+      case ThemeVariant.nature:
+        return 'Earth tones inspired by natural elements';
+    }
+  }
+
+  IconData get icon {
+    switch (this) {
+      case ThemeVariant.classic:
+        return Icons.library_books;
+      case ThemeVariant.modern:
+        return Icons.architecture;
+      case ThemeVariant.vibrant:
+        return Icons.color_lens;
+      case ThemeVariant.minimal:
+        return Icons.circle_outlined;
+      case ThemeVariant.nature:
+        return Icons.eco;
+    }
+  }
+}
+
+class ThemeVariants {
+  static ThemeData classic({required Brightness brightness}) {
+    final isLight = brightness == Brightness.light;
+    return ThemeData(
+      useMaterial3: true,
+      colorScheme: ColorScheme.fromSeed(
+        seedColor: const Color(0xFF8B4513),
+        brightness: brightness,
+      ).copyWith(
+        primary: isLight ? const Color(0xFF8B4513) : const Color(0xFFD2B48C),
+        secondary: isLight ? const Color(0xFF2F4F4F) : const Color(0xFF708090),
+        surface: isLight ? const Color(0xFFFFFDF8) : const Color(0xFF1A1611),
+      ),
+      textTheme: TextTheme(
+        displayLarge: TextStyle(
+          fontFamily: 'Georgia',
+          color: isLight ? const Color(0xFF2F2F2F) : const Color(0xFFF5F5DC),
+        ),
+        headlineLarge: TextStyle(
+          fontFamily: 'Georgia',
+          color: isLight ? const Color(0xFF2F2F2F) : const Color(0xFFF5F5DC),
+        ),
+        bodyLarge: TextStyle(
+          fontFamily: 'Times',
+          color: isLight ? const Color(0xFF3F3F3F) : const Color(0xFFE5E5DC),
+        ),
+      ),
+      cardTheme: CardTheme(
+        elevation: 3,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(8),
+        ),
+        color: isLight ? const Color(0xFFFFFDF8) : const Color(0xFF2A251F),
+      ),
+    );
+  }
+
+  static ThemeData modern({required Brightness brightness}) {
+    final isLight = brightness == Brightness.light;
+    return ThemeData(
+      useMaterial3: true,
+      colorScheme: ColorScheme.fromSeed(
+        seedColor: Colors.blueGrey,
+        brightness: brightness,
+      ).copyWith(
+        primary: isLight ? Colors.blueGrey.shade800 : Colors.blueGrey.shade200,
+        secondary: isLight ? Colors.cyan.shade700 : Colors.cyan.shade300,
+        surface: isLight ? Colors.grey.shade50 : Colors.grey.shade900,
+      ),
+      textTheme: const TextTheme(
+        displayLarge: TextStyle(fontFamily: 'Roboto', fontWeight: FontWeight.w300),
+        headlineLarge: TextStyle(fontFamily: 'Roboto', fontWeight: FontWeight.w400),
+        bodyLarge: TextStyle(fontFamily: 'Roboto', fontWeight: FontWeight.w400),
+      ),
+      cardTheme: CardTheme(
+        elevation: 1,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(16),
+        ),
+      ),
+      elevatedButtonTheme: ElevatedButtonThemeData(
+        style: ElevatedButton.styleFrom(
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12),
+          ),
+        ),
+      ),
+    );
+  }
+
+  static ThemeData vibrant({required Brightness brightness}) {
+    final isLight = brightness == Brightness.light;
+    return ThemeData(
+      useMaterial3: true,
+      colorScheme: ColorScheme.fromSeed(
+        seedColor: Colors.deepPurple,
+        brightness: brightness,
+      ).copyWith(
+        primary: isLight ? Colors.deepPurple : Colors.deepPurple.shade300,
+        secondary: isLight ? Colors.pink.shade600 : Colors.pink.shade300,
+        tertiary: isLight ? Colors.orange.shade600 : Colors.orange.shade300,
+        surface: isLight ? Colors.purple.shade50 : Colors.purple.shade900,
+      ),
+      textTheme: const TextTheme(
+        displayLarge: TextStyle(fontFamily: 'Montserrat', fontWeight: FontWeight.bold),
+        headlineLarge: TextStyle(fontFamily: 'Montserrat', fontWeight: FontWeight.w600),
+        bodyLarge: TextStyle(fontFamily: 'Open Sans', fontWeight: FontWeight.w400),
+      ),
+      cardTheme: CardTheme(
+        elevation: 4,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(20),
+        ),
+      ),
+      elevatedButtonTheme: ElevatedButtonThemeData(
+        style: ElevatedButton.styleFrom(
+          shape: const StadiumBorder(),
+          elevation: 3,
+        ),
+      ),
+    );
+  }
+
+  static ThemeData minimal({required Brightness brightness}) {
+    final isLight = brightness == Brightness.light;
+    return ThemeData(
+      useMaterial3: true,
+      colorScheme: ColorScheme.fromSeed(
+        seedColor: Colors.grey,
+        brightness: brightness,
+      ).copyWith(
+        primary: isLight ? Colors.grey.shade800 : Colors.grey.shade200,
+        secondary: isLight ? Colors.grey.shade600 : Colors.grey.shade400,
+        surface: isLight ? Colors.white : Colors.grey.shade900,
+        background: isLight ? Colors.grey.shade50 : Colors.black,
+      ),
+      textTheme: const TextTheme(
+        displayLarge: TextStyle(fontFamily: 'Inter', fontWeight: FontWeight.w200),
+        headlineLarge: TextStyle(fontFamily: 'Inter', fontWeight: FontWeight.w300),
+        bodyLarge: TextStyle(fontFamily: 'Inter', fontWeight: FontWeight.w400),
+      ),
+      cardTheme: CardTheme(
+        elevation: 0,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(4),
+          side: BorderSide(
+            color: isLight ? Colors.grey.shade300 : Colors.grey.shade700,
+            width: 1,
+          ),
+        ),
+      ),
+      elevatedButtonTheme: ElevatedButtonThemeData(
+        style: ElevatedButton.styleFrom(
+          elevation: 0,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(4),
+          ),
+        ),
+      ),
+    );
+  }
+
+  static ThemeData nature({required Brightness brightness}) {
+    final isLight = brightness == Brightness.light;
+    return ThemeData(
+      useMaterial3: true,
+      colorScheme: ColorScheme.fromSeed(
+        seedColor: Colors.green,
+        brightness: brightness,
+      ).copyWith(
+        primary: isLight ? Colors.green.shade700 : Colors.green.shade300,
+        secondary: isLight ? Colors.brown.shade600 : Colors.brown.shade300,
+        tertiary: isLight ? Colors.amber.shade700 : Colors.amber.shade300,
+        surface: isLight ? Colors.green.shade50 : Colors.green.shade900,
+        background: isLight ? const Color(0xFFF1F8E9) : const Color(0xFF0D1F0D),
+      ),
+      textTheme: const TextTheme(
+        displayLarge: TextStyle(fontFamily: 'Merriweather', fontWeight: FontWeight.w400),
+        headlineLarge: TextStyle(fontFamily: 'Merriweather', fontWeight: FontWeight.w500),
+        bodyLarge: TextStyle(fontFamily: 'Lato', fontWeight: FontWeight.w400),
+      ),
+      cardTheme: CardTheme(
+        elevation: 2,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(12),
+        ),
+        color: isLight ? Colors.green.shade50 : Colors.green.shade800,
+      ),
+      elevatedButtonTheme: ElevatedButtonThemeData(
+        style: ElevatedButton.styleFrom(
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(8),
+          ),
+        ),
+      ),
+    );
+  }
+
+  static ThemeData getTheme({
+    required ThemeVariant variant,
+    required Brightness brightness,
+  }) {
+    switch (variant) {
+      case ThemeVariant.classic:
+        return classic(brightness: brightness);
+      case ThemeVariant.modern:
+        return modern(brightness: brightness);
+      case ThemeVariant.vibrant:
+        return vibrant(brightness: brightness);
+      case ThemeVariant.minimal:
+        return minimal(brightness: brightness);
+      case ThemeVariant.nature:
+        return nature(brightness: brightness);
+    }
+  }
+}
+
+class MyApp extends StatelessWidget {
+  const MyApp({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return MaterialApp(
+      title: 'Multiple Theme Variants',
+      theme: ThemeVariants.modern(brightness: Brightness.light),
+      home: const MultipleThemeVariantsPage(),
+    );
+  }
+}
+
+class MultipleThemeVariantsPage extends StatefulWidget {
+  const MultipleThemeVariantsPage({super.key});
+
+  @override
+  State<MultipleThemeVariantsPage> createState() => _MultipleThemeVariantsPageState();
+}
+
+class _MultipleThemeVariantsPageState extends State<MultipleThemeVariantsPage>
+    with TickerProviderStateMixin {
+  ThemeVariant _selectedVariant = ThemeVariant.modern;
+  bool _isDarkMode = false;
+  late AnimationController _animationController;
+
+  @override
+  void initState() {
+    super.initState();
+    _animationController = AnimationController(
+      duration: const Duration(milliseconds: 300),
+      vsync: this,
+    );
+  }
+
+  @override
+  void dispose() {
+    _animationController.dispose();
+    super.dispose();
+  }
+
+  void _changeTheme(ThemeVariant variant) {
+    setState(() {
+      _selectedVariant = variant;
+    });
+    _animationController.forward().then((_) {
+      _animationController.reset();
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = ThemeVariants.getTheme(
+      variant: _selectedVariant,
+      brightness: _isDarkMode ? Brightness.dark : Brightness.light,
+    );
+
+    return AnimatedBuilder(
+      animation: _animationController,
+      builder: (context, child) {
+        return Theme(
+          data: theme,
+          child: Scaffold(
+            appBar: AppBar(
+              title: Text('${_selectedVariant.displayName} Theme'),
+              actions: [
+                Switch(
+                  value: _isDarkMode,
+                  onChanged: (value) {
+                    setState(() {
+                      _isDarkMode = value;
+                    });
+                  },
+                ),
+              ],
+            ),
+            body: SingleChildScrollView(
+              child: Column(
+                children: [
+                  _buildThemeSelector(),
+                  _buildCurrentThemeInfo(),
+                  _buildComponentShowcase(),
+                  _buildThemeComparison(),
+                ],
+              ),
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _buildThemeSelector() {
+    return Container(
+      height: 200,
+      margin: const EdgeInsets.all(16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            'Theme Variants',
+            style: Theme.of(context).textTheme.titleLarge,
+          ),
+          const SizedBox(height: 16),
+          Expanded(
+            child: ListView.builder(
+              scrollDirection: Axis.horizontal,
+              itemCount: ThemeVariant.values.length,
+              itemBuilder: (context, index) {
+                final variant = ThemeVariant.values[index];
+                final isSelected = variant == _selectedVariant;
+                final variantTheme = ThemeVariants.getTheme(
+                  variant: variant,
+                  brightness: _isDarkMode ? Brightness.dark : Brightness.light,
+                );
+
+                return GestureDetector(
+                  onTap: () => _changeTheme(variant),
+                  child: Container(
+                    width: 140,
+                    margin: const EdgeInsets.only(right: 12),
+                    child: Card(
+                      elevation: isSelected ? 8 : 2,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(16),
+                        side: isSelected
+                            ? BorderSide(
+                                color: variantTheme.colorScheme.primary,
+                                width: 2,
+                              )
+                            : BorderSide.none,
+                      ),
+                      child: Container(
+                        decoration: BoxDecoration(
+                          borderRadius: BorderRadius.circular(16),
+                          gradient: LinearGradient(
+                            begin: Alignment.topLeft,
+                            end: Alignment.bottomRight,
+                            colors: [
+                              variantTheme.colorScheme.primary.withOpacity(0.1),
+                              variantTheme.colorScheme.secondary.withOpacity(0.1),
+                            ],
+                          ),
+                        ),
+                        child: Padding(
+                          padding: const EdgeInsets.all(16),
+                          child: Column(
+                            children: [
+                              Icon(
+                                variant.icon,
+                                size: 32,
+                                color: variantTheme.colorScheme.primary,
+                              ),
+                              const SizedBox(height: 8),
+                              Text(
+                                variant.displayName,
+                                style: TextStyle(
+                                  fontWeight: FontWeight.w600,
+                                  color: variantTheme.colorScheme.onSurface,
+                                ),
+                                textAlign: TextAlign.center,
+                              ),
+                              const SizedBox(height: 4),
+                              Text(
+                                variant.description,
+                                style: TextStyle(
+                                  fontSize: 10,
+                                  color: variantTheme.colorScheme.onSurface.withOpacity(0.7),
+                                ),
+                                textAlign: TextAlign.center,
+                                maxLines: 2,
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+                );
+              },
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildCurrentThemeInfo() {
+    return Card(
+      margin: const EdgeInsets.all(16),
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Icon(_selectedVariant.icon),
+                const SizedBox(width: 8),
+                Text(
+                  'Current Theme: ${_selectedVariant.displayName}',
+                  style: Theme.of(context).textTheme.titleLarge,
+                ),
+              ],
+            ),
+            const SizedBox(height: 8),
+            Text(
+              _selectedVariant.description,
+              style: Theme.of(context).textTheme.bodyMedium,
+            ),
+            const SizedBox(height: 16),
+            Row(
+              children: [
+                _buildColorSwatch('Primary', Theme.of(context).colorScheme.primary),
+                const SizedBox(width: 12),
+                _buildColorSwatch('Secondary', Theme.of(context).colorScheme.secondary),
+                const SizedBox(width: 12),
+                _buildColorSwatch('Surface', Theme.of(context).colorScheme.surface),
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildColorSwatch(String label, Color color) {
+    return Expanded(
+      child: Column(
+        children: [
+          Container(
+            height: 40,
+            decoration: BoxDecoration(
+              color: color,
+              borderRadius: BorderRadius.circular(8),
+              boxShadow: [
+                BoxShadow(
+                  color: color.withOpacity(0.3),
+                  blurRadius: 4,
+                  offset: const Offset(0, 2),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 4),
+          Text(
+            label,
+            style: Theme.of(context).textTheme.bodySmall,
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildComponentShowcase() {
+    return Card(
+      margin: const EdgeInsets.all(16),
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              'Component Showcase',
+              style: Theme.of(context).textTheme.titleLarge,
+            ),
+            const SizedBox(height: 16),
+            Text(
+              'Sample Headline',
+              style: Theme.of(context).textTheme.headlineMedium,
+            ),
+            const SizedBox(height: 8),
+            Text(
+              'This is sample body text that demonstrates how the theme affects typography and readability across different variants.',
+              style: Theme.of(context).textTheme.bodyMedium,
+            ),
+            const SizedBox(height: 16),
+            Row(
+              children: [
+                Expanded(
+                  child: ElevatedButton(
+                    onPressed: () {},
+                    child: const Text('Primary Button'),
+                  ),
+                ),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: OutlinedButton(
+                    onPressed: () {},
+                    child: const Text('Secondary'),
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 12),
+            TextButton(
+              onPressed: () {},
+              child: const Text('Text Button'),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildThemeComparison() {
+    return Container(
+      margin: const EdgeInsets.all(16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            'All Theme Variants',
+            style: Theme.of(context).textTheme.titleLarge,
+          ),
+          const SizedBox(height: 16),
+          GridView.builder(
+            shrinkWrap: true,
+            physics: const NeverScrollableScrollPhysics(),
+            gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+              crossAxisCount: 2,
+              crossAxisSpacing: 12,
+              mainAxisSpacing: 12,
+              childAspectRatio: 1.5,
+            ),
+            itemCount: ThemeVariant.values.length,
+            itemBuilder: (context, index) {
+              final variant = ThemeVariant.values[index];
+              final variantTheme = ThemeVariants.getTheme(
+                variant: variant,
+                brightness: _isDarkMode ? Brightness.dark : Brightness.light,
+              );
+
+              return Container(
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(12),
+                  gradient: LinearGradient(
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                    colors: [
+                      variantTheme.colorScheme.primary,
+                      variantTheme.colorScheme.secondary,
+                    ],
+                  ),
+                ),
+                child: Material(
+                  color: Colors.transparent,
+                  child: InkWell(
+                    borderRadius: BorderRadius.circular(12),
+                    onTap: () => _changeTheme(variant),
+                    child: Padding(
+                      padding: const EdgeInsets.all(16),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Icon(
+                            variant.icon,
+                            color: Colors.white,
+                            size: 28,
+                          ),
+                          const Spacer(),
+                          Text(
+                            variant.displayName,
+                            style: const TextStyle(
+                              color: Colors.white,
+                              fontWeight: FontWeight.w600,
+                              fontSize: 16,
+                            ),
+                          ),
+                          Text(
+                            'Tap to apply',
+                            style: TextStyle(
+                              color: Colors.white.withOpacity(0.8),
+                              fontSize: 12,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
+              );
+            },
+          ),
+        ],
+      ),
+    );
+  }
+}
+```
+
+Multiple theme variants allow users to choose from different visual  
+styles while maintaining consistent functionality. Each variant defines  
+its own color schemes, typography, and component styling. This approach  
+provides flexibility for different user preferences and brand  
+requirements within a single application.  
