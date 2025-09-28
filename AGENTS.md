@@ -13,4 +13,4 @@ Be consistent with existing documents in the repository.
 Each example builds on the previous one, progressing from simpler to more complex concepts.  
 Do not number section titles for examples such as Example 1: Basic types, use only simple title such as  
 Basic types. Follow Flutter & Dart best practices.
-Use dart theme.  
+Use dark theme.  
