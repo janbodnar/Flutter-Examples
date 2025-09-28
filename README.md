@@ -67,6 +67,8 @@ class MyHomePage extends StatelessWidget {
 }
 ```
 
+
+
 ### Notification positioned at the top
 
 ```flutter
@@ -123,6 +125,114 @@ class MyHomePage extends StatelessWidget {
   }
 }
 ```
+
+### Other notifications
+
+```dart
+import 'package:flutter/material.dart';
+
+void main() {
+  runApp(const MyApp());
+}
+
+class MyApp extends StatelessWidget {
+  const MyApp({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return MaterialApp(
+      title: 'Notification Demo',
+      theme: ThemeData.dark(),
+      home: const MyHomePage(),
+    );
+  }
+}
+
+class MyHomePage extends StatelessWidget {
+  const MyHomePage({super.key});
+
+  void _showSnackBar(BuildContext context) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: const Text('Top SnackBar!'),
+        duration: const Duration(seconds: 3),
+        behavior: SnackBarBehavior.floating,
+        margin: const EdgeInsets.only(top: 10.0, left: 10.0, right: 10.0),
+      ),
+    );
+  }
+
+  void _showAlertDialog(BuildContext context) {
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: const Text('Alert'),
+          content: const Text('This is an alert dialog.'),
+          actions: [
+            TextButton(
+              child: const Text('OK'),
+              onPressed: () => Navigator.of(context).pop(),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  void _showBottomSheet(BuildContext context) {
+    showModalBottomSheet(
+      context: context,
+      builder: (BuildContext context) {
+        return Container(
+          height: 200,
+          padding: const EdgeInsets.all(16.0),
+          child: Column(
+            children: [
+              const Text('This is a BottomSheet!'),
+              ElevatedButton(
+                child: const Text('Close'),
+                onPressed: () => Navigator.of(context).pop(),
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text('Notification Types'),
+      ),
+      body: Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            ElevatedButton(
+              onPressed: () => _showSnackBar(context),
+              child: const Text('Show SnackBar'),
+            ),
+            const SizedBox(height: 10),
+            ElevatedButton(
+              onPressed: () => _showAlertDialog(context),
+              child: const Text('Show AlertDialog'),
+            ),
+            const SizedBox(height: 10),
+            ElevatedButton(
+              onPressed: () => _showBottomSheet(context),
+              child: const Text('Show BottomSheet'),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+```
+
 
 ### Exit button
 
