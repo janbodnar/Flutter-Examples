@@ -1,4 +1,4 @@
-# Flutter Object-Oriented Programming - 30 Essential Examples
+# Flutter Object-Oriented Programming
 
 This comprehensive guide covers Object-Oriented Programming concepts in  
 Flutter/Dart with 30 practical examples, progressing from basic classes  
