@@ -328,124 +328,124 @@ class _CounterPageState extends State<CounterPage> {
 ```
 
 ### Understanding State
--   **`StatefulWidget`**: Unlike a `StatelessWidget`, a `StatefulWidget` has a
-    separate `State` object. The widget itself is immutable, but the `State`
-    object persists over the lifetime of the widget, allowing it to hold mutable
-    data.
--   **`_CounterPageState`**: This is our `State` class. The leading underscore
-    (`_`) makes it private to its own library (in this case, the file). It holds
-    the `_counter` variable.
--   **`setState()`**: This is the crucial method. Calling `setState()` tells the
-    Flutter framework that something has changed in this `State`, which causes it
-    to re-run the `build` method. You should never change state without calling
-    `setState()`, as the UI will not update.
--   **`widget.`**: Inside the `State` object, you can access properties of the
-    parent `StatefulWidget` using `widget.propertyName` (e.g., `widget.title`).
+-   **`StatefulWidget`**: Unlike a `StatelessWidget`, a `StatefulWidget` has a  
+    separate `State` object. The widget itself is immutable, but the `State`  
+    object persists over the lifetime of the widget, allowing it to hold mutable  
+    data.  
+-   **`_CounterPageState`**: This is our `State` class. The leading underscore  
+    (`_`) makes it private to its own library (in this case, the file). It holds  
+    the `_counter` variable.  
+-   **`setState()`**: This is the crucial method. Calling `setState()` tells the  
+    Flutter framework that something has changed in this `State`, which causes it  
+    to re-run the `build` method. You should never change state without calling  
+    `setState()`, as the UI will not update.  
+-   **`widget.`**: Inside the `State` object, you can access properties of the  
+    parent `StatefulWidget` using `widget.propertyName` (e.g., `widget.title`).  
 
 ## The Flutter Ecosystem: More Than Just a Framework
 
-Flutter's strength extends far beyond its technical capabilities. It is supported
-by a thriving global ecosystem that provides developers with the resources,
-tools, and community they need to be successful.
+Flutter's strength extends far beyond its technical capabilities. It is supported  
+by a thriving global ecosystem that provides developers with the resources,  
+tools, and community they need to be successful.  
 
 ### A Thriving Community
-The Flutter community is one of the most active and welcoming in the software
-world. You can connect with other developers through:
--   **Online Forums**: Platforms like Stack Overflow, Reddit (r/FlutterDev), and
-    the official Flutter Discord server are great places to ask questions and
-    share knowledge.
--   **Meetups and Conferences**: Flutter meetups are held in cities worldwide, and
-    major events like Flutter Interact and Google I/O showcase the latest
-    developments in the ecosystem.
+The Flutter community is one of the most active and welcoming in the software  
+world. You can connect with other developers through:  
+-   **Online Forums**: Platforms like Stack Overflow, Reddit (r/FlutterDev), and  
+    the official Flutter Discord server are great places to ask questions and  
+    share knowledge.  
+-   **Meetups and Conferences**: Flutter meetups are held in cities worldwide, and  
+    major events like Flutter Interact and Google I/O showcase the latest  
+    developments in the ecosystem.  
 
 ### pub.dev: The Flutter Package Repository
-You don't have to build everything from scratch. **pub.dev** is the official
-package repository for Dart and Flutter applications, hosting thousands of
-open-source packages that can be easily added to your project. Whether you need
-to integrate a database, add complex animations, or connect to a third-party
-service, there's likely a package for it on pub.dev.
+You don't have to build everything from scratch. **pub.dev** is the official  
+package repository for Dart and Flutter applications, hosting thousands of  
+open-source packages that can be easily added to your project. Whether you need  
+to integrate a database, add complex animations, or connect to a third-party  
+service, there's likely a package for it on pub.dev.  
 
 ### Learning Resources
-Beyond the official documentation, there is a vast collection of high-quality
-learning materials created by the community, including:
--   **Video Tutorials**: Countless channels on YouTube and platforms like Udemy
-    offer in-depth video courses.
--   **Blogs and Articles**: Many experienced developers share their insights and
-    tutorials on platforms like Medium.
--   **Books**: A growing number of books cover everything from the basics to
-    advanced Flutter development patterns.
+Beyond the official documentation, there is a vast collection of high-quality  
+learning materials created by the community, including:  
+-   **Video Tutorials**: Countless channels on YouTube and platforms like Udemy  
+    offer in-depth video courses.  
+-   **Blogs and Articles**: Many experienced developers share their insights and  
+    tutorials on platforms like Medium.  
+-   **Books**: A growing number of books cover everything from the basics to  
+    advanced Flutter development patterns.  
 
-This rich ecosystem means you're never alone on your Flutter journey.
+This rich ecosystem means you're never alone on your Flutter journey.  
 
 ## Inside Flutter's Engine: A Layered Architecture
 
-Flutter's power and flexibility come from its well-structured, layered
-architecture. This design allows developers to work at a high level of
-abstraction while ensuring the underlying system is optimized for performance. The
-architecture can be broken down into three primary layers, each with a distinct
-role:
+Flutter's power and flexibility come from its well-structured, layered  
+architecture. This design allows developers to work at a high level of  
+abstraction while ensuring the underlying system is optimized for performance. The  
+architecture can be broken down into three primary layers, each with a distinct  
+role:  
 
 ### 1. The Framework (Dart)
-This is where developers spend most of their time. Written entirely in Dart, the
-Framework layer is a rich collection of high-level APIs that provide all the
-tools you need to build an application. It includes:
--   **Material & Cupertino Widgets**: Comprehensive libraries of pre-built
-    widgets that implement Google's Material Design and Apple's Human Interface
-    Guidelines.
--   **Widgets Layer**: The fundamental building block of Flutter. This layer
-    provides the core classes for layout, painting, and hit-testing (gestures).
--   **Rendering Layer**: An abstraction for the layout and painting process. It
-    takes the widget tree and translates it into a renderable object tree, which
-    is then passed to the Engine.
+This is where developers spend most of their time. Written entirely in Dart, the  
+Framework layer is a rich collection of high-level APIs that provide all the  
+tools you need to build an application. It includes:  
+-   **Material & Cupertino Widgets**: Comprehensive libraries of pre-built  
+    widgets that implement Google's Material Design and Apple's Human Interface  
+    Guidelines.  
+-   **Widgets Layer**: The fundamental building block of Flutter. This layer  
+    provides the core classes for layout, painting, and hit-testing (gestures).  
+-   **Rendering Layer**: An abstraction for the layout and painting process. It  
+    takes the widget tree and translates it into a renderable object tree, which  
+    is then passed to the Engine.  
 
 ### 2. The Engine (C++)
-The Engine is the heart of Flutter, written in high-performance C++. Its primary
-responsibility is to take the instructions from the Framework and bring them to
-life on the screen. Key components include:
--   **Skia**: A powerful, open-source 2D graphics library that handles all the
-    low-level rendering, drawing your UI directly to the GPU. This is why
-    Flutter's UI is consistent across all platforms.
--   **Dart Runtime**: Provides the execution environment for your Dart code,
-    including garbage collection, an Ahead-of-Time (AOT) compiler for release
-    builds, and a Just-in-Time (JIT) compiler for development (powering Hot
-    Reload).
--   **Text Rendering**: Manages font rendering and text layout, ensuring crisp and
-    clear text on every device.
+The Engine is the heart of Flutter, written in high-performance C++. Its primary  
+responsibility is to take the instructions from the Framework and bring them to  
+life on the screen. Key components include:  
+-   **Skia**: A powerful, open-source 2D graphics library that handles all the  
+    low-level rendering, drawing your UI directly to the GPU. This is why  
+    Flutter's UI is consistent across all platforms.  
+-   **Dart Runtime**: Provides the execution environment for your Dart code,  
+    including garbage collection, an Ahead-of-Time (AOT) compiler for release  
+    builds, and a Just-in-Time (JIT) compiler for development (powering Hot  
+    Reload).  
+-   **Text Rendering**: Manages font rendering and text layout, ensuring crisp and  
+    clear text on every device.  
 
 ### 3. The Embedder (Platform-Specific)
-The Embedder is a platform-specific layer that acts as the bridge between Flutter
-and the native operating system. It provides the entry point for a Flutter
-application and handles communication with the host OS, such as:
--   **Rendering Surfaces**: Setting up a canvas where Flutter can paint its UI.
--   **Input Events**: Listening for and passing user inputs (touch, mouse,
-    keyboard) to the Flutter Engine.
--   **Platform Channels**: Enabling communication between your Dart code and native
-    platform APIs (like accessing the camera, GPS, or other device services).
+The Embedder is a platform-specific layer that acts as the bridge between Flutter  
+and the native operating system. It provides the entry point for a Flutter  
+application and handles communication with the host OS, such as:  
+-   **Rendering Surfaces**: Setting up a canvas where Flutter can paint its UI.  
+-   **Input Events**: Listening for and passing user inputs (touch, mouse,  
+    keyboard) to the Flutter Engine.  
+-   **Platform Channels**: Enabling communication between your Dart code and native  
+    platform APIs (like accessing the camera, GPS, or other device services).  
 
-This layered design is the secret to Flutter's "write once, run anywhere"
-capability. The Framework and Engine are platform-agnostic, while the Embedder
-provides the specific glue needed for each target platform, ensuring seamless
-integration.
+This layered design is the secret to Flutter's "write once, run anywhere"  
+capability. The Framework and Engine are platform-agnostic, while the Embedder  
+provides the specific glue needed for each target platform, ensuring seamless  
+integration.  
 
 ## Your Journey Starts Now
 
-You've just taken your first steps into the exciting world of Flutter. You've
-learned about its history, its powerful architecture, and the core concepts that
-make it a revolutionary toolkit for app development. From the simplicity of the
-"Hello World" app to the interactivity of the counter, you've seen how Flutter's
-declarative UI and state management work in practice.
+You've just taken your first steps into the exciting world of Flutter. You've  
+learned about its history, its powerful architecture, and the core concepts that  
+make it a revolutionary toolkit for app development. From the simplicity of the  
+"Hello World" app to the interactivity of the counter, you've seen how Flutter's  
+declarative UI and state management work in practice.  
 
-This introduction is just the beginning. The true power of Flutter unfolds as you
-explore more advanced topics like:
--   **Navigation and Routing**: Building multi-screen applications.
--   **Advanced State Management**: Scaling your app with solutions like Provider,
-    Riverpod, or BLoC.
--   **Custom Animations**: Creating beautiful, fluid user experiences.
--   **Platform Integration**: Tapping into native device features.
--   **Testing and Debugging**: Ensuring your application is robust and reliable.
+This introduction is just the beginning. The true power of Flutter unfolds as you  
+explore more advanced topics like:  
+-   **Navigation and Routing**: Building multi-screen applications.  
+-   **Advanced State Management**: Scaling your app with solutions like Provider,  
+    Riverpod, or BLoC.  
+-   **Custom Animations**: Creating beautiful, fluid user experiences.  
+-   **Platform Integration**: Tapping into native device features.  
+-   **Testing and Debugging**: Ensuring your application is robust and reliable.  
 
-The path to mastering Flutter is a rewarding one, supported by a vibrant community
-and a rich ecosystem of tools and packages. The most important step is the one
-you take yourself: start building.
+The path to mastering Flutter is a rewarding one, supported by a vibrant community  
+and a rich ecosystem of tools and packages. The most important step is the one  
+you take yourself: start building.  
 
-Happy coding!
+Happy coding!  
