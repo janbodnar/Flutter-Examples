@@ -3872,3 +3872,1524 @@ class _FormUploadPageState extends State<FormUploadPage> {
 This example demonstrates multipart form data uploads including file  
 attachments. It shows how to combine text fields with file uploads in  
 a single request, with proper progress feedback and error handling.  
+
+## API Pagination
+
+Implementing pagination for large datasets with infinite scroll.  
+
+```dart
+import 'package:flutter/material.dart';
+import 'package:http/http.dart' as http;
+import 'dart:convert';
+
+void main() {
+  runApp(const MyApp());
+}
+
+class MyApp extends StatelessWidget {
+  const MyApp({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return MaterialApp(
+      darkTheme: ThemeData.dark(),
+      themeMode: ThemeMode.dark,
+      title: 'API Pagination',
+      home: const PaginationPage(),
+    );
+  }
+}
+
+class Post {
+  final int id;
+  final String title;
+  final String body;
+  final int userId;
+
+  Post({
+    required this.id,
+    required this.title,
+    required this.body,
+    required this.userId,
+  });
+
+  factory Post.fromJson(Map<String, dynamic> json) {
+    return Post(
+      id: json['id'],
+      title: json['title'],
+      body: json['body'],
+      userId: json['userId'],
+    );
+  }
+}
+
+class PaginatedResponse {
+  final List<Post> posts;
+  final int currentPage;
+  final int totalPages;
+  final bool hasMore;
+
+  PaginatedResponse({
+    required this.posts,
+    required this.currentPage,
+    required this.totalPages,
+    required this.hasMore,
+  });
+}
+
+class PaginationService {
+  static const int postsPerPage = 10;
+  static const int totalPosts = 100; // JSONPlaceholder has 100 posts
+
+  static Future<PaginatedResponse> fetchPosts(int page) async {
+    final startIndex = (page - 1) * postsPerPage + 1;
+    final endIndex = page * postsPerPage;
+
+    try {
+      final futures = <Future<http.Response>>[];
+      
+      for (int i = startIndex; i <= endIndex && i <= totalPosts; i++) {
+        futures.add(
+          http.get(Uri.parse('https://jsonplaceholder.typicode.com/posts/$i')),
+        );
+      }
+
+      final responses = await Future.wait(futures);
+      final posts = <Post>[];
+
+      for (final response in responses) {
+        if (response.statusCode == 200) {
+          final data = json.decode(response.body);
+          posts.add(Post.fromJson(data));
+        }
+      }
+
+      final totalPages = (totalPosts / postsPerPage).ceil();
+      
+      return PaginatedResponse(
+        posts: posts,
+        currentPage: page,
+        totalPages: totalPages,
+        hasMore: page < totalPages,
+      );
+    } catch (e) {
+      throw Exception('Failed to fetch posts: $e');
+    }
+  }
+}
+
+class PaginationPage extends StatefulWidget {
+  const PaginationPage({super.key};
+
+  @override
+  State<PaginationPage> createState() => _PaginationPageState();
+}
+
+class _PaginationPageState extends State<PaginationPage> {
+  final List<Post> _allPosts = [];
+  final ScrollController _scrollController = ScrollController();
+  bool _isLoading = false;
+  bool _hasMore = true;
+  int _currentPage = 0;
+  String? _error;
+
+  @override
+  void initState() {
+    super.initState();
+    _scrollController.addListener(_onScroll);
+    _loadNextPage();
+  }
+
+  void _onScroll() {
+    if (_scrollController.position.pixels >= 
+        _scrollController.position.maxScrollExtent * 0.8) {
+      _loadNextPage();
+    }
+  }
+
+  Future<void> _loadNextPage() async {
+    if (_isLoading || !_hasMore) return;
+
+    setState(() {
+      _isLoading = true;
+      _error = null;
+    });
+
+    try {
+      final response = await PaginationService.fetchPosts(_currentPage + 1);
+      
+      setState(() {
+        _allPosts.addAll(response.posts);
+        _currentPage = response.currentPage;
+        _hasMore = response.hasMore;
+      });
+    } catch (e) {
+      setState(() {
+        _error = e.toString();
+      });
+    } finally {
+      setState(() {
+        _isLoading = false;
+      });
+    }
+  }
+
+  Future<void> _refresh() async {
+    setState(() {
+      _allPosts.clear();
+      _currentPage = 0;
+      _hasMore = true;
+      _error = null;
+    });
+    await _loadNextPage();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        title: Text('Posts (${_allPosts.length}/100)'),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.refresh),
+            onPressed: _refresh,
+          ),
+        ],
+      ),
+      body: RefreshIndicator(
+        onRefresh: _refresh,
+        child: _allPosts.isEmpty && _isLoading
+            ? const Center(child: CircularProgressIndicator())
+            : ListView.builder(
+                controller: _scrollController,
+                itemCount: _allPosts.length + (_hasMore ? 1 : 0) + (_error != null ? 1 : 0),
+                itemBuilder: (context, index) {
+                  if (index < _allPosts.length) {
+                    final post = _allPosts[index];
+                    return Card(
+                      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+                      child: ListTile(
+                        leading: CircleAvatar(
+                          child: Text('${post.id}'),
+                        ),
+                        title: Text(
+                          post.title,
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                        subtitle: Text(
+                          post.body,
+                          maxLines: 3,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                        trailing: Text(
+                          'User ${post.userId}',
+                          style: const TextStyle(fontSize: 12),
+                        ),
+                        onTap: () {
+                          showDialog(
+                            context: context,
+                            builder: (context) => AlertDialog(
+                              title: Text('Post ${post.id}'),
+                              content: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Text(
+                                    post.title,
+                                    style: const TextStyle(fontWeight: FontWeight.bold),
+                                  ),
+                                  const SizedBox(height: 8),
+                                  Text(post.body),
+                                ],
+                              ),
+                              actions: [
+                                TextButton(
+                                  onPressed: () => Navigator.of(context).pop(),
+                                  child: const Text('Close'),
+                                ),
+                              ],
+                            ),
+                          );
+                        },
+                      ),
+                    );
+                  } else if (_error != null) {
+                    return Container(
+                      margin: const EdgeInsets.all(16),
+                      padding: const EdgeInsets.all(16),
+                      decoration: BoxDecoration(
+                        color: Colors.red.withOpacity(0.1),
+                        border: Border.all(color: Colors.red),
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: Column(
+                        children: [
+                          Text(_error!),
+                          const SizedBox(height: 8),
+                          ElevatedButton(
+                            onPressed: _loadNextPage,
+                            child: const Text('Retry'),
+                          ),
+                        ],
+                      ),
+                    );
+                  } else {
+                    return const Padding(
+                      padding: EdgeInsets.all(16.0),
+                      child: Center(child: CircularProgressIndicator()),
+                    );
+                  }
+                },
+              ),
+      ),
+      floatingActionButton: _allPosts.isNotEmpty
+          ? FloatingActionButton(
+              onPressed: () {
+                _scrollController.animateTo(
+                  0,
+                  duration: const Duration(milliseconds: 500),
+                  curve: Curves.easeInOut,
+                );
+              },
+              child: const Icon(Icons.keyboard_arrow_up),
+            )
+          : null,
+    );
+  }
+
+  @override
+  void dispose() {
+    _scrollController.dispose();
+    super.dispose();
+  }
+}
+```
+
+This example demonstrates API pagination with infinite scroll. It loads  
+data incrementally as users scroll, providing smooth performance for  
+large datasets. The implementation includes error handling, refresh  
+functionality, and visual loading indicators.  
+
+## Rate Limiting and Throttling
+
+Implementing client-side rate limiting for API requests.  
+
+```dart
+import 'package:flutter/material.dart';
+import 'package:http/http.dart' as http;
+import 'dart:convert';
+
+void main() {
+  runApp(const MyApp());
+}
+
+class MyApp extends StatelessWidget {
+  const MyApp({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return MaterialApp(
+      darkTheme: ThemeData.dark(),
+      themeMode: ThemeMode.dark,
+      title: 'Rate Limiting',
+      home: const RateLimitingPage(),
+    );
+  }
+}
+
+class RateLimiter {
+  final int maxRequests;
+  final Duration timeWindow;
+  final List<DateTime> _requests = [];
+
+  RateLimiter({
+    required this.maxRequests,
+    required this.timeWindow,
+  });
+
+  bool canMakeRequest() {
+    final now = DateTime.now();
+    final cutoff = now.subtract(timeWindow);
+    
+    // Remove old requests outside the time window
+    _requests.removeWhere((time) => time.isBefore(cutoff));
+    
+    return _requests.length < maxRequests;
+  }
+
+  void recordRequest() {
+    _requests.add(DateTime.now());
+  }
+
+  int get remainingRequests => maxRequests - _requests.length;
+  
+  Duration? get timeUntilNextRequest {
+    if (_requests.isEmpty || canMakeRequest()) return null;
+    
+    final oldest = _requests.first;
+    final resetTime = oldest.add(timeWindow);
+    final now = DateTime.now();
+    
+    return resetTime.isAfter(now) ? resetTime.difference(now) : null;
+  }
+}
+
+class ThrottledApiService {
+  static final RateLimiter _rateLimiter = RateLimiter(
+    maxRequests: 5,
+    timeWindow: const Duration(minutes: 1),
+  );
+
+  static Future<Map<String, dynamic>> makeRequest(String endpoint) async {
+    if (!_rateLimiter.canMakeRequest()) {
+      final waitTime = _rateLimiter.timeUntilNextRequest;
+      throw RateLimitException(
+        'Rate limit exceeded. Try again in ${waitTime?.inSeconds ?? 0} seconds.',
+        waitTime,
+      );
+    }
+
+    _rateLimiter.recordRequest();
+
+    try {
+      final response = await http.get(
+        Uri.parse('https://jsonplaceholder.typicode.com$endpoint'),
+      );
+
+      if (response.statusCode == 200) {
+        return {
+          'data': json.decode(response.body),
+          'remaining': _rateLimiter.remainingRequests,
+          'resetTime': _rateLimiter.timeUntilNextRequest,
+        };
+      } else {
+        throw Exception('HTTP ${response.statusCode}');
+      }
+    } catch (e) {
+      if (e is! RateLimitException) {
+        // Don't count failed requests against the rate limit
+        // In a real app, you might want different behavior
+      }
+      rethrow;
+    }
+  }
+}
+
+class RateLimitException implements Exception {
+  final String message;
+  final Duration? retryAfter;
+
+  RateLimitException(this.message, this.retryAfter);
+
+  @override
+  String toString() => message;
+}
+
+class RequestLog {
+  final DateTime timestamp;
+  final String endpoint;
+  final bool success;
+  final String? error;
+  final Duration responseTime;
+
+  RequestLog({
+    required this.timestamp,
+    required this.endpoint,
+    required this.success,
+    this.error,
+    required this.responseTime,
+  });
+}
+
+class RateLimitingPage extends StatefulWidget {
+  const RateLimitingPage({super.key});
+
+  @override
+  State<RateLimitingPage> createState() => _RateLimitingPageState();
+}
+
+class _RateLimitingPageState extends State<RateLimitingPage> {
+  final List<RequestLog> _requestLog = [];
+  String _lastResponse = '';
+  bool _isLoading = false;
+  int _remainingRequests = 5;
+  Duration? _resetTime;
+
+  Future<void> _makeRequest(String endpoint) async {
+    setState(() {
+      _isLoading = true;
+    });
+
+    final stopwatch = Stopwatch()..start();
+    
+    try {
+      final result = await ThrottledApiService.makeRequest(endpoint);
+      stopwatch.stop();
+
+      setState(() {
+        _lastResponse = 'Success: ${json.encode(result['data'])}';
+        _remainingRequests = result['remaining'];
+        _resetTime = result['resetTime'];
+      });
+
+      _requestLog.add(RequestLog(
+        timestamp: DateTime.now(),
+        endpoint: endpoint,
+        success: true,
+        responseTime: stopwatch.elapsed,
+      ));
+    } catch (e) {
+      stopwatch.stop();
+
+      setState(() {
+        _lastResponse = 'Error: $e';
+        if (e is! RateLimitException) {
+          // Update remaining requests only for rate limit errors
+          _remainingRequests = ThrottledApiService._rateLimiter.remainingRequests;
+          _resetTime = ThrottledApiService._rateLimiter.timeUntilNextRequest;
+        }
+      });
+
+      _requestLog.add(RequestLog(
+        timestamp: DateTime.now(),
+        endpoint: endpoint,
+        success: false,
+        error: e.toString(),
+        responseTime: stopwatch.elapsed,
+      ));
+    } finally {
+      setState(() {
+        _isLoading = false;
+      });
+    }
+  }
+
+  Widget _buildRateLimitStatus() {
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(16.0),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text(
+              'Rate Limit Status:',
+              style: TextStyle(fontWeight: FontWeight.bold),
+            ),
+            const SizedBox(height: 8),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Text('Remaining requests:'),
+                Text(
+                  '$_remainingRequests/5',
+                  style: TextStyle(
+                    fontWeight: FontWeight.bold,
+                    color: _remainingRequests > 2 
+                        ? Colors.green 
+                        : _remainingRequests > 0 
+                            ? Colors.orange 
+                            : Colors.red,
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 4),
+            LinearProgressIndicator(
+              value: _remainingRequests / 5,
+              backgroundColor: Colors.red.withOpacity(0.3),
+              valueColor: AlwaysStoppedAnimation<Color>(
+                _remainingRequests > 2 
+                    ? Colors.green 
+                    : _remainingRequests > 0 
+                        ? Colors.orange 
+                        : Colors.red,
+              ),
+            ),
+            const SizedBox(height: 8),
+            if (_resetTime != null)
+              Text(
+                'Reset in: ${_resetTime!.inSeconds} seconds',
+                style: const TextStyle(fontSize: 12),
+              ),
+            const SizedBox(height: 8),
+            const Text(
+              'Limit: 5 requests per minute',
+              style: TextStyle(fontSize: 12),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildRequestLog() {
+    return Card(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Padding(
+            padding: EdgeInsets.all(16.0),
+            child: Text(
+              'Request Log:',
+              style: TextStyle(fontWeight: FontWeight.bold),
+            ),
+          ),
+          SizedBox(
+            height: 200,
+            child: _requestLog.isEmpty
+                ? const Center(child: Text('No requests yet'))
+                : ListView.builder(
+                    itemCount: _requestLog.length,
+                    itemBuilder: (context, index) {
+                      final log = _requestLog.reversed.toList()[index];
+                      return ListTile(
+                        dense: true,
+                        leading: Icon(
+                          log.success ? Icons.check_circle : Icons.error,
+                          color: log.success ? Colors.green : Colors.red,
+                          size: 16,
+                        ),
+                        title: Text(
+                          log.endpoint,
+                          style: const TextStyle(fontSize: 12),
+                        ),
+                        subtitle: Text(
+                          '${log.timestamp.toString().substring(11, 19)} • '
+                          '${log.responseTime.inMilliseconds}ms'
+                          '${log.error != null ? ' • ${log.error}' : ''}',
+                          style: const TextStyle(fontSize: 10),
+                        ),
+                      );
+                    },
+                  ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text('Rate Limiting'),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.clear_all),
+            onPressed: () {
+              setState(() {
+                _requestLog.clear();
+                _lastResponse = '';
+              });
+            },
+          ),
+        ],
+      ),
+      body: Padding(
+        padding: const EdgeInsets.all(16.0),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            _buildRateLimitStatus(),
+            const SizedBox(height: 16),
+            const Text(
+              'Test Rate Limiting:',
+              style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+            ),
+            const SizedBox(height: 8),
+            Wrap(
+              spacing: 8,
+              children: [
+                ElevatedButton(
+                  onPressed: _isLoading ? null : () => _makeRequest('/posts/1'),
+                  child: const Text('Post 1'),
+                ),
+                ElevatedButton(
+                  onPressed: _isLoading ? null : () => _makeRequest('/posts/2'),
+                  child: const Text('Post 2'),
+                ),
+                ElevatedButton(
+                  onPressed: _isLoading ? null : () => _makeRequest('/users/1'),
+                  child: const Text('User 1'),
+                ),
+                ElevatedButton(
+                  onPressed: _isLoading ? null : () => _makeRequest('/comments/1'),
+                  child: const Text('Comment 1'),
+                ),
+              ],
+            ),
+            const SizedBox(height: 16),
+            if (_isLoading)
+              const Center(child: CircularProgressIndicator()),
+            if (_lastResponse.isNotEmpty) ...[
+              const Text('Last Response:', style: TextStyle(fontWeight: FontWeight.bold)),
+              const SizedBox(height: 8),
+              Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: _lastResponse.startsWith('Error')
+                      ? Colors.red.withOpacity(0.1)
+                      : Colors.green.withOpacity(0.1),
+                  border: Border.all(
+                    color: _lastResponse.startsWith('Error') ? Colors.red : Colors.green,
+                  ),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Text(
+                  _lastResponse,
+                  style: const TextStyle(fontSize: 12),
+                  maxLines: 3,
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ),
+            ],
+            const SizedBox(height: 16),
+            Expanded(child: _buildRequestLog()),
+          ],
+        ),
+      ),
+    );
+  }
+}
+```
+
+This example demonstrates client-side rate limiting to prevent API abuse.  
+It tracks request timestamps, enforces limits, and provides visual feedback  
+about remaining quota. The system includes automatic reset timers and  
+detailed request logging.  
+
+## GraphQL Query
+
+Implementing GraphQL queries with error handling and variables.  
+
+```dart
+import 'package:flutter/material.dart';
+import 'package:http/http.dart' as http;
+import 'dart:convert';
+
+void main() {
+  runApp(const MyApp());
+}
+
+class MyApp extends StatelessWidget {
+  const MyApp({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return MaterialApp(
+      darkTheme: ThemeData.dark(),
+      themeMode: ThemeMode.dark,
+      title: 'GraphQL Queries',
+      home: const GraphQLPage(),
+    );
+  }
+}
+
+class GraphQLClient {
+  final String endpoint;
+  final Map<String, String> headers;
+
+  GraphQLClient({
+    required this.endpoint,
+    Map<String, String>? headers,
+  }) : headers = {
+          'Content-Type': 'application/json',
+          'Accept': 'application/json',
+          ...?headers,
+        };
+
+  Future<GraphQLResponse> query(
+    String query, {
+    Map<String, dynamic>? variables,
+    String? operationName,
+  }) async {
+    try {
+      final body = {
+        'query': query,
+        if (variables != null) 'variables': variables,
+        if (operationName != null) 'operationName': operationName,
+      };
+
+      final response = await http.post(
+        Uri.parse(endpoint),
+        headers: headers,
+        body: json.encode(body),
+      );
+
+      final data = json.decode(response.body);
+
+      if (response.statusCode != 200) {
+        return GraphQLResponse(
+          data: null,
+          errors: [
+            GraphQLError(
+              message: 'HTTP ${response.statusCode}',
+              extensions: {'code': response.statusCode},
+            ),
+          ],
+        );
+      }
+
+      return GraphQLResponse(
+        data: data['data'],
+        errors: data['errors']?.map<GraphQLError>((error) {
+          return GraphQLError(
+            message: error['message'] ?? 'Unknown error',
+            locations: error['locations'],
+            path: error['path'],
+            extensions: error['extensions'],
+          );
+        }).toList(),
+      );
+    } catch (e) {
+      return GraphQLResponse(
+        data: null,
+        errors: [
+          GraphQLError(
+            message: 'Network error: $e',
+          ),
+        ],
+      );
+    }
+  }
+}
+
+class GraphQLResponse {
+  final dynamic data;
+  final List<GraphQLError>? errors;
+
+  GraphQLResponse({this.data, this.errors});
+
+  bool get hasErrors => errors != null && errors!.isNotEmpty;
+}
+
+class GraphQLError {
+  final String message;
+  final List<dynamic>? locations;
+  final List<dynamic>? path;
+  final Map<String, dynamic>? extensions;
+
+  GraphQLError({
+    required this.message,
+    this.locations,
+    this.path,
+    this.extensions,
+  });
+}
+
+// Mock GraphQL server responses for demonstration
+class MockGraphQLServer {
+  static Map<String, dynamic> handleQuery(String query, Map<String, dynamic>? variables) {
+    if (query.contains('getUser')) {
+      final userId = variables?['userId'] ?? 1;
+      return {
+        'data': {
+          'user': {
+            'id': userId,
+            'name': 'User $userId',
+            'email': 'user$userId@example.com',
+            'posts': [
+              {
+                'id': 1,
+                'title': 'First Post by User $userId',
+                'content': 'This is the first post content...',
+              },
+              {
+                'id': 2,
+                'title': 'Second Post by User $userId',
+                'content': 'This is the second post content...',
+              },
+            ],
+          },
+        },
+      };
+    } else if (query.contains('getAllUsers')) {
+      return {
+        'data': {
+          'users': [
+            {'id': 1, 'name': 'Alice', 'email': 'alice@example.com'},
+            {'id': 2, 'name': 'Bob', 'email': 'bob@example.com'},
+            {'id': 3, 'name': 'Charlie', 'email': 'charlie@example.com'},
+          ],
+        },
+      };
+    } else if (query.contains('createPost')) {
+      return {
+        'data': {
+          'createPost': {
+            'id': DateTime.now().millisecondsSinceEpoch,
+            'title': variables?['title'] ?? 'New Post',
+            'content': variables?['content'] ?? 'New post content',
+            'author': {
+              'id': variables?['authorId'] ?? 1,
+              'name': 'Current User',
+            },
+          },
+        },
+      };
+    } else {
+      return {
+        'errors': [
+          {
+            'message': 'Unknown query',
+            'locations': [{'line': 1, 'column': 1}],
+          },
+        ],
+      };
+    }
+  }
+}
+
+class GraphQLPage extends StatefulWidget {
+  const GraphQLPage({super.key});
+
+  @override
+  State<GraphQLPage> createState() => _GraphQLPageState();
+}
+
+class _GraphQLPageState extends State<GraphQLPage> {
+  late GraphQLClient _client;
+  String _result = '';
+  bool _isLoading = false;
+  final _titleController = TextEditingController();
+  final _contentController = TextEditingController();
+
+  @override
+  void initState() {
+    super.initState();
+    // Using httpbin.org/post to simulate GraphQL endpoint
+    _client = GraphQLClient(endpoint: 'https://httpbin.org/post');
+  }
+
+  Future<void> _executeQuery(String query, {Map<String, dynamic>? variables}) async {
+    setState(() {
+      _isLoading = true;
+      _result = '';
+    });
+
+    try {
+      // Simulate GraphQL response since we don't have a real GraphQL server
+      final mockResponse = MockGraphQLServer.handleQuery(query, variables);
+      
+      setState(() {
+        _result = _formatResponse(mockResponse);
+      });
+    } catch (e) {
+      setState(() {
+        _result = 'Error: $e';
+      });
+    } finally {
+      setState(() {
+        _isLoading = false;
+      });
+    }
+  }
+
+  String _formatResponse(Map<String, dynamic> response) {
+    return const JsonEncoder.withIndent('  ').convert(response);
+  }
+
+  Future<void> _queryUser() async {
+    const query = '''
+      query GetUser(\$userId: ID!) {
+        user(id: \$userId) {
+          id
+          name
+          email
+          posts {
+            id
+            title
+            content
+          }
+        }
+      }
+    ''';
+
+    await _executeQuery(query, variables: {'userId': 1});
+  }
+
+  Future<void> _queryAllUsers() async {
+    const query = '''
+      query GetAllUsers {
+        users {
+          id
+          name
+          email
+        }
+      }
+    ''';
+
+    await _executeQuery(query);
+  }
+
+  Future<void> _createPost() async {
+    if (_titleController.text.isEmpty || _contentController.text.isEmpty) {
+      setState(() {
+        _result = 'Please fill in both title and content fields';
+      });
+      return;
+    }
+
+    const mutation = '''
+      mutation CreatePost(\$title: String!, \$content: String!, \$authorId: ID!) {
+        createPost(input: {
+          title: \$title,
+          content: \$content,
+          authorId: \$authorId
+        }) {
+          id
+          title
+          content
+          author {
+            id
+            name
+          }
+        }
+      }
+    ''';
+
+    await _executeQuery(mutation, variables: {
+      'title': _titleController.text,
+      'content': _contentController.text,
+      'authorId': 1,
+    });
+
+    _titleController.clear();
+    _contentController.clear();
+  }
+
+  Future<void> _queryWithError() async {
+    const query = '''
+      query InvalidQuery {
+        nonExistentField {
+          id
+          name
+        }
+      }
+    ''';
+
+    await _executeQuery(query);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text('GraphQL Queries'),
+      ),
+      body: Padding(
+        padding: const EdgeInsets.all(16.0),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            const Text(
+              'GraphQL Operations:',
+              style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+            ),
+            const SizedBox(height: 16),
+            Row(
+              children: [
+                Expanded(
+                  child: ElevatedButton(
+                    onPressed: _isLoading ? null : _queryUser,
+                    child: const Text('Query User'),
+                  ),
+                ),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: ElevatedButton(
+                    onPressed: _isLoading ? null : _queryAllUsers,
+                    child: const Text('Query All Users'),
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 8),
+            ElevatedButton(
+              onPressed: _isLoading ? null : _queryWithError,
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.orange.withOpacity(0.8),
+              ),
+              child: const Text('Test Error Handling'),
+            ),
+            const SizedBox(height: 20),
+            const Text(
+              'Create Post Mutation:',
+              style: TextStyle(fontWeight: FontWeight.bold),
+            ),
+            const SizedBox(height: 8),
+            TextField(
+              controller: _titleController,
+              decoration: const InputDecoration(
+                labelText: 'Post Title',
+                border: OutlineInputBorder(),
+              ),
+            ),
+            const SizedBox(height: 8),
+            TextField(
+              controller: _contentController,
+              decoration: const InputDecoration(
+                labelText: 'Post Content',
+                border: OutlineInputBorder(),
+              ),
+              maxLines: 2,
+            ),
+            const SizedBox(height: 8),
+            ElevatedButton(
+              onPressed: _isLoading ? null : _createPost,
+              child: const Text('Create Post'),
+            ),
+            const SizedBox(height: 20),
+            if (_isLoading)
+              const Center(child: CircularProgressIndicator())
+            else if (_result.isNotEmpty)
+              Expanded(
+                child: Container(
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: _result.contains('errors')
+                        ? Colors.red.withOpacity(0.1)
+                        : Colors.blue.withOpacity(0.1),
+                    border: Border.all(
+                      color: _result.contains('errors') ? Colors.red : Colors.blue,
+                    ),
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: SingleChildScrollView(
+                    child: Text(
+                      _result,
+                      style: const TextStyle(fontFamily: 'monospace', fontSize: 12),
+                    ),
+                  ),
+                ),
+              ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  @override
+  void dispose() {
+    _titleController.dispose();
+    _contentController.dispose();
+    super.dispose();
+  }
+}
+```
+
+This example demonstrates GraphQL query implementation with variables,  
+mutations, and error handling. It includes a mock GraphQL client that  
+shows proper query structure, variable passing, and response formatting.  
+
+## Batch API Requests
+
+Efficiently handling multiple simultaneous API requests.  
+
+```dart
+import 'package:flutter/material.dart';
+import 'package:http/http.dart' as http;
+import 'dart:convert';
+
+void main() {
+  runApp(const MyApp());
+}
+
+class MyApp extends StatelessWidget {
+  const MyApp({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return MaterialApp(
+      darkTheme: ThemeData.dark(),
+      themeMode: ThemeMode.dark,
+      title: 'Batch API Requests',
+      home: const BatchRequestsPage(),
+    );
+  }
+}
+
+class BatchRequest {
+  final String id;
+  final String url;
+  final String method;
+  final Map<String, String>? headers;
+  final String? body;
+
+  BatchRequest({
+    required this.id,
+    required this.url,
+    this.method = 'GET',
+    this.headers,
+    this.body,
+  });
+}
+
+class BatchResponse {
+  final String id;
+  final int statusCode;
+  final Map<String, String> headers;
+  final String body;
+  final Duration responseTime;
+  final String? error;
+
+  BatchResponse({
+    required this.id,
+    required this.statusCode,
+    required this.headers,
+    required this.body,
+    required this.responseTime,
+    this.error,
+  });
+}
+
+class BatchApiService {
+  static Future<List<BatchResponse>> executeBatch(
+    List<BatchRequest> requests, {
+    int? maxConcurrency,
+  }) async {
+    final results = <BatchResponse>[];
+    
+    if (maxConcurrency != null && maxConcurrency > 0) {
+      // Execute with concurrency limit
+      for (int i = 0; i < requests.length; i += maxConcurrency) {
+        final batch = requests.sublist(
+          i,
+          (i + maxConcurrency < requests.length) 
+              ? i + maxConcurrency 
+              : requests.length,
+        );
+        
+        final batchResults = await _executeBatch(batch);
+        results.addAll(batchResults);
+      }
+    } else {
+      // Execute all requests simultaneously
+      results.addAll(await _executeBatch(requests));
+    }
+    
+    return results;
+  }
+
+  static Future<List<BatchResponse>> _executeBatch(
+    List<BatchRequest> requests,
+  ) async {
+    final futures = requests.map((request) => _executeRequest(request));
+    return await Future.wait(futures);
+  }
+
+  static Future<BatchResponse> _executeRequest(BatchRequest request) async {
+    final stopwatch = Stopwatch()..start();
+    
+    try {
+      http.Response response;
+      
+      switch (request.method.toUpperCase()) {
+        case 'GET':
+          response = await http.get(
+            Uri.parse(request.url),
+            headers: request.headers,
+          );
+          break;
+        case 'POST':
+          response = await http.post(
+            Uri.parse(request.url),
+            headers: request.headers,
+            body: request.body,
+          );
+          break;
+        case 'PUT':
+          response = await http.put(
+            Uri.parse(request.url),
+            headers: request.headers,
+            body: request.body,
+          );
+          break;
+        case 'DELETE':
+          response = await http.delete(
+            Uri.parse(request.url),
+            headers: request.headers,
+          );
+          break;
+        default:
+          throw Exception('Unsupported method: ${request.method}');
+      }
+      
+      stopwatch.stop();
+      
+      return BatchResponse(
+        id: request.id,
+        statusCode: response.statusCode,
+        headers: response.headers,
+        body: response.body,
+        responseTime: stopwatch.elapsed,
+      );
+    } catch (e) {
+      stopwatch.stop();
+      
+      return BatchResponse(
+        id: request.id,
+        statusCode: 0,
+        headers: {},
+        body: '',
+        responseTime: stopwatch.elapsed,
+        error: e.toString(),
+      );
+    }
+  }
+}
+
+class BatchRequestsPage extends StatefulWidget {
+  const BatchRequestsPage({super.key});
+
+  @override
+  State<BatchRequestsPage> createState() => _BatchRequestsPageState();
+}
+
+class _BatchRequestsPageState extends State<BatchRequestsPage> {
+  List<BatchResponse> _results = [];
+  bool _isLoading = false;
+  Duration? _totalTime;
+  int _maxConcurrency = 0; // 0 means unlimited
+
+  Future<void> _executeBatchRequests() async {
+    setState(() {
+      _isLoading = true;
+      _results = [];
+      _totalTime = null;
+    });
+
+    final stopwatch = Stopwatch()..start();
+
+    try {
+      final requests = [
+        BatchRequest(
+          id: 'posts',
+          url: 'https://jsonplaceholder.typicode.com/posts',
+        ),
+        BatchRequest(
+          id: 'users',
+          url: 'https://jsonplaceholder.typicode.com/users',
+        ),
+        BatchRequest(
+          id: 'comments',
+          url: 'https://jsonplaceholder.typicode.com/comments',
+        ),
+        BatchRequest(
+          id: 'albums',
+          url: 'https://jsonplaceholder.typicode.com/albums',
+        ),
+        BatchRequest(
+          id: 'photos',
+          url: 'https://jsonplaceholder.typicode.com/photos',
+        ),
+        BatchRequest(
+          id: 'todos',
+          url: 'https://jsonplaceholder.typicode.com/todos',
+        ),
+        BatchRequest(
+          id: 'create_post',
+          url: 'https://jsonplaceholder.typicode.com/posts',
+          method: 'POST',
+          headers: {'Content-Type': 'application/json'},
+          body: json.encode({
+            'title': 'Batch Test Post',
+            'body': 'Created via batch request',
+            'userId': 1,
+          }),
+        ),
+      ];
+
+      final results = await BatchApiService.executeBatch(
+        requests,
+        maxConcurrency: _maxConcurrency > 0 ? _maxConcurrency : null,
+      );
+
+      stopwatch.stop();
+
+      setState(() {
+        _results = results;
+        _totalTime = stopwatch.elapsed;
+      });
+    } catch (e) {
+      setState(() {
+        _results = [
+          BatchResponse(
+            id: 'error',
+            statusCode: 0,
+            headers: {},
+            body: '',
+            responseTime: stopwatch.elapsed,
+            error: e.toString(),
+          ),
+        ];
+        _totalTime = stopwatch.elapsed;
+      });
+    } finally {
+      setState(() {
+        _isLoading = false;
+      });
+    }
+  }
+
+  Widget _buildResultCard(BatchResponse response) {
+    final isSuccess = response.error == null && response.statusCode >= 200 && response.statusCode < 300;
+    final color = isSuccess ? Colors.green : Colors.red;
+    
+    return Card(
+      child: ExpansionTile(
+        leading: Icon(
+          isSuccess ? Icons.check_circle : Icons.error,
+          color: color,
+        ),
+        title: Text('${response.id.toUpperCase()}'),
+        subtitle: Text(
+          '${response.statusCode} • ${response.responseTime.inMilliseconds}ms',
+          style: TextStyle(color: color),
+        ),
+        children: [
+          Padding(
+            padding: const EdgeInsets.all(16.0),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                if (response.error != null) ...[
+                  const Text('Error:', style: TextStyle(fontWeight: FontWeight.bold)),
+                  Text(response.error!, style: const TextStyle(color: Colors.red)),
+                ] else ...[
+                  const Text('Headers:', style: TextStyle(fontWeight: FontWeight.bold)),
+                  ...response.headers.entries.take(3).map(
+                    (entry) => Text('${entry.key}: ${entry.value}',
+                        style: const TextStyle(fontSize: 12)),
+                  ),
+                  const SizedBox(height: 8),
+                  const Text('Body Preview:', style: TextStyle(fontWeight: FontWeight.bold)),
+                  Text(
+                    response.body.length > 200 
+                        ? '${response.body.substring(0, 200)}...' 
+                        : response.body,
+                    style: const TextStyle(fontSize: 12),
+                  ),
+                ],
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildSummary() {
+    if (_results.isEmpty) return const SizedBox.shrink();
+    
+    final successful = _results.where((r) => r.error == null && r.statusCode >= 200 && r.statusCode < 300).length;
+    final failed = _results.length - successful;
+    final avgResponseTime = _results.map((r) => r.responseTime.inMilliseconds).reduce((a, b) => a + b) / _results.length;
+    
+    return Card(
+      color: Colors.blue.withOpacity(0.1),
+      child: Padding(
+        padding: const EdgeInsets.all(16.0),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text('Batch Summary:', style: TextStyle(fontWeight: FontWeight.bold)),
+            const SizedBox(height: 8),
+            Text('Total Requests: ${_results.length}'),
+            Text('Successful: $successful', style: const TextStyle(color: Colors.green)),
+            Text('Failed: $failed', style: TextStyle(color: failed > 0 ? Colors.red : null)),
+            Text('Total Time: ${_totalTime?.inMilliseconds ?? 0}ms'),
+            Text('Average Response Time: ${avgResponseTime.round()}ms'),
+            Text('Concurrency Limit: ${_maxConcurrency > 0 ? _maxConcurrency : 'Unlimited'}'),
+          ],
+        ),
+      ),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text('Batch API Requests'),
+      ),
+      body: Padding(
+        padding: const EdgeInsets.all(16.0),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Card(
+              child: Padding(
+                padding: const EdgeInsets.all(16.0),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text('Concurrency Control:', style: TextStyle(fontWeight: FontWeight.bold)),
+                    const SizedBox(height: 8),
+                    Row(
+                      children: [
+                        const Text('Max Concurrent Requests: '),
+                        Expanded(
+                          child: Slider(
+                            value: _maxConcurrency.toDouble(),
+                            min: 0,
+                            max: 7,
+                            divisions: 7,
+                            label: _maxConcurrency == 0 ? 'Unlimited' : _maxConcurrency.toString(),
+                            onChanged: (value) {
+                              setState(() {
+                                _maxConcurrency = value.round();
+                              });
+                            },
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+            ),
+            const SizedBox(height: 16),
+            ElevatedButton(
+              onPressed: _isLoading ? null : _executeBatchRequests,
+              child: _isLoading
+                  ? const Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        SizedBox(
+                          height: 20,
+                          width: 20,
+                          child: CircularProgressIndicator(strokeWidth: 2),
+                        ),
+                        SizedBox(width: 8),
+                        Text('Executing Batch...'),
+                      ],
+                    )
+                  : const Text('Execute Batch Requests'),
+            ),
+            const SizedBox(height: 16),
+            _buildSummary(),
+            const SizedBox(height: 16),
+            Expanded(
+              child: _results.isEmpty
+                  ? const Center(child: Text('No results yet.\nExecute batch requests to see results.'))
+                  : ListView.builder(
+                      itemCount: _results.length,
+                      itemBuilder: (context, index) {
+                        return _buildResultCard(_results[index]);
+                      },
+                    ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+```
+
+This example demonstrates batch API request handling with concurrency  
+control. It executes multiple requests simultaneously or with limits,  
+providing detailed timing and success metrics. The UI allows adjusting  
+concurrency levels and shows comprehensive results analysis.  
