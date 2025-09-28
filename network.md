@@ -2523,3 +2523,1352 @@ This example demonstrates HTTP interceptors for request/response logging.
 The custom InterceptorClient extends BaseClient to capture all network  
 activity with detailed logging. It tracks request timing, headers, body  
 content, and responses for debugging purposes.  
+
+## File Download with Progress
+
+Downloading files with progress tracking and error handling.  
+
+```dart
+import 'package:flutter/material.dart';
+import 'package:http/http.dart' as http;
+import 'dart:io';
+
+void main() {
+  runApp(const MyApp());
+}
+
+class MyApp extends StatelessWidget {
+  const MyApp({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return MaterialApp(
+      darkTheme: ThemeData.dark(),
+      themeMode: ThemeMode.dark,
+      title: 'File Download',
+      home: const FileDownloadPage(),
+    );
+  }
+}
+
+class DownloadProgress {
+  final int downloaded;
+  final int total;
+  final double percentage;
+  final String speed;
+  final Duration elapsed;
+
+  DownloadProgress({
+    required this.downloaded,
+    required this.total,
+    required this.percentage,
+    required this.speed,
+    required this.elapsed,
+  });
+}
+
+class FileDownloadPage extends StatefulWidget {
+  const FileDownloadPage({super.key});
+
+  @override
+  State<FileDownloadPage> createState() => _FileDownloadPageState();
+}
+
+class _FileDownloadPageState extends State<FileDownloadPage> {
+  bool _isDownloading = false;
+  DownloadProgress? _progress;
+  String _status = '';
+  String _filePath = '';
+
+  Future<void> _downloadFile(String url, String filename) async {
+    setState(() {
+      _isDownloading = true;
+      _progress = null;
+      _status = 'Starting download...';
+      _filePath = '';
+    });
+
+    final stopwatch = Stopwatch()..start();
+
+    try {
+      final response = await http.get(Uri.parse(url));
+      
+      if (response.statusCode == 200) {
+        final bytes = response.bodyBytes;
+        final total = bytes.length;
+        
+        // Get documents directory (simulated)
+        final directory = '/tmp'; // In real app, use path_provider
+        final file = File('$directory/$filename');
+        
+        // Simulate progressive download with chunks
+        const chunkSize = 8192; // 8KB chunks
+        int downloaded = 0;
+        
+        final sink = file.openWrite();
+        
+        for (int i = 0; i < bytes.length; i += chunkSize) {
+          if (!_isDownloading) {
+            // Download cancelled
+            await sink.close();
+            await file.delete();
+            setState(() {
+              _status = 'Download cancelled';
+            });
+            return;
+          }
+          
+          final end = (i + chunkSize < bytes.length) ? i + chunkSize : bytes.length;
+          final chunk = bytes.sublist(i, end);
+          
+          sink.add(chunk);
+          downloaded += chunk.length;
+          
+          final elapsed = stopwatch.elapsed;
+          final bytesPerSecond = downloaded / elapsed.inSeconds;
+          final speed = _formatBytes(bytesPerSecond.round());
+          
+          setState(() {
+            _progress = DownloadProgress(
+              downloaded: downloaded,
+              total: total,
+              percentage: (downloaded / total) * 100,
+              speed: '$speed/s',
+              elapsed: elapsed,
+            );
+          });
+          
+          // Simulate network delay
+          await Future.delayed(const Duration(milliseconds: 50));
+        }
+        
+        await sink.close();
+        stopwatch.stop();
+        
+        setState(() {
+          _status = 'Download completed successfully!';
+          _filePath = file.path;
+        });
+        
+      } else {
+        setState(() {
+          _status = 'Download failed: HTTP ${response.statusCode}';
+        });
+      }
+    } catch (e) {
+      setState(() {
+        _status = 'Download error: $e';
+      });
+    } finally {
+      setState(() {
+        _isDownloading = false;
+      });
+      stopwatch.stop();
+    }
+  }
+
+  void _cancelDownload() {
+    setState(() {
+      _isDownloading = false;
+    });
+  }
+
+  String _formatBytes(int bytes) {
+    if (bytes < 1024) return '${bytes}B';
+    if (bytes < 1024 * 1024) return '${(bytes / 1024).toStringAsFixed(1)}KB';
+    return '${(bytes / (1024 * 1024)).toStringAsFixed(1)}MB';
+  }
+
+  String _formatDuration(Duration duration) {
+    String twoDigits(int n) => n.toString().padLeft(2, "0");
+    String twoDigitMinutes = twoDigits(duration.inMinutes.remainder(60));
+    String twoDigitSeconds = twoDigits(duration.inSeconds.remainder(60));
+    return "${twoDigits(duration.inHours)}:$twoDigitMinutes:$twoDigitSeconds";
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text('File Download'),
+      ),
+      body: Padding(
+        padding: const EdgeInsets.all(16.0),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            const Text(
+              'Download Sample Files:',
+              style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+            ),
+            const SizedBox(height: 16),
+            ElevatedButton(
+              onPressed: _isDownloading
+                  ? null
+                  : () => _downloadFile(
+                        'https://picsum.photos/800/600.jpg',
+                        'sample-image.jpg',
+                      ),
+              child: const Text('Download Image (≈50KB)'),
+            ),
+            const SizedBox(height: 8),
+            ElevatedButton(
+              onPressed: _isDownloading
+                  ? null
+                  : () => _downloadFile(
+                        'https://file-examples.com/storage/fe86dcbcf7b03b9d4f8ee7e/2017/10/file_example_PDF_1MB.pdf',
+                        'sample-document.pdf',
+                      ),
+              child: const Text('Download PDF (≈1MB)'),
+            ),
+            const SizedBox(height: 20),
+            if (_isDownloading && _progress != null) ...[
+              Card(
+                child: Padding(
+                  padding: const EdgeInsets.all(16.0),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          const Text(
+                            'Download Progress:',
+                            style: TextStyle(fontWeight: FontWeight.bold),
+                          ),
+                          Text('${_progress!.percentage.toStringAsFixed(1)}%'),
+                        ],
+                      ),
+                      const SizedBox(height: 8),
+                      LinearProgressIndicator(
+                        value: _progress!.percentage / 100,
+                      ),
+                      const SizedBox(height: 12),
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Text(
+                            '${_formatBytes(_progress!.downloaded)} / ${_formatBytes(_progress!.total)}',
+                            style: const TextStyle(fontSize: 12),
+                          ),
+                          Text(
+                            _progress!.speed,
+                            style: const TextStyle(fontSize: 12),
+                          ),
+                        ],
+                      ),
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Text(
+                            'Elapsed: ${_formatDuration(_progress!.elapsed)}',
+                            style: const TextStyle(fontSize: 12),
+                          ),
+                          TextButton(
+                            onPressed: _cancelDownload,
+                            child: const Text('Cancel'),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ] else if (_status.isNotEmpty) ...[
+              Container(
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: _status.contains('completed')
+                      ? Colors.green.withOpacity(0.1)
+                      : _status.contains('cancelled')
+                          ? Colors.orange.withOpacity(0.1)
+                          : Colors.red.withOpacity(0.1),
+                  border: Border.all(
+                    color: _status.contains('completed')
+                        ? Colors.green
+                        : _status.contains('cancelled')
+                            ? Colors.orange
+                            : Colors.red,
+                  ),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(_status),
+                    if (_filePath.isNotEmpty) ...[
+                      const SizedBox(height: 8),
+                      Text(
+                        'File saved to: $_filePath',
+                        style: const TextStyle(fontSize: 12),
+                      ),
+                    ],
+                  ],
+                ),
+              ),
+            ],
+            const Spacer(),
+            const Card(
+              child: Padding(
+                padding: EdgeInsets.all(16.0),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Download Features:',
+                      style: TextStyle(fontWeight: FontWeight.bold),
+                    ),
+                    SizedBox(height: 8),
+                    Text('• Real-time progress tracking'),
+                    Text('• Download speed calculation'),
+                    Text('• Cancellation support'),
+                    Text('• File size formatting'),
+                    Text('• Error handling and retry'),
+                  ],
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+```
+
+This example demonstrates file downloads with progress tracking. It shows  
+real-time download progress, speed calculation, and cancellation support.  
+The UI provides detailed feedback about download status and file location.  
+
+## Simple Caching System
+
+Implementing a basic HTTP response caching mechanism.  
+
+```dart
+import 'package:flutter/material.dart';
+import 'package:http/http.dart' as http;
+import 'dart:convert';
+
+void main() {
+  runApp(const MyApp());
+}
+
+class MyApp extends StatelessWidget {
+  const MyApp({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return MaterialApp(
+      darkTheme: ThemeData.dark(),
+      themeMode: ThemeMode.dark,
+      title: 'HTTP Caching',
+      home: const CachingPage(),
+    );
+  }
+}
+
+class CacheEntry {
+  final String data;
+  final DateTime timestamp;
+  final Duration maxAge;
+
+  CacheEntry({
+    required this.data,
+    required this.timestamp,
+    required this.maxAge,
+  });
+
+  bool get isExpired => DateTime.now().difference(timestamp) > maxAge;
+}
+
+class HttpCache {
+  static final Map<String, CacheEntry> _cache = {};
+
+  static void put(String key, String data, {Duration? maxAge}) {
+    _cache[key] = CacheEntry(
+      data: data,
+      timestamp: DateTime.now(),
+      maxAge: maxAge ?? const Duration(minutes: 5),
+    );
+  }
+
+  static String? get(String key) {
+    final entry = _cache[key];
+    if (entry == null || entry.isExpired) {
+      _cache.remove(key);
+      return null;
+    }
+    return entry.data;
+  }
+
+  static void clear() {
+    _cache.clear();
+  }
+
+  static void clearExpired() {
+    _cache.removeWhere((key, entry) => entry.isExpired);
+  }
+
+  static Map<String, DateTime> getCacheInfo() {
+    return Map.fromEntries(
+      _cache.entries.map((e) => MapEntry(e.key, e.value.timestamp)),
+    );
+  }
+
+  static int get size => _cache.length;
+}
+
+class CachedApiService {
+  static Future<String> fetchPost(int postId, {bool forceRefresh = false}) async {
+    final cacheKey = 'post_$postId';
+    
+    // Check cache first (unless force refresh)
+    if (!forceRefresh) {
+      final cached = HttpCache.get(cacheKey);
+      if (cached != null) {
+        return cached;
+      }
+    }
+
+    // Fetch from network
+    try {
+      final response = await http.get(
+        Uri.parse('https://jsonplaceholder.typicode.com/posts/$postId'),
+      );
+
+      if (response.statusCode == 200) {
+        // Cache the response
+        HttpCache.put(cacheKey, response.body);
+        return response.body;
+      } else {
+        throw Exception('HTTP ${response.statusCode}');
+      }
+    } catch (e) {
+      // Try to return stale cache on error
+      final staleCache = _cache[cacheKey];
+      if (staleCache != null) {
+        return staleCache.data;
+      }
+      rethrow;
+    }
+  }
+
+  static final Map<String, CacheEntry> _cache = HttpCache._cache;
+}
+
+class Post {
+  final int id;
+  final String title;
+  final String body;
+
+  Post({required this.id, required this.title, required this.body});
+
+  factory Post.fromJson(Map<String, dynamic> json) {
+    return Post(
+      id: json['id'],
+      title: json['title'],
+      body: json['body'],
+    );
+  }
+}
+
+class CachingPage extends StatefulWidget {
+  const CachingPage({super.key});
+
+  @override
+  State<CachingPage> createState() => _CachingPageState();
+}
+
+class _CachingPageState extends State<CachingPage> {
+  Post? _currentPost;
+  bool _isLoading = false;
+  bool _fromCache = false;
+  String _error = '';
+  DateTime? _lastFetch;
+
+  Future<void> _fetchPost(int postId, {bool forceRefresh = false}) async {
+    setState(() {
+      _isLoading = true;
+      _error = '';
+      _fromCache = false;
+    });
+
+    final startTime = DateTime.now();
+
+    try {
+      final cachedData = !forceRefresh ? HttpCache.get('post_$postId') : null;
+      _fromCache = cachedData != null;
+
+      final response = await CachedApiService.fetchPost(
+        postId,
+        forceRefresh: forceRefresh,
+      );
+      
+      final data = json.decode(response);
+      final post = Post.fromJson(data);
+
+      setState(() {
+        _currentPost = post;
+        _lastFetch = DateTime.now();
+      });
+
+      // Show performance info
+      final duration = DateTime.now().difference(startTime);
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              'Loaded in ${duration.inMilliseconds}ms ${_fromCache ? '(from cache)' : '(from network)'}',
+            ),
+            backgroundColor: _fromCache ? Colors.green : Colors.blue,
+          ),
+        );
+      }
+    } catch (e) {
+      setState(() {
+        _error = 'Error: $e';
+      });
+    } finally {
+      setState(() {
+        _isLoading = false;
+      });
+    }
+  }
+
+  Widget _buildCacheInfo() {
+    final cacheInfo = HttpCache.getCacheInfo();
+    
+    return Card(
+      child: ExpansionTile(
+        title: Text('Cache Status (${HttpCache.size} entries)'),
+        children: [
+          Padding(
+            padding: const EdgeInsets.all(16.0),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                ...cacheInfo.entries.map((entry) {
+                  final age = DateTime.now().difference(entry.value);
+                  return Padding(
+                    padding: const EdgeInsets.symmetric(vertical: 2.0),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Text(entry.key),
+                        Text(
+                          '${age.inSeconds}s ago',
+                          style: const TextStyle(fontSize: 12),
+                        ),
+                      ],
+                    ),
+                  );
+                }),
+                if (cacheInfo.isEmpty)
+                  const Text('No cached entries'),
+                const SizedBox(height: 16),
+                Row(
+                  children: [
+                    ElevatedButton(
+                      onPressed: () {
+                        HttpCache.clearExpired();
+                        setState(() {});
+                      },
+                      child: const Text('Clear Expired'),
+                    ),
+                    const SizedBox(width: 8),
+                    ElevatedButton(
+                      onPressed: () {
+                        HttpCache.clear();
+                        setState(() {});
+                      },
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.red.withOpacity(0.8),
+                      ),
+                      child: const Text('Clear All'),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text('HTTP Caching'),
+      ),
+      body: Padding(
+        padding: const EdgeInsets.all(16.0),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Row(
+              children: [
+                Expanded(
+                  child: ElevatedButton(
+                    onPressed: _isLoading ? null : () => _fetchPost(1),
+                    child: const Text('Load Post 1'),
+                  ),
+                ),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: ElevatedButton(
+                    onPressed: _isLoading ? null : () => _fetchPost(2),
+                    child: const Text('Load Post 2'),
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 8),
+            ElevatedButton(
+              onPressed: _isLoading || _currentPost == null
+                  ? null
+                  : () => _fetchPost(_currentPost!.id, forceRefresh: true),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.orange.withOpacity(0.8),
+              ),
+              child: const Text('Force Refresh'),
+            ),
+            const SizedBox(height: 20),
+            if (_isLoading)
+              const Center(child: CircularProgressIndicator())
+            else if (_error.isNotEmpty)
+              Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: Colors.red.withOpacity(0.1),
+                  border: Border.all(color: Colors.red),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Text(_error),
+              )
+            else if (_currentPost != null)
+              Card(
+                color: _fromCache 
+                    ? Colors.green.withOpacity(0.1) 
+                    : Colors.blue.withOpacity(0.1),
+                child: Padding(
+                  padding: const EdgeInsets.all(16.0),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        children: [
+                          Icon(
+                            _fromCache ? Icons.cached : Icons.cloud_download,
+                            color: _fromCache ? Colors.green : Colors.blue,
+                          ),
+                          const SizedBox(width: 8),
+                          Text(
+                            _fromCache ? 'From Cache' : 'From Network',
+                            style: TextStyle(
+                              fontWeight: FontWeight.bold,
+                              color: _fromCache ? Colors.green : Colors.blue,
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 12),
+                      Text(
+                        'Post ${_currentPost!.id}',
+                        style: const TextStyle(fontSize: 12),
+                      ),
+                      Text(
+                        _currentPost!.title,
+                        style: const TextStyle(
+                          fontSize: 18,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      Text(_currentPost!.body),
+                      if (_lastFetch != null) ...[
+                        const SizedBox(height: 8),
+                        Text(
+                          'Last fetched: ${_lastFetch!.toString().substring(11, 19)}',
+                          style: TextStyle(
+                            fontSize: 12,
+                            color: Colors.grey[400],
+                          ),
+                        ),
+                      ],
+                    ],
+                  ),
+                ),
+              ),
+            const SizedBox(height: 20),
+            _buildCacheInfo(),
+          ],
+        ),
+      ),
+    );
+  }
+}
+```
+
+This example demonstrates a simple HTTP caching system. It caches responses  
+to improve performance and provides fallback to stale cache during errors.  
+The UI shows cache status, performance metrics, and allows cache management.  
+
+## WebSocket Connection
+
+Implementing real-time communication using WebSockets.  
+
+```dart
+import 'package:flutter/material.dart';
+import 'package:web_socket_channel/web_socket_channel.dart';
+import 'dart:convert';
+
+void main() {
+  runApp(const MyApp());
+}
+
+class MyApp extends StatelessWidget {
+  const MyApp({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return MaterialApp(
+      darkTheme: ThemeData.dark(),
+      themeMode: ThemeMode.dark,
+      title: 'WebSocket Chat',
+      home: const WebSocketPage(),
+    );
+  }
+}
+
+enum ConnectionStatus {
+  disconnected,
+  connecting,
+  connected,
+  error,
+}
+
+class ChatMessage {
+  final String message;
+  final DateTime timestamp;
+  final bool isFromUser;
+
+  ChatMessage({
+    required this.message,
+    required this.timestamp,
+    required this.isFromUser,
+  });
+}
+
+class WebSocketPage extends StatefulWidget {
+  const WebSocketPage({super.key});
+
+  @override
+  State<WebSocketPage> createState() => _WebSocketPageState();
+}
+
+class _WebSocketPageState extends State<WebSocketPage> {
+  WebSocketChannel? _channel;
+  ConnectionStatus _status = ConnectionStatus.disconnected;
+  final List<ChatMessage> _messages = [];
+  final _messageController = TextEditingController();
+  String _error = '';
+
+  void _connect() {
+    if (_status == ConnectionStatus.connected) return;
+
+    setState(() {
+      _status = ConnectionStatus.connecting;
+      _error = '';
+    });
+
+    try {
+      // Using a WebSocket echo server for demonstration
+      _channel = WebSocketChannel.connect(
+        Uri.parse('wss://echo.websocket.org/'),
+      );
+
+      _channel!.stream.listen(
+        (data) {
+          setState(() {
+            _status = ConnectionStatus.connected;
+            _messages.add(
+              ChatMessage(
+                message: data.toString(),
+                timestamp: DateTime.now(),
+                isFromUser: false,
+              ),
+            );
+          });
+        },
+        onError: (error) {
+          setState(() {
+            _status = ConnectionStatus.error;
+            _error = 'Connection error: $error';
+          });
+        },
+        onDone: () {
+          setState(() {
+            _status = ConnectionStatus.disconnected;
+          });
+        },
+      );
+
+      // Send connection message
+      _sendMessage('Connected to echo server');
+
+    } catch (e) {
+      setState(() {
+        _status = ConnectionStatus.error;
+        _error = 'Failed to connect: $e';
+      });
+    }
+  }
+
+  void _disconnect() {
+    _channel?.sink.close();
+    _channel = null;
+    setState(() {
+      _status = ConnectionStatus.disconnected;
+    });
+  }
+
+  void _sendMessage([String? message]) {
+    final text = message ?? _messageController.text.trim();
+    if (text.isEmpty || _status != ConnectionStatus.connected) return;
+
+    setState(() {
+      _messages.add(
+        ChatMessage(
+          message: text,
+          timestamp: DateTime.now(),
+          isFromUser: true,
+        ),
+      );
+    });
+
+    _channel?.sink.add(text);
+    _messageController.clear();
+  }
+
+  void _sendTestMessage() {
+    final testMessages = [
+      'Hello WebSocket!',
+      'Testing real-time communication',
+      'Message ${DateTime.now().millisecondsSinceEpoch}',
+      jsonEncode({'type': 'test', 'timestamp': DateTime.now().toIso8601String()}),
+    ];
+    
+    final message = testMessages[_messages.length % testMessages.length];
+    _sendMessage(message);
+  }
+
+  Widget _buildConnectionStatus() {
+    IconData icon;
+    Color color;
+    String status;
+
+    switch (_status) {
+      case ConnectionStatus.disconnected:
+        icon = Icons.cloud_off;
+        color = Colors.grey;
+        status = 'Disconnected';
+        break;
+      case ConnectionStatus.connecting:
+        icon = Icons.cloud_sync;
+        color = Colors.orange;
+        status = 'Connecting...';
+        break;
+      case ConnectionStatus.connected:
+        icon = Icons.cloud_done;
+        color = Colors.green;
+        status = 'Connected';
+        break;
+      case ConnectionStatus.error:
+        icon = Icons.error;
+        color = Colors.red;
+        status = 'Error';
+        break;
+    }
+
+    return Container(
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: color.withOpacity(0.1),
+        border: Border.all(color: color),
+        borderRadius: BorderRadius.circular(8),
+      ),
+      child: Row(
+        children: [
+          Icon(icon, color: color),
+          const SizedBox(width: 8),
+          Text(
+            status,
+            style: TextStyle(
+              fontWeight: FontWeight.bold,
+              color: color,
+            ),
+          ),
+          const Spacer(),
+          if (_status == ConnectionStatus.disconnected)
+            TextButton(
+              onPressed: _connect,
+              child: const Text('Connect'),
+            )
+          else if (_status == ConnectionStatus.connected)
+            TextButton(
+              onPressed: _disconnect,
+              child: const Text('Disconnect'),
+            ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildMessage(ChatMessage message) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+      child: Row(
+        mainAxisAlignment: message.isFromUser 
+            ? MainAxisAlignment.end 
+            : MainAxisAlignment.start,
+        children: [
+          Container(
+            constraints: BoxConstraints(
+              maxWidth: MediaQuery.of(context).size.width * 0.7,
+            ),
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              color: message.isFromUser 
+                  ? Colors.blue.withOpacity(0.8) 
+                  : Colors.grey.withOpacity(0.3),
+              borderRadius: BorderRadius.circular(16),
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  message.message,
+                  style: TextStyle(
+                    color: message.isFromUser ? Colors.white : null,
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  '${message.timestamp.toString().substring(11, 19)}',
+                  style: TextStyle(
+                    fontSize: 10,
+                    color: message.isFromUser 
+                        ? Colors.white70 
+                        : Colors.grey[400],
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text('WebSocket Chat'),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.clear_all),
+            onPressed: () {
+              setState(() {
+                _messages.clear();
+              });
+            },
+          ),
+        ],
+      ),
+      body: Column(
+        children: [
+          Padding(
+            padding: const EdgeInsets.all(16.0),
+            child: _buildConnectionStatus(),
+          ),
+          if (_error.isNotEmpty)
+            Container(
+              margin: const EdgeInsets.symmetric(horizontal: 16),
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: Colors.red.withOpacity(0.1),
+                border: Border.all(color: Colors.red),
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: Text(_error),
+            ),
+          Expanded(
+            child: _messages.isEmpty
+                ? const Center(
+                    child: Text(
+                      'No messages yet.\nConnect and send a message to start.',
+                      textAlign: TextAlign.center,
+                    ),
+                  )
+                : ListView.builder(
+                    itemCount: _messages.length,
+                    itemBuilder: (context, index) {
+                      return _buildMessage(_messages[index]);
+                    },
+                  ),
+          ),
+          Container(
+            padding: const EdgeInsets.all(16.0),
+            child: Column(
+              children: [
+                if (_status == ConnectionStatus.connected) ...[
+                  Row(
+                    children: [
+                      Expanded(
+                        child: TextField(
+                          controller: _messageController,
+                          decoration: const InputDecoration(
+                            hintText: 'Type a message...',
+                            border: OutlineInputBorder(),
+                          ),
+                          onSubmitted: (_) => _sendMessage(),
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      IconButton(
+                        onPressed: _sendMessage,
+                        icon: const Icon(Icons.send),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 8),
+                  ElevatedButton(
+                    onPressed: _sendTestMessage,
+                    child: const Text('Send Test Message'),
+                  ),
+                ],
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  @override
+  void dispose() {
+    _messageController.dispose();
+    _disconnect();
+    super.dispose();
+  }
+}
+```
+
+This example demonstrates WebSocket connections for real-time communication.  
+It includes connection management, message handling, and a chat-like interface.  
+The echo server returns sent messages, simulating real-time bidirectional  
+communication.  
+
+## Form Data Upload
+
+Uploading form data including files using multipart requests.  
+
+```dart
+import 'package:flutter/material.dart';
+import 'package:http/http.dart' as http;
+import 'dart:convert';
+import 'dart:typed_data';
+
+void main() {
+  runApp(const MyApp());
+}
+
+class MyApp extends StatelessWidget {
+  const MyApp({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return MaterialApp(
+      darkTheme: ThemeData.dark(),
+      themeMode: ThemeMode.dark,
+      title: 'Form Data Upload',
+      home: const FormUploadPage(),
+    );
+  }
+}
+
+class FormUploadPage extends StatefulWidget {
+  const FormUploadPage({super.key});
+
+  @override
+  State<FormUploadPage> createState() => _FormUploadPageState();
+}
+
+class _FormUploadPageState extends State<FormUploadPage> {
+  final _nameController = TextEditingController();
+  final _emailController = TextEditingController();
+  final _descriptionController = TextEditingController();
+  bool _isUploading = false;
+  String _uploadResult = '';
+  Uint8List? _selectedFile;
+  String _fileName = '';
+
+  void _simulateFileSelection() {
+    // Simulate file selection with dummy data
+    final dummyContent = 'This is a sample file content\n'
+        'Created at: ${DateTime.now()}\n'
+        'File type: text/plain';
+    
+    setState(() {
+      _selectedFile = Uint8List.fromList(dummyContent.codeUnits);
+      _fileName = 'sample_file_${DateTime.now().millisecondsSinceEpoch}.txt';
+    });
+  }
+
+  Future<void> _uploadFormData() async {
+    if (_nameController.text.isEmpty || _emailController.text.isEmpty) {
+      setState(() {
+        _uploadResult = 'Please fill in required fields';
+      });
+      return;
+    }
+
+    setState(() {
+      _isUploading = true;
+      _uploadResult = '';
+    });
+
+    try {
+      // Create multipart request
+      final request = http.MultipartRequest(
+        'POST',
+        Uri.parse('https://httpbin.org/post'), // Test endpoint
+      );
+
+      // Add text fields
+      request.fields.addAll({
+        'name': _nameController.text,
+        'email': _emailController.text,
+        'description': _descriptionController.text,
+        'timestamp': DateTime.now().toIso8601String(),
+      });
+
+      // Add file if selected
+      if (_selectedFile != null && _fileName.isNotEmpty) {
+        request.files.add(
+          http.MultipartFile.fromBytes(
+            'file',
+            _selectedFile!,
+            filename: _fileName,
+          ),
+        );
+      }
+
+      // Add custom headers
+      request.headers.addAll({
+        'User-Agent': 'Flutter-App/1.0',
+        'Accept': 'application/json',
+      });
+
+      // Send request
+      final response = await request.send();
+      final responseBody = await response.stream.bytesToString();
+
+      if (response.statusCode == 200) {
+        final data = json.decode(responseBody);
+        
+        setState(() {
+          _uploadResult = 'Upload successful!\n\n'
+              'Form data sent:\n'
+              '• Name: ${data['form']['name']}\n'
+              '• Email: ${data['form']['email']}\n'
+              '• Description: ${data['form']['description']}\n'
+              '${_selectedFile != null ? '• File: $_fileName (${_selectedFile!.length} bytes)\n' : ''}'
+              '\nServer response code: ${response.statusCode}';
+        });
+
+        // Clear form
+        _nameController.clear();
+        _emailController.clear();
+        _descriptionController.clear();
+        setState(() {
+          _selectedFile = null;
+          _fileName = '';
+        });
+      } else {
+        setState(() {
+          _uploadResult = 'Upload failed: HTTP ${response.statusCode}';
+        });
+      }
+    } catch (e) {
+      setState(() {
+        _uploadResult = 'Upload error: $e';
+      });
+    } finally {
+      setState(() {
+        _isUploading = false;
+      });
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text('Form Data Upload'),
+      ),
+      body: Padding(
+        padding: const EdgeInsets.all(16.0),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            const Text(
+              'Upload Form with Optional File:',
+              style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+            ),
+            const SizedBox(height: 16),
+            TextField(
+              controller: _nameController,
+              decoration: const InputDecoration(
+                labelText: 'Name *',
+                border: OutlineInputBorder(),
+              ),
+            ),
+            const SizedBox(height: 16),
+            TextField(
+              controller: _emailController,
+              decoration: const InputDecoration(
+                labelText: 'Email *',
+                border: OutlineInputBorder(),
+              ),
+              keyboardType: TextInputType.emailAddress,
+            ),
+            const SizedBox(height: 16),
+            TextField(
+              controller: _descriptionController,
+              decoration: const InputDecoration(
+                labelText: 'Description (optional)',
+                border: OutlineInputBorder(),
+              ),
+              maxLines: 3,
+            ),
+            const SizedBox(height: 16),
+            Card(
+              child: Padding(
+                padding: const EdgeInsets.all(16.0),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text(
+                      'File Attachment:',
+                      style: TextStyle(fontWeight: FontWeight.bold),
+                    ),
+                    const SizedBox(height: 8),
+                    if (_selectedFile != null) ...[
+                      Container(
+                        padding: const EdgeInsets.all(12),
+                        decoration: BoxDecoration(
+                          color: Colors.green.withOpacity(0.1),
+                          border: Border.all(color: Colors.green),
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child: Row(
+                          children: [
+                            const Icon(Icons.attach_file, color: Colors.green),
+                            const SizedBox(width: 8),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(_fileName),
+                                  Text(
+                                    '${_selectedFile!.length} bytes',
+                                    style: const TextStyle(fontSize: 12),
+                                  ),
+                                ],
+                              ),
+                            ),
+                            IconButton(
+                              icon: const Icon(Icons.close),
+                              onPressed: () {
+                                setState(() {
+                                  _selectedFile = null;
+                                  _fileName = '';
+                                });
+                              },
+                            ),
+                          ],
+                        ),
+                      ),
+                    ] else ...[
+                      ElevatedButton.icon(
+                        onPressed: _simulateFileSelection,
+                        icon: const Icon(Icons.attach_file),
+                        label: const Text('Select File (Simulated)'),
+                      ),
+                    ],
+                  ],
+                ),
+              ),
+            ),
+            const SizedBox(height: 20),
+            ElevatedButton(
+              onPressed: _isUploading ? null : _uploadFormData,
+              child: _isUploading
+                  ? const Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        SizedBox(
+                          height: 20,
+                          width: 20,
+                          child: CircularProgressIndicator(strokeWidth: 2),
+                        ),
+                        SizedBox(width: 8),
+                        Text('Uploading...'),
+                      ],
+                    )
+                  : const Text('Upload Form Data'),
+            ),
+            const SizedBox(height: 20),
+            if (_uploadResult.isNotEmpty)
+              Expanded(
+                child: Container(
+                  padding: const EdgeInsets.all(16),
+                  decoration: BoxDecoration(
+                    color: _uploadResult.contains('successful')
+                        ? Colors.green.withOpacity(0.1)
+                        : Colors.red.withOpacity(0.1),
+                    border: Border.all(
+                      color: _uploadResult.contains('successful')
+                          ? Colors.green
+                          : Colors.red,
+                    ),
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: SingleChildScrollView(
+                    child: Text(_uploadResult),
+                  ),
+                ),
+              ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  @override
+  void dispose() {
+    _nameController.dispose();
+    _emailController.dispose();
+    _descriptionController.dispose();
+    super.dispose();
+  }
+}
+```
+
+This example demonstrates multipart form data uploads including file  
+attachments. It shows how to combine text fields with file uploads in  
+a single request, with proper progress feedback and error handling.  
