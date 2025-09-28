@@ -315,7 +315,7 @@ class ThemeTogglePage extends StatelessWidget {
                         Icon(
                           isDarkMode ? Icons.nightlight_round : Icons.wb_sunny,
                           size: 32,
-                          color: Theme.of(context).primaryColor,
+                          color: isDarkMode ? Colors.amberAccent : Theme.of(context).primaryColor,
                         ),
                         const SizedBox(width: 12),
                         Expanded(
