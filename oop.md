@@ -4596,3 +4596,6780 @@ through database connection management. Factory constructors create
 appropriate implementations based on parameters, while the singleton  
 ConnectionPoolManager manages instances. The QueryBuilder shows the  
 builder pattern for fluent interface construction.
+
+## Generic Classes and Type Safety
+
+Implementing type-safe generic classes with constraints and bounds.
+
+```dart
+import 'package:flutter/material.dart';
+
+void main() {
+  runApp(const MyApp());
+}
+
+class MyApp extends StatelessWidget {
+  const MyApp({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return MaterialApp(
+      title: 'Generic Classes and Type Safety',
+      theme: ThemeData.dark(),
+      home: const GenericClassesDemo(),
+    );
+  }
+}
+
+// Generic repository interface for data operations
+abstract class Repository<T, ID> {
+  Future<T?> findById(ID id);
+  Future<List<T>> findAll();
+  Future<T> save(T entity);
+  Future<void> deleteById(ID id);
+  Future<bool> existsById(ID id);
+}
+
+// Generic entity base class
+abstract class Entity<ID> {
+  ID get id;
+  DateTime get createdAt;
+  DateTime get updatedAt;
+}
+
+// Concrete entity implementations
+class User extends Entity<String> {
+  @override
+  final String id;
+  final String name;
+  final String email;
+  final int age;
+  @override
+  final DateTime createdAt;
+  @override
+  final DateTime updatedAt;
+
+  User({
+    required this.id,
+    required this.name,
+    required this.email,
+    required this.age,
+    DateTime? createdAt,
+    DateTime? updatedAt,
+  }) : createdAt = createdAt ?? DateTime.now(),
+       updatedAt = updatedAt ?? DateTime.now();
+
+  User copyWith({
+    String? name,
+    String? email,
+    int? age,
+  }) {
+    return User(
+      id: id,
+      name: name ?? this.name,
+      email: email ?? this.email,
+      age: age ?? this.age,
+      createdAt: createdAt,
+      updatedAt: DateTime.now(),
+    );
+  }
+
+  @override
+  String toString() => 'User(id: $id, name: $name, email: $email, age: $age)';
+}
+
+class Product extends Entity<int> {
+  @override
+  final int id;
+  final String name;
+  final double price;
+  final String category;
+  @override
+  final DateTime createdAt;
+  @override
+  final DateTime updatedAt;
+
+  Product({
+    required this.id,
+    required this.name,
+    required this.price,
+    required this.category,
+    DateTime? createdAt,
+    DateTime? updatedAt,
+  }) : createdAt = createdAt ?? DateTime.now(),
+       updatedAt = updatedAt ?? DateTime.now();
+
+  Product copyWith({
+    String? name,
+    double? price,
+    String? category,
+  }) {
+    return Product(
+      id: id,
+      name: name ?? this.name,
+      price: price ?? this.price,
+      category: category ?? this.category,
+      createdAt: createdAt,
+      updatedAt: DateTime.now(),
+    );
+  }
+
+  @override
+  String toString() => 'Product(id: $id, name: $name, price: \$${price.toStringAsFixed(2)}, category: $category)';
+}
+
+// Generic in-memory repository implementation
+class InMemoryRepository<T extends Entity<ID>, ID> implements Repository<T, ID> {
+  final Map<ID, T> _storage = {};
+  final String entityType;
+
+  InMemoryRepository(this.entityType);
+
+  @override
+  Future<T?> findById(ID id) async {
+    await Future.delayed(const Duration(milliseconds: 100)); // Simulate DB access
+    return _storage[id];
+  }
+
+  @override
+  Future<List<T>> findAll() async {
+    await Future.delayed(const Duration(milliseconds: 150));
+    return _storage.values.toList();
+  }
+
+  @override
+  Future<T> save(T entity) async {
+    await Future.delayed(const Duration(milliseconds: 200));
+    _storage[entity.id] = entity;
+    return entity;
+  }
+
+  @override
+  Future<void> deleteById(ID id) async {
+    await Future.delayed(const Duration(milliseconds: 100));
+    _storage.remove(id);
+  }
+
+  @override
+  Future<bool> existsById(ID id) async {
+    await Future.delayed(const Duration(milliseconds: 50));
+    return _storage.containsKey(id);
+  }
+
+  // Additional methods specific to in-memory implementation
+  int get size => _storage.length;
+  List<ID> get allIds => _storage.keys.toList();
+  void clear() => _storage.clear();
+
+  // Generic search method with predicate
+  Future<List<T>> findWhere(bool Function(T) predicate) async {
+    await Future.delayed(const Duration(milliseconds: 100));
+    return _storage.values.where(predicate).toList();
+  }
+}
+
+// Generic service layer with business logic
+class EntityService<T extends Entity<ID>, ID> {
+  final Repository<T, ID> repository;
+  final String entityName;
+
+  EntityService(this.repository, this.entityName);
+
+  Future<T?> getById(ID id) async {
+    return await repository.findById(id);
+  }
+
+  Future<List<T>> getAll() async {
+    return await repository.findAll();
+  }
+
+  Future<T> create(T entity) async {
+    final exists = await repository.existsById(entity.id);
+    if (exists) {
+      throw StateError('$entityName with ID ${entity.id} already exists');
+    }
+    return await repository.save(entity);
+  }
+
+  Future<T> update(T entity) async {
+    final exists = await repository.existsById(entity.id);
+    if (!exists) {
+      throw StateError('$entityName with ID ${entity.id} does not exist');
+    }
+    return await repository.save(entity);
+  }
+
+  Future<void> delete(ID id) async {
+    final exists = await repository.existsById(entity.id);
+    if (!exists) {
+      throw StateError('$entityName with ID $id does not exist');
+    }
+    await repository.deleteById(id);
+  }
+
+  Future<bool> exists(ID id) async {
+    return await repository.existsById(id);
+  }
+}
+
+// Generic collection wrapper with type safety
+class TypedCollection<T> {
+  final List<T> _items = [];
+  final String typeName;
+
+  TypedCollection(this.typeName);
+
+  void add(T item) {
+    _items.add(item);
+  }
+
+  void addAll(Iterable<T> items) {
+    _items.addAll(items);
+  }
+
+  T? findFirst(bool Function(T) predicate) {
+    try {
+      return _items.firstWhere(predicate);
+    } catch (e) {
+      return null;
+    }
+  }
+
+  List<T> findAll(bool Function(T) predicate) {
+    return _items.where(predicate).toList();
+  }
+
+  bool remove(T item) {
+    return _items.remove(item);
+  }
+
+  T removeAt(int index) {
+    return _items.removeAt(index);
+  }
+
+  void clear() {
+    _items.clear();
+  }
+
+  // Generic transformation methods
+  TypedCollection<R> map<R>(R Function(T) transform, String newTypeName) {
+    final newCollection = TypedCollection<R>(newTypeName);
+    newCollection.addAll(_items.map(transform));
+    return newCollection;
+  }
+
+  TypedCollection<T> filter(bool Function(T) predicate) {
+    final filtered = TypedCollection<T>(typeName);
+    filtered.addAll(_items.where(predicate));
+    return filtered;
+  }
+
+  // Aggregate operations
+  R fold<R>(R initialValue, R Function(R previous, T element) combine) {
+    return _items.fold(initialValue, combine);
+  }
+
+  T? reduce(T Function(T value, T element) combine) {
+    return _items.isEmpty ? null : _items.reduce(combine);
+  }
+
+  // Properties
+  int get length => _items.length;
+  bool get isEmpty => _items.isEmpty;
+  bool get isNotEmpty => _items.isNotEmpty;
+  List<T> get items => List.unmodifiable(_items);
+  T operator [](int index) => _items[index];
+}
+
+class GenericClassesDemo extends StatefulWidget {
+  const GenericClassesDemo({super.key});
+
+  @override
+  State<GenericClassesDemo> createState() => _GenericClassesDemoState();
+}
+
+class _GenericClassesDemoState extends State<GenericClassesDemo> {
+  late InMemoryRepository<User, String> userRepository;
+  late InMemoryRepository<Product, int> productRepository;
+  late EntityService<User, String> userService;
+  late EntityService<Product, int> productService;
+  
+  final TypedCollection<String> stringCollection = TypedCollection<String>('String');
+  final TypedCollection<int> intCollection = TypedCollection<int>('Integer');
+  
+  String _operationResult = '';
+  List<String> _operations = [];
+
+  @override
+  void initState() {
+    super.initState();
+    
+    // Initialize repositories and services
+    userRepository = InMemoryRepository<User, String>('User');
+    productRepository = InMemoryRepository<Product, int>('Product');
+    userService = EntityService<User, String>(userRepository, 'User');
+    productService = EntityService<Product, int>(productRepository, 'Product');
+
+    // Initialize with sample data
+    _initializeData();
+  }
+
+  void _initializeData() async {
+    // Add sample users
+    await userService.create(User(
+      id: 'user1',
+      name: 'Alice Johnson',
+      email: 'alice@example.com',
+      age: 28,
+    ));
+    
+    await userService.create(User(
+      id: 'user2',
+      name: 'Bob Smith',
+      email: 'bob@example.com',
+      age: 35,
+    ));
+
+    // Add sample products
+    await productService.create(Product(
+      id: 1,
+      name: 'Gaming Laptop',
+      price: 1299.99,
+      category: 'Electronics',
+    ));
+    
+    await productService.create(Product(
+      id: 2,
+      name: 'Office Chair',
+      price: 299.99,
+      category: 'Furniture',
+    ));
+
+    // Add items to typed collections
+    stringCollection.addAll(['Alpha', 'Beta', 'Gamma', 'Delta']);
+    intCollection.addAll([10, 20, 30, 40, 50]);
+
+    setState(() {
+      _addOperation('Sample data initialized');
+    });
+  }
+
+  void _addOperation(String operation) {
+    _operations.insert(0, '${DateTime.now().toString().substring(11, 19)}: $operation');
+    if (_operations.length > 8) {
+      _operations.removeLast();
+    }
+  }
+
+  Future<void> _performUserOperation(String operation) async {
+    try {
+      switch (operation) {
+        case 'find_all':
+          final users = await userService.getAll();
+          setState(() {
+            _operationResult = 'Found ${users.length} users:\n${users.join('\n')}';
+          });
+          _addOperation('Found ${users.length} users');
+          break;
+        case 'find_adults':
+          final adults = await userRepository.findWhere((user) => user.age >= 18);
+          setState(() {
+            _operationResult = 'Found ${adults.length} adults:\n${adults.join('\n')}';
+          });
+          _addOperation('Found ${adults.length} adult users');
+          break;
+        case 'add_user':
+          final newUser = User(
+            id: 'user${DateTime.now().millisecondsSinceEpoch}',
+            name: 'New User',
+            email: 'new@example.com',
+            age: 25,
+          );
+          await userService.create(newUser);
+          setState(() {
+            _operationResult = 'Created user: $newUser';
+          });
+          _addOperation('Created new user');
+          break;
+      }
+    } catch (e) {
+      setState(() {
+        _operationResult = 'Error: $e';
+      });
+      _addOperation('Error in user operation: $e');
+    }
+  }
+
+  Future<void> _performProductOperation(String operation) async {
+    try {
+      switch (operation) {
+        case 'find_all':
+          final products = await productService.getAll();
+          setState(() {
+            _operationResult = 'Found ${products.length} products:\n${products.join('\n')}';
+          });
+          _addOperation('Found ${products.length} products');
+          break;
+        case 'find_expensive':
+          final expensive = await productRepository.findWhere((product) => product.price > 500);
+          setState(() {
+            _operationResult = 'Found ${expensive.length} expensive products:\n${expensive.join('\n')}';
+          });
+          _addOperation('Found ${expensive.length} expensive products');
+          break;
+        case 'add_product':
+          final newProduct = Product(
+            id: DateTime.now().millisecondsSinceEpoch,
+            name: 'New Product',
+            price: 99.99,
+            category: 'General',
+          );
+          await productService.create(newProduct);
+          setState(() {
+            _operationResult = 'Created product: $newProduct';
+          });
+          _addOperation('Created new product');
+          break;
+      }
+    } catch (e) {
+      setState(() {
+        _operationResult = 'Error: $e';
+      });
+      _addOperation('Error in product operation: $e');
+    }
+  }
+
+  void _performCollectionOperation(String operation) {
+    switch (operation) {
+      case 'filter_strings':
+        final filtered = stringCollection.filter((str) => str.length > 4);
+        setState(() {
+          _operationResult = 'Filtered strings (length > 4): ${filtered.items.join(', ')}';
+        });
+        _addOperation('Filtered string collection');
+        break;
+      case 'map_strings':
+        final mapped = stringCollection.map<int>((str) => str.length, 'StringLength');
+        setState(() {
+          _operationResult = 'Mapped to lengths: ${mapped.items.join(', ')}';
+        });
+        _addOperation('Mapped strings to lengths');
+        break;
+      case 'sum_integers':
+        final sum = intCollection.fold<int>(0, (prev, element) => prev + element);
+        setState(() {
+          _operationResult = 'Sum of integers: $sum';
+        });
+        _addOperation('Calculated sum of integers');
+        break;
+      case 'add_items':
+        stringCollection.add('Echo');
+        intCollection.add(60);
+        setState(() {
+          _operationResult = 'Added items to collections';
+        });
+        _addOperation('Added items to typed collections');
+        break;
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text('Generic Classes and Type Safety'),
+      ),
+      body: SingleChildScrollView(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // Operation Result
+            if (_operationResult.isNotEmpty) ...[
+              Card(
+                color: Colors.blue.shade800,
+                child: Padding(
+                  padding: const EdgeInsets.all(16),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Text(
+                        'Operation Result',
+                        style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                      ),
+                      const SizedBox(height: 8),
+                      Text(_operationResult),
+                    ],
+                  ),
+                ),
+              ),
+              const SizedBox(height: 16),
+            ],
+
+            // Generic Repository Operations
+            Card(
+              child: Padding(
+                padding: const EdgeInsets.all(16),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text(
+                      'Generic Repository<User, String>',
+                      style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                    ),
+                    const SizedBox(height: 12),
+                    Text('Repository Size: ${userRepository.size}'),
+                    const SizedBox(height: 12),
+                    Wrap(
+                      spacing: 8,
+                      runSpacing: 8,
+                      children: [
+                        ElevatedButton(
+                          onPressed: () => _performUserOperation('find_all'),
+                          child: const Text('Find All Users'),
+                        ),
+                        ElevatedButton(
+                          onPressed: () => _performUserOperation('find_adults'),
+                          child: const Text('Find Adults'),
+                        ),
+                        ElevatedButton(
+                          onPressed: () => _performUserOperation('add_user'),
+                          child: const Text('Add User'),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+            ),
+            const SizedBox(height: 16),
+
+            // Generic Repository Operations - Products
+            Card(
+              child: Padding(
+                padding: const EdgeInsets.all(16),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text(
+                      'Generic Repository<Product, int>',
+                      style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                    ),
+                    const SizedBox(height: 12),
+                    Text('Repository Size: ${productRepository.size}'),
+                    const SizedBox(height: 12),
+                    Wrap(
+                      spacing: 8,
+                      runSpacing: 8,
+                      children: [
+                        ElevatedButton(
+                          onPressed: () => _performProductOperation('find_all'),
+                          child: const Text('Find All Products'),
+                        ),
+                        ElevatedButton(
+                          onPressed: () => _performProductOperation('find_expensive'),
+                          child: const Text('Find Expensive'),
+                        ),
+                        ElevatedButton(
+                          onPressed: () => _performProductOperation('add_product'),
+                          child: const Text('Add Product'),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+            ),
+            const SizedBox(height: 16),
+
+            // Generic Collections
+            Card(
+              child: Padding(
+                padding: const EdgeInsets.all(16),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text(
+                      'Generic Collections',
+                      style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                    ),
+                    const SizedBox(height: 12),
+                    Text('TypedCollection<String>: ${stringCollection.length} items'),
+                    Text('Items: ${stringCollection.items.join(', ')}'),
+                    const SizedBox(height: 8),
+                    Text('TypedCollection<int>: ${intCollection.length} items'),
+                    Text('Items: ${intCollection.items.join(', ')}'),
+                    const SizedBox(height: 12),
+                    Wrap(
+                      spacing: 8,
+                      runSpacing: 8,
+                      children: [
+                        ElevatedButton(
+                          onPressed: () => _performCollectionOperation('filter_strings'),
+                          child: const Text('Filter Strings'),
+                        ),
+                        ElevatedButton(
+                          onPressed: () => _performCollectionOperation('map_strings'),
+                          child: const Text('Map to Lengths'),
+                        ),
+                        ElevatedButton(
+                          onPressed: () => _performCollectionOperation('sum_integers'),
+                          child: const Text('Sum Integers'),
+                        ),
+                        ElevatedButton(
+                          onPressed: () => _performCollectionOperation('add_items'),
+                          child: const Text('Add Items'),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+            ),
+            const SizedBox(height: 16),
+
+            // Operations Log
+            Card(
+              child: Padding(
+                padding: const EdgeInsets.all(16),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text(
+                      'Operations Log',
+                      style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                    ),
+                    const SizedBox(height: 8),
+                    Container(
+                      height: 120,
+                      width: double.infinity,
+                      padding: const EdgeInsets.all(12),
+                      decoration: BoxDecoration(
+                        color: Colors.grey.shade900,
+                        borderRadius: BorderRadius.circular(8),
+                        border: Border.all(color: Colors.grey.shade700),
+                      ),
+                      child: SingleChildScrollView(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: _operations.map((op) => Padding(
+                            padding: const EdgeInsets.only(bottom: 2),
+                            child: Text(
+                              op,
+                              style: const TextStyle(fontSize: 11, fontFamily: 'monospace'),
+                            ),
+                          )).toList(),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+            const SizedBox(height: 16),
+
+            Card(
+              child: Padding(
+                padding: const EdgeInsets.all(16),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text(
+                      'Generic Programming Concepts Demonstrated',
+                      style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                    ),
+                    const SizedBox(height: 8),
+                    const Text('• Generic classes: Repository<T, ID>, TypedCollection<T>'),
+                    const Text('• Type constraints: <T extends Entity<ID>>'),
+                    const Text('• Generic methods: map<R>(), fold<R>(), findWhere()'),
+                    const Text('• Type safety: Compile-time type checking and inference'),
+                    const Text('• Generic interfaces: Repository<T, ID> contract'),
+                    const Text('• Type parameters: Multiple type variables in single class'),
+                    const Text('• Generic inheritance: Entity<ID> base class'),
+                    const Text('• Type bounds: Restricting generic parameters to specific types'),
+                  ],
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+```
+
+This example demonstrates generic programming with type-safe collections,  
+repositories, and services. Generic classes provide code reuse while  
+maintaining type safety through compile-time checking. The Repository  
+pattern shows how generics enable flexible data access layers, while  
+TypedCollection demonstrates generic transformations and operations.
+
+## Composition vs Inheritance
+
+Demonstrating composition patterns as alternatives to inheritance.
+
+```dart
+import 'package:flutter/material.dart';
+
+void main() {
+  runApp(const MyApp());
+}
+
+class MyApp extends StatelessWidget {
+  const MyApp({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return MaterialApp(
+      title: 'Composition vs Inheritance',
+      theme: ThemeData.dark(),
+      home: const CompositionDemo(),
+    );
+  }
+}
+
+// Components for composition
+class Logger {
+  final String name;
+  final List<String> _logs = [];
+  
+  Logger(this.name);
+  
+  void log(String message) {
+    final timestamp = DateTime.now().toString().substring(0, 19);
+    final logEntry = '[$timestamp] [$name] $message';
+    _logs.add(logEntry);
+    print(logEntry);
+  }
+  
+  List<String> getLogs() => List.unmodifiable(_logs);
+  void clearLogs() => _logs.clear();
+}
+
+class Validator {
+  final Map<String, List<String Function(dynamic)>> _rules = {};
+  
+  void addRule(String field, String Function(dynamic) rule) {
+    _rules.putIfAbsent(field, () => []).add(rule);
+  }
+  
+  Map<String, List<String>> validate(Map<String, dynamic> data) {
+    Map<String, List<String>> errors = {};
+    
+    _rules.forEach((field, rules) {
+      final value = data[field];
+      for (var rule in rules) {
+        final error = rule(value);
+        if (error.isNotEmpty) {
+          errors.putIfAbsent(field, () => []).add(error);
+        }
+      }
+    });
+    
+    return errors;
+  }
+  
+  bool isValid(Map<String, dynamic> data) {
+    return validate(data).isEmpty;
+  }
+}
+
+class Cache<T> {
+  final Map<String, T> _cache = {};
+  final int maxSize;
+  
+  Cache({this.maxSize = 100});
+  
+  void put(String key, T value) {
+    if (_cache.length >= maxSize) {
+      // Simple LRU: remove first entry
+      final firstKey = _cache.keys.first;
+      _cache.remove(firstKey);
+    }
+    _cache[key] = value;
+  }
+  
+  T? get(String key) => _cache[key];
+  
+  bool containsKey(String key) => _cache.containsKey(key);
+  
+  void remove(String key) => _cache.remove(key);
+  
+  void clear() => _cache.clear();
+  
+  int get size => _cache.length;
+  
+  List<String> get keys => _cache.keys.toList();
+}
+
+class EventEmitter {
+  final Map<String, List<Function(dynamic)>> _listeners = {};
+  
+  void on(String event, Function(dynamic) listener) {
+    _listeners.putIfAbsent(event, () => []).add(listener);
+  }
+  
+  void emit(String event, [dynamic data]) {
+    final listeners = _listeners[event];
+    if (listeners != null) {
+      for (var listener in listeners) {
+        listener(data);
+      }
+    }
+  }
+  
+  void off(String event, [Function(dynamic)? listener]) {
+    if (listener != null) {
+      _listeners[event]?.remove(listener);
+    } else {
+      _listeners[event]?.clear();
+    }
+  }
+  
+  List<String> get events => _listeners.keys.toList();
+}
+
+// Inheritance-based approach (traditional OOP)
+abstract class BaseEntity {
+  String id;
+  DateTime createdAt;
+  DateTime updatedAt;
+  
+  BaseEntity(this.id) : 
+    createdAt = DateTime.now(),
+    updatedAt = DateTime.now();
+  
+  void log(String message) {
+    print('[$id] $message');
+  }
+  
+  bool validate() {
+    return id.isNotEmpty;
+  }
+  
+  void touch() {
+    updatedAt = DateTime.now();
+  }
+}
+
+class InheritanceUser extends BaseEntity {
+  String name;
+  String email;
+  
+  InheritanceUser(String id, this.name, this.email) : super(id);
+  
+  @override
+  bool validate() {
+    return super.validate() && 
+           name.isNotEmpty && 
+           email.contains('@');
+  }
+  
+  void updateProfile(String newName, String newEmail) {
+    log('Updating profile');
+    name = newName;
+    email = newEmail;
+    touch();
+  }
+  
+  @override
+  String toString() => 'InheritanceUser(id: $id, name: $name, email: $email)';
+}
+
+// Composition-based approach (preferred)
+class CompositionUser {
+  final String id;
+  String name;
+  String email;
+  final DateTime createdAt;
+  DateTime updatedAt;
+  
+  // Composed components
+  final Logger _logger;
+  final Validator _validator;
+  final Cache<String> _cache;
+  final EventEmitter _eventEmitter;
+  
+  CompositionUser(this.id, this.name, this.email) 
+    : createdAt = DateTime.now(),
+      updatedAt = DateTime.now(),
+      _logger = Logger('User-$id'),
+      _validator = Validator(),
+      _cache = Cache<String>(maxSize: 10),
+      _eventEmitter = EventEmitter() {
+    
+    // Setup validation rules
+    _validator.addRule('name', (value) => 
+        value == null || value.isEmpty ? 'Name is required' : '');
+    _validator.addRule('email', (value) => 
+        value == null || !value.contains('@') ? 'Invalid email format' : '');
+    
+    _logger.log('User created: $name ($email)');
+    _eventEmitter.emit('user_created', this);
+  }
+  
+  // Delegate functionality to components
+  void log(String message) => _logger.log(message);
+  
+  bool validate() {
+    final data = {'name': name, 'email': email};
+    final isValid = _validator.isValid(data);
+    log('Validation result: $isValid');
+    return isValid;
+  }
+  
+  Map<String, List<String>> getValidationErrors() {
+    return _validator.validate({'name': name, 'email': email});
+  }
+  
+  void cacheData(String key, String value) {
+    _cache.put(key, value);
+    log('Cached data: $key');
+  }
+  
+  String? getCachedData(String key) {
+    final value = _cache.get(key);
+    log('Retrieved cached data: $key ${value != null ? '(found)' : '(not found)'}');
+    return value;
+  }
+  
+  void addEventListener(String event, Function(dynamic) listener) {
+    _eventEmitter.on(event, listener);
+  }
+  
+  void updateProfile(String newName, String newEmail) {
+    log('Updating profile from ($name, $email) to ($newName, $newEmail)');
+    
+    final oldData = {'name': name, 'email': email};
+    name = newName;
+    email = newEmail;
+    updatedAt = DateTime.now();
+    
+    _eventEmitter.emit('profile_updated', {
+      'old': oldData,
+      'new': {'name': name, 'email': email},
+      'user': this,
+    });
+    
+    log('Profile updated successfully');
+  }
+  
+  void performExpensiveOperation() {
+    const cacheKey = 'expensive_result';
+    
+    // Check cache first
+    final cached = getCachedData(cacheKey);
+    if (cached != null) {
+      log('Returning cached result: $cached');
+      _eventEmitter.emit('operation_completed', cached);
+      return;
+    }
+    
+    // Perform expensive operation
+    log('Performing expensive computation...');
+    final result = 'Computed result for $name at ${DateTime.now()}';
+    
+    // Cache the result
+    cacheData(cacheKey, result);
+    _eventEmitter.emit('operation_completed', result);
+  }
+  
+  // Expose component functionality
+  List<String> get logs => _logger.getLogs();
+  int get cacheSize => _cache.size;
+  List<String> get cachedKeys => _cache.keys;
+  List<String> get events => _eventEmitter.events;
+  
+  @override
+  String toString() => 'CompositionUser(id: $id, name: $name, email: $email)';
+}
+
+// Example showing composition with different component combinations
+class SmartDevice {
+  final String id;
+  final String name;
+  final String type;
+  
+  // Flexible composition - only include needed components
+  final Logger? logger;
+  final Cache<Map<String, dynamic>>? cache;
+  final EventEmitter? eventEmitter;
+  
+  bool _isOnline = false;
+  Map<String, dynamic> _settings = {};
+  
+  SmartDevice({
+    required this.id,
+    required this.name,
+    required this.type,
+    bool enableLogging = true,
+    bool enableCaching = true,
+    bool enableEvents = true,
+  }) : logger = enableLogging ? Logger('Device-$id') : null,
+       cache = enableCaching ? Cache<Map<String, dynamic>>(maxSize: 5) : null,
+       eventEmitter = enableEvents ? EventEmitter() : null {
+    
+    logger?.log('Device initialized: $name ($type)');
+  }
+  
+  void connect() {
+    _isOnline = true;
+    logger?.log('Device connected');
+    eventEmitter?.emit('device_connected', this);
+  }
+  
+  void disconnect() {
+    _isOnline = false;
+    logger?.log('Device disconnected');
+    eventEmitter?.emit('device_disconnected', this);
+  }
+  
+  void updateSetting(String key, dynamic value) {
+    final oldValue = _settings[key];
+    _settings[key] = value;
+    
+    logger?.log('Setting updated: $key = $value (was: $oldValue)');
+    
+    // Cache settings if caching is enabled
+    cache?.put('settings', Map<String, dynamic>.from(_settings));
+    
+    eventEmitter?.emit('setting_changed', {
+      'key': key,
+      'oldValue': oldValue,
+      'newValue': value,
+    });
+  }
+  
+  Map<String, dynamic> getSettings() {
+    // Try cache first
+    final cached = cache?.get('settings');
+    if (cached != null) {
+      logger?.log('Retrieved settings from cache');
+      return Map<String, dynamic>.from(cached);
+    }
+    
+    logger?.log('Retrieved settings from memory');
+    return Map<String, dynamic>.from(_settings);
+  }
+  
+  bool get isOnline => _isOnline;
+  List<String> get logs => logger?.getLogs() ?? [];
+}
+
+class CompositionDemo extends StatefulWidget {
+  const CompositionDemo({super.key});
+
+  @override
+  State<CompositionDemo> createState() => _CompositionDemoState();
+}
+
+class _CompositionDemoState extends State<CompositionDemo> {
+  late InheritanceUser inheritanceUser;
+  late CompositionUser compositionUser;
+  late SmartDevice smartDevice;
+  
+  String _operationResult = '';
+  List<String> _events = [];
+
+  @override
+  void initState() {
+    super.initState();
+    
+    // Initialize inheritance-based user
+    inheritanceUser = InheritanceUser('INH001', 'John Doe', 'john@example.com');
+    
+    // Initialize composition-based user
+    compositionUser = CompositionUser('COMP001', 'Jane Smith', 'jane@example.com');
+    
+    // Setup event listeners for composition user
+    compositionUser.addEventListener('profile_updated', (data) {
+      _addEvent('Profile updated: ${data['old']} -> ${data['new']}');
+    });
+    
+    compositionUser.addEventListener('operation_completed', (result) {
+      _addEvent('Operation completed: $result');
+    });
+    
+    // Initialize smart device
+    smartDevice = SmartDevice(
+      id: 'DEV001',
+      name: 'Smart Thermostat',
+      type: 'Climate Control',
+    );
+    
+    smartDevice.eventEmitter?.on('device_connected', (device) {
+      _addEvent('Device connected: ${device.name}');
+    });
+    
+    smartDevice.eventEmitter?.on('setting_changed', (data) {
+      _addEvent('Device setting changed: ${data['key']} = ${data['newValue']}');
+    });
+  }
+
+  void _addEvent(String event) {
+    setState(() {
+      _events.insert(0, '${DateTime.now().toString().substring(11, 19)}: $event');
+      if (_events.length > 8) {
+        _events.removeLast();
+      }
+    });
+  }
+
+  void _performInheritanceOperation(String operation) {
+    setState(() {
+      switch (operation) {
+        case 'update_profile':
+          inheritanceUser.updateProfile('John Updated', 'john.updated@example.com');
+          _operationResult = 'Inheritance: Profile updated\n$inheritanceUser';
+          break;
+        case 'validate':
+          bool isValid = inheritanceUser.validate();
+          _operationResult = 'Inheritance: Validation result: $isValid\n$inheritanceUser';
+          break;
+      }
+    });
+  }
+
+  void _performCompositionOperation(String operation) {
+    setState(() {
+      switch (operation) {
+        case 'update_profile':
+          compositionUser.updateProfile('Jane Updated', 'jane.updated@example.com');
+          _operationResult = 'Composition: Profile updated\n$compositionUser';
+          break;
+        case 'validate':
+          bool isValid = compositionUser.validate();
+          final errors = compositionUser.getValidationErrors();
+          _operationResult = 'Composition: Validation result: $isValid\nErrors: $errors\n$compositionUser';
+          break;
+        case 'cache_operation':
+          compositionUser.cacheData('temp_data', 'Temporary cached value');
+          final cached = compositionUser.getCachedData('temp_data');
+          _operationResult = 'Composition: Cached and retrieved: $cached';
+          break;
+        case 'expensive_operation':
+          compositionUser.performExpensiveOperation();
+          _operationResult = 'Composition: Expensive operation completed (check events)';
+          break;
+      }
+    });
+  }
+
+  void _performDeviceOperation(String operation) {
+    setState(() {
+      switch (operation) {
+        case 'connect':
+          smartDevice.connect();
+          _operationResult = 'Device: Connected - ${smartDevice.name}';
+          break;
+        case 'update_setting':
+          smartDevice.updateSetting('temperature', 22.5);
+          smartDevice.updateSetting('mode', 'heating');
+          final settings = smartDevice.getSettings();
+          _operationResult = 'Device: Settings updated - $settings';
+          break;
+        case 'disconnect':
+          smartDevice.disconnect();
+          _operationResult = 'Device: Disconnected - ${smartDevice.name}';
+          break;
+      }
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text('Composition vs Inheritance'),
+      ),
+      body: SingleChildScrollView(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // Operation Result
+            if (_operationResult.isNotEmpty) ...[
+              Card(
+                color: Colors.blue.shade800,
+                child: Padding(
+                  padding: const EdgeInsets.all(16),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Text(
+                        'Operation Result',
+                        style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                      ),
+                      const SizedBox(height: 8),
+                      Text(_operationResult),
+                    ],
+                  ),
+                ),
+              ),
+              const SizedBox(height: 16),
+            ],
+
+            // Inheritance Example
+            Card(
+              child: Padding(
+                padding: const EdgeInsets.all(16),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text(
+                      'Inheritance Approach',
+                      style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                    ),
+                    const SizedBox(height: 12),
+                    Text(inheritanceUser.toString()),
+                    Text('Created: ${inheritanceUser.createdAt.toString().substring(0, 19)}'),
+                    Text('Updated: ${inheritanceUser.updatedAt.toString().substring(0, 19)}'),
+                    const SizedBox(height: 12),
+                    Wrap(
+                      spacing: 8,
+                      runSpacing: 8,
+                      children: [
+                        ElevatedButton(
+                          onPressed: () => _performInheritanceOperation('update_profile'),
+                          child: const Text('Update Profile'),
+                        ),
+                        ElevatedButton(
+                          onPressed: () => _performInheritanceOperation('validate'),
+                          child: const Text('Validate'),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+            ),
+            const SizedBox(height: 16),
+
+            // Composition Example
+            Card(
+              child: Padding(
+                padding: const EdgeInsets.all(16),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text(
+                      'Composition Approach',
+                      style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                    ),
+                    const SizedBox(height: 12),
+                    Text(compositionUser.toString()),
+                    Text('Created: ${compositionUser.createdAt.toString().substring(0, 19)}'),
+                    Text('Updated: ${compositionUser.updatedAt.toString().substring(0, 19)}'),
+                    Text('Logs: ${compositionUser.logs.length}'),
+                    Text('Cache size: ${compositionUser.cacheSize}'),
+                    Text('Events: ${compositionUser.events.join(', ')}'),
+                    const SizedBox(height: 12),
+                    Wrap(
+                      spacing: 8,
+                      runSpacing: 8,
+                      children: [
+                        ElevatedButton(
+                          onPressed: () => _performCompositionOperation('update_profile'),
+                          child: const Text('Update Profile'),
+                        ),
+                        ElevatedButton(
+                          onPressed: () => _performCompositionOperation('validate'),
+                          child: const Text('Validate'),
+                        ),
+                        ElevatedButton(
+                          onPressed: () => _performCompositionOperation('cache_operation'),
+                          child: const Text('Cache Data'),
+                        ),
+                        ElevatedButton(
+                          onPressed: () => _performCompositionOperation('expensive_operation'),
+                          child: const Text('Expensive Operation'),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+            ),
+            const SizedBox(height: 16),
+
+            // Smart Device Example (Flexible Composition)
+            Card(
+              child: Padding(
+                padding: const EdgeInsets.all(16),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text(
+                      'Flexible Composition (Smart Device)',
+                      style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                    ),
+                    const SizedBox(height: 12),
+                    Text('Device: ${smartDevice.name} (${smartDevice.type})'),
+                    Text('Online: ${smartDevice.isOnline}'),
+                    Text('Logs: ${smartDevice.logs.length}'),
+                    Text('Settings: ${smartDevice.getSettings()}'),
+                    const SizedBox(height: 12),
+                    Wrap(
+                      spacing: 8,
+                      runSpacing: 8,
+                      children: [
+                        ElevatedButton(
+                          onPressed: () => _performDeviceOperation('connect'),
+                          child: const Text('Connect'),
+                        ),
+                        ElevatedButton(
+                          onPressed: () => _performDeviceOperation('update_setting'),
+                          child: const Text('Update Settings'),
+                        ),
+                        ElevatedButton(
+                          onPressed: () => _performDeviceOperation('disconnect'),
+                          child: const Text('Disconnect'),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+            ),
+            const SizedBox(height: 16),
+
+            // Events Log
+            if (_events.isNotEmpty) ...[
+              Card(
+                child: Padding(
+                  padding: const EdgeInsets.all(16),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Text(
+                        'Events Log (Composition Components)',
+                        style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                      ),
+                      const SizedBox(height: 8),
+                      Container(
+                        height: 150,
+                        width: double.infinity,
+                        padding: const EdgeInsets.all(12),
+                        decoration: BoxDecoration(
+                          color: Colors.grey.shade900,
+                          borderRadius: BorderRadius.circular(8),
+                          border: Border.all(color: Colors.grey.shade700),
+                        ),
+                        child: SingleChildScrollView(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: _events.map((event) => Padding(
+                              padding: const EdgeInsets.only(bottom: 2),
+                              child: Text(
+                                event,
+                                style: const TextStyle(fontSize: 11, fontFamily: 'monospace'),
+                              ),
+                            )).toList(),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+              const SizedBox(height: 16),
+            ],
+
+            Card(
+              child: Padding(
+                padding: const EdgeInsets.all(16),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text(
+                      'Composition vs Inheritance Concepts',
+                      style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                    ),
+                    const SizedBox(height: 8),
+                    const Text('• Inheritance: "is-a" relationship, tight coupling, single parent'),
+                    const Text('• Composition: "has-a" relationship, loose coupling, multiple components'),
+                    const Text('• Flexibility: Composition allows runtime component selection'),
+                    const Text('• Reusability: Components can be shared across different classes'),
+                    const Text('• Testing: Easier to mock individual components in composition'),
+                    const Text('• Single Responsibility: Each component handles one concern'),
+                    const Text('• Dependency Injection: Components can be injected for flexibility'),
+                    const Text('• Strategy Pattern: Different component implementations'),
+                  ],
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+```
+
+This example demonstrates composition versus inheritance approaches to  
+object design. The inheritance approach creates tight coupling through  
+class hierarchies, while composition promotes loose coupling by combining  
+focused components. Composition provides greater flexibility, easier  
+testing, and better separation of concerns.
+
+## Delegation Pattern and Proxy Objects
+
+Implementing delegation and proxy patterns for controlled object access.
+
+```dart
+import 'package:flutter/material.dart';
+
+void main() {
+  runApp(const MyApp());
+}
+
+class MyApp extends StatelessWidget {
+  const MyApp({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return MaterialApp(
+      title: 'Delegation and Proxy Patterns',
+      theme: ThemeData.dark(),
+      home: const DelegationDemo(),
+    );
+  }
+}
+
+// Service interface for delegation
+abstract class UserService {
+  Future<List<Map<String, dynamic>>> getAllUsers();
+  Future<Map<String, dynamic>?> getUserById(String id);
+  Future<Map<String, dynamic>> createUser(Map<String, dynamic> userData);
+  Future<Map<String, dynamic>> updateUser(String id, Map<String, dynamic> userData);
+  Future<bool> deleteUser(String id);
+}
+
+// Concrete service implementation
+class ConcreteUserService implements UserService {
+  final Map<String, Map<String, dynamic>> _users = {};
+
+  @override
+  Future<List<Map<String, dynamic>>> getAllUsers() async {
+    await Future.delayed(const Duration(milliseconds: 200));
+    return _users.values.toList();
+  }
+
+  @override
+  Future<Map<String, dynamic>?> getUserById(String id) async {
+    await Future.delayed(const Duration(milliseconds: 100));
+    return _users[id];
+  }
+
+  @override
+  Future<Map<String, dynamic>> createUser(Map<String, dynamic> userData) async {
+    await Future.delayed(const Duration(milliseconds: 150));
+    final id = DateTime.now().millisecondsSinceEpoch.toString();
+    userData['id'] = id;
+    userData['createdAt'] = DateTime.now().toIso8601String();
+    _users[id] = userData;
+    return userData;
+  }
+
+  @override
+  Future<Map<String, dynamic>> updateUser(String id, Map<String, dynamic> userData) async {
+    await Future.delayed(const Duration(milliseconds: 150));
+    if (!_users.containsKey(id)) {
+      throw Exception('User not found: $id');
+    }
+    userData['id'] = id;
+    userData['updatedAt'] = DateTime.now().toIso8601String();
+    _users[id] = {..._users[id]!, ...userData};
+    return _users[id]!;
+  }
+
+  @override
+  Future<bool> deleteUser(String id) async {
+    await Future.delayed(const Duration(milliseconds: 100));
+    return _users.remove(id) != null;
+  }
+}
+
+// Caching proxy that delegates to the real service
+class CachingUserServiceProxy implements UserService {
+  final UserService _delegate;
+  final Map<String, dynamic> _cache = {};
+  final Map<String, DateTime> _cacheTimestamps = {};
+  final Duration _cacheExpiry = const Duration(minutes: 5);
+
+  CachingUserServiceProxy(this._delegate);
+
+  String _getCacheKey(String operation, [String? id]) {
+    return id != null ? '${operation}_$id' : operation;
+  }
+
+  bool _isCacheValid(String key) {
+    final timestamp = _cacheTimestamps[key];
+    if (timestamp == null) return false;
+    return DateTime.now().difference(timestamp) < _cacheExpiry;
+  }
+
+  @override
+  Future<List<Map<String, dynamic>>> getAllUsers() async {
+    const key = 'all_users';
+    
+    if (_isCacheValid(key)) {
+      return List<Map<String, dynamic>>.from(_cache[key]);
+    }
+    
+    final users = await _delegate.getAllUsers();
+    _cache[key] = users;
+    _cacheTimestamps[key] = DateTime.now();
+    
+    return users;
+  }
+
+  @override
+  Future<Map<String, dynamic>?> getUserById(String id) async {
+    final key = _getCacheKey('user', id);
+    
+    if (_isCacheValid(key)) {
+      return Map<String, dynamic>.from(_cache[key]);
+    }
+    
+    final user = await _delegate.getUserById(id);
+    if (user != null) {
+      _cache[key] = user;
+      _cacheTimestamps[key] = DateTime.now();
+    }
+    
+    return user;
+  }
+
+  @override
+  Future<Map<String, dynamic>> createUser(Map<String, dynamic> userData) async {
+    final user = await _delegate.createUser(userData);
+    
+    // Invalidate cache
+    _cache.remove('all_users');
+    _cacheTimestamps.remove('all_users');
+    
+    return user;
+  }
+
+  @override
+  Future<Map<String, dynamic>> updateUser(String id, Map<String, dynamic> userData) async {
+    final user = await _delegate.updateUser(id, userData);
+    
+    // Update cache
+    final userKey = _getCacheKey('user', id);
+    _cache[userKey] = user;
+    _cacheTimestamps[userKey] = DateTime.now();
+    
+    // Invalidate all users cache
+    _cache.remove('all_users');
+    _cacheTimestamps.remove('all_users');
+    
+    return user;
+  }
+
+  @override
+  Future<bool> deleteUser(String id) async {
+    final success = await _delegate.deleteUser(id);
+    
+    if (success) {
+      // Remove from cache
+      _cache.remove(_getCacheKey('user', id));
+      _cacheTimestamps.remove(_getCacheKey('user', id));
+      
+      // Invalidate all users cache
+      _cache.remove('all_users');
+      _cacheTimestamps.remove('all_users');
+    }
+    
+    return success;
+  }
+
+  // Proxy-specific methods
+  void clearCache() {
+    _cache.clear();
+    _cacheTimestamps.clear();
+  }
+  
+  Map<String, DateTime> get cacheInfo => Map.from(_cacheTimestamps);
+}
+
+// Logging proxy that delegates and adds logging
+class LoggingUserServiceProxy implements UserService {
+  final UserService _delegate;
+  final List<String> _operationLog = [];
+
+  LoggingUserServiceProxy(this._delegate);
+
+  void _log(String operation, [String? details]) {
+    final entry = '${DateTime.now().toIso8601String()}: $operation${details != null ? ' - $details' : ''}';
+    _operationLog.add(entry);
+  }
+
+  @override
+  Future<List<Map<String, dynamic>>> getAllUsers() async {
+    _log('getAllUsers', 'Starting operation');
+    try {
+      final users = await _delegate.getAllUsers();
+      _log('getAllUsers', 'Success - ${users.length} users retrieved');
+      return users;
+    } catch (e) {
+      _log('getAllUsers', 'Error - $e');
+      rethrow;
+    }
+  }
+
+  @override
+  Future<Map<String, dynamic>?> getUserById(String id) async {
+    _log('getUserById', 'ID: $id');
+    try {
+      final user = await _delegate.getUserById(id);
+      _log('getUserById', user != null ? 'Success - User found' : 'User not found');
+      return user;
+    } catch (e) {
+      _log('getUserById', 'Error - $e');
+      rethrow;
+    }
+  }
+
+  @override
+  Future<Map<String, dynamic>> createUser(Map<String, dynamic> userData) async {
+    _log('createUser', 'Name: ${userData['name']}');
+    try {
+      final user = await _delegate.createUser(userData);
+      _log('createUser', 'Success - User created with ID: ${user['id']}');
+      return user;
+    } catch (e) {
+      _log('createUser', 'Error - $e');
+      rethrow;
+    }
+  }
+
+  @override
+  Future<Map<String, dynamic>> updateUser(String id, Map<String, dynamic> userData) async {
+    _log('updateUser', 'ID: $id, Changes: ${userData.keys.join(', ')}');
+    try {
+      final user = await _delegate.updateUser(id, userData);
+      _log('updateUser', 'Success - User updated');
+      return user;
+    } catch (e) {
+      _log('updateUser', 'Error - $e');
+      rethrow;
+    }
+  }
+
+  @override
+  Future<bool> deleteUser(String id) async {
+    _log('deleteUser', 'ID: $id');
+    try {
+      final success = await _delegate.deleteUser(id);
+      _log('deleteUser', success ? 'Success - User deleted' : 'User not found');
+      return success;
+    } catch (e) {
+      _log('deleteUser', 'Error - $e');
+      rethrow;
+    }
+  }
+
+  List<String> get operationLog => List.unmodifiable(_operationLog);
+  
+  void clearLog() {
+    _operationLog.clear();
+  }
+}
+
+// Access control proxy with role-based permissions
+class AccessControlUserServiceProxy implements UserService {
+  final UserService _delegate;
+  final String _userRole;
+  final Map<String, List<String>> _permissions = {
+    'admin': ['read', 'write', 'delete'],
+    'editor': ['read', 'write'],
+    'viewer': ['read'],
+  };
+
+  AccessControlUserServiceProxy(this._delegate, this._userRole);
+
+  bool _hasPermission(String permission) {
+    final userPermissions = _permissions[_userRole] ?? [];
+    return userPermissions.contains(permission);
+  }
+
+  void _checkPermission(String permission, String operation) {
+    if (!_hasPermission(permission)) {
+      throw Exception('Access denied: $operation requires $permission permission');
+    }
+  }
+
+  @override
+  Future<List<Map<String, dynamic>>> getAllUsers() async {
+    _checkPermission('read', 'getAllUsers');
+    return await _delegate.getAllUsers();
+  }
+
+  @override
+  Future<Map<String, dynamic>?> getUserById(String id) async {
+    _checkPermission('read', 'getUserById');
+    return await _delegate.getUserById(id);
+  }
+
+  @override
+  Future<Map<String, dynamic>> createUser(Map<String, dynamic> userData) async {
+    _checkPermission('write', 'createUser');
+    return await _delegate.createUser(userData);
+  }
+
+  @override
+  Future<Map<String, dynamic>> updateUser(String id, Map<String, dynamic> userData) async {
+    _checkPermission('write', 'updateUser');
+    return await _delegate.updateUser(id, userData);
+  }
+
+  @override
+  Future<bool> deleteUser(String id) async {
+    _checkPermission('delete', 'deleteUser');
+    return await _delegate.deleteUser(id);
+  }
+
+  String get role => _userRole;
+  List<String> get permissions => _permissions[_userRole] ?? [];
+}
+
+class DelegationDemo extends StatefulWidget {
+  const DelegationDemo({super.key});
+
+  @override
+  State<DelegationDemo> createState() => _DelegationDemoState();
+}
+
+class _DelegationDemoState extends State<DelegationDemo> {
+  late ConcreteUserService concreteService;
+  late CachingUserServiceProxy cachingProxy;
+  late LoggingUserServiceProxy loggingProxy;
+  late AccessControlUserServiceProxy accessProxy;
+  
+  UserService currentService = ConcreteUserService();
+  String currentServiceType = 'Concrete Service';
+  String currentRole = 'admin';
+  
+  String _operationResult = '';
+  List<Map<String, dynamic>> _users = [];
+
+  @override
+  void initState() {
+    super.initState();
+    
+    concreteService = ConcreteUserService();
+    cachingProxy = CachingUserServiceProxy(concreteService);
+    loggingProxy = LoggingUserServiceProxy(cachingProxy);
+    accessProxy = AccessControlUserServiceProxy(loggingProxy, currentRole);
+    
+    currentService = accessProxy;
+    _initializeData();
+  }
+
+  void _initializeData() async {
+    try {
+      await currentService.createUser({
+        'name': 'Alice Johnson',
+        'email': 'alice@example.com',
+        'role': 'admin'
+      });
+      
+      await currentService.createUser({
+        'name': 'Bob Smith', 
+        'email': 'bob@example.com',
+        'role': 'editor'
+      });
+      
+      _refreshUsersList();
+    } catch (e) {
+      print('Initialization error: $e');
+    }
+  }
+
+  void _switchService(String serviceType) {
+    setState(() {
+      currentServiceType = serviceType;
+      switch (serviceType) {
+        case 'Concrete Service':
+          currentService = concreteService;
+          break;
+        case 'Caching Proxy':
+          currentService = cachingProxy;
+          break;
+        case 'Logging Proxy':
+          currentService = loggingProxy;
+          break;
+        case 'Access Control Proxy':
+          currentService = AccessControlUserServiceProxy(loggingProxy, currentRole);
+          break;
+        case 'Full Proxy Chain':
+          currentService = AccessControlUserServiceProxy(loggingProxy, currentRole);
+          break;
+      }
+    });
+  }
+
+  void _changeRole(String role) {
+    setState(() {
+      currentRole = role;
+      if (currentServiceType.contains('Access Control') || currentServiceType.contains('Full')) {
+        accessProxy = AccessControlUserServiceProxy(loggingProxy, role);
+        currentService = accessProxy;
+      }
+    });
+  }
+
+  Future<void> _refreshUsersList() async {
+    try {
+      final users = await currentService.getAllUsers();
+      setState(() {
+        _users = users;
+        _operationResult = 'Retrieved ${users.length} users';
+      });
+    } catch (e) {
+      setState(() {
+        _operationResult = 'Error: $e';
+      });
+    }
+  }
+
+  Future<void> _createUser() async {
+    try {
+      final user = await currentService.createUser({
+        'name': 'New User ${DateTime.now().millisecond}',
+        'email': 'newuser${DateTime.now().millisecond}@example.com',
+        'role': 'viewer'
+      });
+      
+      setState(() {
+        _operationResult = 'Created user: ${user['name']}';
+      });
+      
+      _refreshUsersList();
+    } catch (e) {
+      setState(() {
+        _operationResult = 'Error creating user: $e';
+      });
+    }
+  }
+
+  Future<void> _deleteLastUser() async {
+    if (_users.isNotEmpty) {
+      try {
+        final lastUser = _users.last;
+        final success = await currentService.deleteUser(lastUser['id']);
+        
+        setState(() {
+          _operationResult = success ? 'Deleted user: ${lastUser['name']}' : 'Delete failed';
+        });
+        
+        if (success) {
+          _refreshUsersList();
+        }
+      } catch (e) {
+        setState(() {
+          _operationResult = 'Error deleting user: $e';
+        });
+      }
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text('Delegation and Proxy Patterns'),
+      ),
+      body: SingleChildScrollView(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // Service Selection
+            Card(
+              child: Padding(
+                padding: const EdgeInsets.all(16),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text(
+                      'Service Selection',
+                      style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                    ),
+                    const SizedBox(height: 12),
+                    DropdownButton<String>(
+                      value: currentServiceType,
+                      isExpanded: true,
+                      items: [
+                        'Concrete Service',
+                        'Caching Proxy',
+                        'Logging Proxy',
+                        'Access Control Proxy',
+                        'Full Proxy Chain'
+                      ].map((type) => DropdownMenuItem(
+                        value: type,
+                        child: Text(type),
+                      )).toList(),
+                      onChanged: (value) => _switchService(value!),
+                    ),
+                    const SizedBox(height: 12),
+                    Row(
+                      children: [
+                        const Text('Role: '),
+                        DropdownButton<String>(
+                          value: currentRole,
+                          items: ['admin', 'editor', 'viewer'].map((role) => DropdownMenuItem(
+                            value: role,
+                            child: Text(role),
+                          )).toList(),
+                          onChanged: (value) => _changeRole(value!),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+            ),
+            const SizedBox(height: 16),
+
+            // Operations
+            Card(
+              child: Padding(
+                padding: const EdgeInsets.all(16),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text(
+                      'Operations',
+                      style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                    ),
+                    const SizedBox(height: 12),
+                    Wrap(
+                      spacing: 8,
+                      runSpacing: 8,
+                      children: [
+                        ElevatedButton(
+                          onPressed: _refreshUsersList,
+                          child: const Text('Refresh Users'),
+                        ),
+                        ElevatedButton(
+                          onPressed: _createUser,
+                          child: const Text('Create User'),
+                        ),
+                        ElevatedButton(
+                          onPressed: _deleteLastUser,
+                          child: const Text('Delete Last User'),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+            ),
+            const SizedBox(height: 16),
+
+            // Result
+            if (_operationResult.isNotEmpty) ...[
+              Card(
+                color: _operationResult.startsWith('Error') ? Colors.red.shade900 : Colors.green.shade900,
+                child: Padding(
+                  padding: const EdgeInsets.all(16),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Text(
+                        'Operation Result',
+                        style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                      ),
+                      const SizedBox(height: 8),
+                      Text(_operationResult),
+                    ],
+                  ),
+                ),
+              ),
+              const SizedBox(height: 16),
+            ],
+
+            // Users List
+            Card(
+              child: Padding(
+                padding: const EdgeInsets.all(16),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text(
+                      'Users List',
+                      style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                    ),
+                    const SizedBox(height: 8),
+                    ..._users.map((user) => Padding(
+                      padding: const EdgeInsets.symmetric(vertical: 4),
+                      child: Text('${user['name']} (${user['email']}) - Role: ${user['role']}'),
+                    )),
+                  ],
+                ),
+              ),
+            ),
+            const SizedBox(height: 16),
+
+            // Proxy Information
+            if (currentServiceType.contains('Logging') || currentServiceType.contains('Full')) ...[
+              Card(
+                child: Padding(
+                  padding: const EdgeInsets.all(16),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Text(
+                        'Operation Log (Logging Proxy)',
+                        style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                      ),
+                      const SizedBox(height: 8),
+                      Container(
+                        height: 150,
+                        width: double.infinity,
+                        padding: const EdgeInsets.all(8),
+                        decoration: BoxDecoration(
+                          color: Colors.grey.shade900,
+                          borderRadius: BorderRadius.circular(4),
+                          border: Border.all(color: Colors.grey.shade700),
+                        ),
+                        child: SingleChildScrollView(
+                          child: Text(
+                            loggingProxy.operationLog.take(10).join('\n'),
+                            style: const TextStyle(fontSize: 10, fontFamily: 'monospace'),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+              const SizedBox(height: 16),
+            ],
+
+            if (currentServiceType.contains('Access Control') || currentServiceType.contains('Full')) ...[
+              Card(
+                child: Padding(
+                  padding: const EdgeInsets.all(16),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Text(
+                        'Access Control Info',
+                        style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                      ),
+                      const SizedBox(height: 8),
+                      Text('Current Role: $currentRole'),
+                      Text('Permissions: ${accessProxy.permissions.join(', ')}'),
+                    ],
+                  ),
+                ),
+              ),
+              const SizedBox(height: 16),
+            ],
+
+            Card(
+              child: Padding(
+                padding: const EdgeInsets.all(16),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text(
+                      'Delegation and Proxy Concepts Demonstrated',
+                      style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                    ),
+                    const SizedBox(height: 8),
+                    const Text('• Delegation: Proxy objects delegate calls to wrapped services'),
+                    const Text('• Proxy Pattern: Controlled access to underlying objects'),
+                    const Text('• Caching Proxy: Transparent performance optimization'),
+                    const Text('• Logging Proxy: Cross-cutting concern implementation'),
+                    const Text('• Access Control Proxy: Security and authorization layer'),
+                    const Text('• Proxy Chaining: Multiple proxies working together'),
+                    const Text('• Interface Consistency: All proxies implement same interface'),
+                    const Text('• Transparent Enhancement: Adding features without changing clients'),
+                  ],
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+```
+
+This example demonstrates delegation and proxy patterns for controlled  
+object access. Proxy objects wrap the concrete service and add  
+functionality like caching, logging, and access control while  
+maintaining the same interface. Multiple proxies can be chained  
+together for comprehensive cross-cutting concerns.
+
+## Observer Pattern and Event-Driven Architecture
+
+Implementing observer pattern for loose coupling and event notifications.
+
+```dart
+import 'package:flutter/material.dart';
+
+void main() {
+  runApp(const MyApp());
+}
+
+class MyApp extends StatelessWidget {
+  const MyApp({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return MaterialApp(
+      title: 'Observer Pattern',
+      theme: ThemeData.dark(),
+      home: const ObserverDemo(),
+    );
+  }
+}
+
+// Observer interface
+abstract class Observer<T> {
+  void update(T data);
+  String get observerName;
+}
+
+// Subject interface  
+abstract class Subject<T> {
+  void attach(Observer<T> observer);
+  void detach(Observer<T> observer);
+  void notify(T data);
+}
+
+// Event data classes
+class StockPriceEvent {
+  final String symbol;
+  final double price;
+  final double change;
+  final double changePercent;
+  final DateTime timestamp;
+
+  StockPriceEvent({
+    required this.symbol,
+    required this.price,
+    required this.change,
+    required this.changePercent,
+  }) : timestamp = DateTime.now();
+
+  @override
+  String toString() => 
+    '$symbol: \$${price.toStringAsFixed(2)} (${change >= 0 ? '+' : ''}${change.toStringAsFixed(2)}, ${changePercent.toStringAsFixed(1)}%)';
+}
+
+// Concrete Subject - Stock Market
+class StockMarket implements Subject<StockPriceEvent> {
+  final List<Observer<StockPriceEvent>> _observers = [];
+  final Map<String, double> _stockPrices = {
+    'AAPL': 150.0,
+    'GOOGL': 2500.0,
+    'MSFT': 300.0,
+    'TSLA': 800.0,
+    'AMZN': 3200.0,
+  };
+
+  @override
+  void attach(Observer<StockPriceEvent> observer) {
+    if (!_observers.contains(observer)) {
+      _observers.add(observer);
+    }
+  }
+
+  @override
+  void detach(Observer<StockPriceEvent> observer) {
+    _observers.remove(observer);
+  }
+
+  @override
+  void notify(StockPriceEvent event) {
+    for (var observer in _observers) {
+      observer.update(event);
+    }
+  }
+
+  void updateStockPrice(String symbol, double newPrice) {
+    if (_stockPrices.containsKey(symbol)) {
+      final oldPrice = _stockPrices[symbol]!;
+      final change = newPrice - oldPrice;
+      final changePercent = (change / oldPrice) * 100;
+
+      _stockPrices[symbol] = newPrice;
+
+      final event = StockPriceEvent(
+        symbol: symbol,
+        price: newPrice,
+        change: change,
+        changePercent: changePercent,
+      );
+
+      notify(event);
+    }
+  }
+
+  Map<String, double> get stockPrices => Map.unmodifiable(_stockPrices);
+  List<Observer<StockPriceEvent>> get observers => List.unmodifiable(_observers);
+}
+
+// Concrete Observers
+class PortfolioTracker implements Observer<StockPriceEvent> {
+  @override
+  final String observerName;
+  final Map<String, int> _holdings = {};
+  final List<String> _transactions = [];
+  double _totalValue = 0.0;
+
+  PortfolioTracker(this.observerName);
+
+  void addHolding(String symbol, int shares) {
+    _holdings[symbol] = (_holdings[symbol] ?? 0) + shares;
+    _transactions.add('${DateTime.now().toString().substring(11, 19)}: Added $shares shares of $symbol');
+  }
+
+  @override
+  void update(StockPriceEvent data) {
+    if (_holdings.containsKey(data.symbol)) {
+      final shares = _holdings[data.symbol]!;
+      final value = shares * data.price;
+      
+      _transactions.add(
+        '${DateTime.now().toString().substring(11, 19)}: ${data.symbol} updated - '
+        '$shares shares worth \$${value.toStringAsFixed(2)} (${data.change >= 0 ? '+' : ''}${(shares * data.change).toStringAsFixed(2)})'
+      );
+
+      _updateTotalValue();
+    }
+  }
+
+  void _updateTotalValue() {
+    // This would normally calculate from current prices
+    // Simplified for demo
+    _totalValue += 100; // Simulate value change
+  }
+
+  Map<String, int> get holdings => Map.unmodifiable(_holdings);
+  List<String> get transactions => List.unmodifiable(_transactions.reversed.take(5).toList());
+  double get totalValue => _totalValue;
+}
+
+class AlertSystem implements Observer<StockPriceEvent> {
+  @override
+  final String observerName;
+  final Map<String, double> _priceAlerts = {};
+  final List<String> _alerts = [];
+
+  AlertSystem(this.observerName);
+
+  void setPriceAlert(String symbol, double targetPrice) {
+    _priceAlerts[symbol] = targetPrice;
+    _alerts.add('${DateTime.now().toString().substring(11, 19)}: Alert set for $symbol at \$${targetPrice.toStringAsFixed(2)}');
+  }
+
+  @override
+  void update(StockPriceEvent data) {
+    final alertPrice = _priceAlerts[data.symbol];
+    if (alertPrice != null) {
+      if ((data.change > 0 && data.price >= alertPrice) || 
+          (data.change < 0 && data.price <= alertPrice)) {
+        _alerts.add(
+          '${DateTime.now().toString().substring(11, 19)}: 🚨 ALERT: ${data.symbol} '
+          'reached \$${data.price.toStringAsFixed(2)} (target: \$${alertPrice.toStringAsFixed(2)})'
+        );
+        _priceAlerts.remove(data.symbol); // Remove triggered alert
+      }
+    }
+
+    // Price change alerts
+    if (data.changePercent.abs() > 5.0) {
+      _alerts.add(
+        '${DateTime.now().toString().substring(11, 19)}: 📈 ${data.symbol} '
+        '${data.change > 0 ? 'SURGE' : 'DROP'}: ${data.changePercent.abs().toStringAsFixed(1)}%'
+      );
+    }
+  }
+
+  Map<String, double> get priceAlerts => Map.unmodifiable(_priceAlerts);
+  List<String> get alerts => List.unmodifiable(_alerts.reversed.take(8).toList());
+}
+
+class NewsGenerator implements Observer<StockPriceEvent> {
+  @override
+  final String observerName;
+  final List<String> _news = [];
+
+  NewsGenerator(this.observerName);
+
+  @override
+  void update(StockPriceEvent data) {
+    String headline;
+    
+    if (data.changePercent > 3.0) {
+      headline = '📈 ${data.symbol} surges ${data.changePercent.toStringAsFixed(1)}% to \$${data.price.toStringAsFixed(2)}';
+    } else if (data.changePercent < -3.0) {
+      headline = '📉 ${data.symbol} drops ${data.changePercent.abs().toStringAsFixed(1)}% to \$${data.price.toStringAsFixed(2)}';
+    } else {
+      headline = '📊 ${data.symbol} moves to \$${data.price.toStringAsFixed(2)} (${data.changePercent >= 0 ? '+' : ''}${data.changePercent.toStringAsFixed(1)}%)';
+    }
+
+    _news.add('${DateTime.now().toString().substring(11, 19)}: $headline');
+  }
+
+  List<String> get news => List.unmodifiable(_news.reversed.take(6).toList());
+}
+
+class TradingBot implements Observer<StockPriceEvent> {
+  @override
+  final String observerName;
+  final List<String> _trades = [];
+  final Map<String, double> _buyThresholds = {};
+  final Map<String, double> _sellThresholds = {};
+
+  TradingBot(this.observerName);
+
+  void setBuyThreshold(String symbol, double threshold) {
+    _buyThresholds[symbol] = threshold;
+  }
+
+  void setSellThreshold(String symbol, double threshold) {
+    _sellThresholds[symbol] = threshold;
+  }
+
+  @override
+  void update(StockPriceEvent data) {
+    final buyThreshold = _buyThresholds[data.symbol];
+    final sellThreshold = _sellThresholds[data.symbol];
+
+    // Buy signal
+    if (buyThreshold != null && data.price <= buyThreshold && data.changePercent < -2.0) {
+      _trades.add(
+        '${DateTime.now().toString().substring(11, 19)}: 🤖 BUY ${data.symbol} at \$${data.price.toStringAsFixed(2)} '
+        '(threshold: \$${buyThreshold.toStringAsFixed(2)})'
+      );
+    }
+
+    // Sell signal
+    if (sellThreshold != null && data.price >= sellThreshold && data.changePercent > 2.0) {
+      _trades.add(
+        '${DateTime.now().toString().substring(11, 19)}: 🤖 SELL ${data.symbol} at \$${data.price.toStringAsFixed(2)} '
+        '(threshold: \$${sellThreshold.toStringAsFixed(2)})'
+      );
+    }
+  }
+
+  List<String> get trades => List.unmodifiable(_trades.reversed.take(5).toList());
+  Map<String, double> get buyThresholds => Map.unmodifiable(_buyThresholds);
+  Map<String, double> get sellThresholds => Map.unmodifiable(_sellThresholds);
+}
+
+class ObserverDemo extends StatefulWidget {
+  const ObserverDemo({super.key});
+
+  @override
+  State<ObserverDemo> createState() => _ObserverDemoState();
+}
+
+class _ObserverDemoState extends State<ObserverDemo> {
+  late StockMarket stockMarket;
+  late PortfolioTracker portfolio;
+  late AlertSystem alertSystem;
+  late NewsGenerator newsGenerator;
+  late TradingBot tradingBot;
+
+  @override
+  void initState() {
+    super.initState();
+
+    // Initialize the subject and observers
+    stockMarket = StockMarket();
+    portfolio = PortfolioTracker('My Portfolio');
+    alertSystem = AlertSystem('Alert System');
+    newsGenerator = NewsGenerator('Financial News');
+    tradingBot = TradingBot('Trading Bot');
+
+    // Attach observers to subject
+    stockMarket.attach(portfolio);
+    stockMarket.attach(alertSystem);
+    stockMarket.attach(newsGenerator);
+    stockMarket.attach(tradingBot);
+
+    // Setup initial data
+    portfolio.addHolding('AAPL', 100);
+    portfolio.addHolding('GOOGL', 10);
+    portfolio.addHolding('TSLA', 50);
+
+    alertSystem.setPriceAlert('AAPL', 160.0);
+    alertSystem.setPriceAlert('TSLA', 750.0);
+
+    tradingBot.setBuyThreshold('MSFT', 280.0);
+    tradingBot.setSellThreshold('AMZN', 3300.0);
+  }
+
+  void _simulateRandomPriceChange() {
+    final symbols = stockMarket.stockPrices.keys.toList();
+    final randomSymbol = symbols[DateTime.now().millisecond % symbols.length];
+    final currentPrice = stockMarket.stockPrices[randomSymbol]!;
+    
+    // Generate random price change between -10% and +10%
+    final changePercent = (DateTime.now().millisecond % 200 - 100) / 10.0; 
+    final newPrice = currentPrice * (1 + changePercent / 100);
+    
+    stockMarket.updateStockPrice(randomSymbol, double.parse(newPrice.toStringAsFixed(2)));
+  }
+
+  void _simulateSpecificPriceChange(String symbol, double newPrice) {
+    stockMarket.updateStockPrice(symbol, newPrice);
+  }
+
+  void _detachObserver(Observer<StockPriceEvent> observer) {
+    setState(() {
+      stockMarket.detach(observer);
+    });
+  }
+
+  void _attachObserver(Observer<StockPriceEvent> observer) {
+    setState(() {
+      stockMarket.attach(observer);
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text('Observer Pattern - Stock Market'),
+      ),
+      body: SingleChildScrollView(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // Stock Market Control
+            Card(
+              child: Padding(
+                padding: const EdgeInsets.all(16),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text(
+                      'Stock Market (Subject)',
+                      style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                    ),
+                    const SizedBox(height: 12),
+                    Text('Active Observers: ${stockMarket.observers.length}'),
+                    const SizedBox(height: 8),
+                    ...stockMarket.stockPrices.entries.map((entry) =>
+                      Text('${entry.key}: \$${entry.value.toStringAsFixed(2)}')
+                    ),
+                    const SizedBox(height: 12),
+                    Wrap(
+                      spacing: 8,
+                      runSpacing: 8,
+                      children: [
+                        ElevatedButton(
+                          onPressed: _simulateRandomPriceChange,
+                          child: const Text('Random Price Change'),
+                        ),
+                        ElevatedButton(
+                          onPressed: () => _simulateSpecificPriceChange('AAPL', 165.0),
+                          child: const Text('AAPL +10%'),
+                        ),
+                        ElevatedButton(
+                          onPressed: () => _simulateSpecificPriceChange('TSLA', 720.0),
+                          child: const Text('TSLA -10%'),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+            ),
+            const SizedBox(height: 16),
+
+            // Observer Controls
+            Card(
+              child: Padding(
+                padding: const EdgeInsets.all(16),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text(
+                      'Observer Controls',
+                      style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                    ),
+                    const SizedBox(height: 8),
+                    Wrap(
+                      spacing: 8,
+                      runSpacing: 8,
+                      children: [
+                        ElevatedButton(
+                          onPressed: stockMarket.observers.contains(portfolio) 
+                              ? () => _detachObserver(portfolio)
+                              : () => _attachObserver(portfolio),
+                          child: Text(stockMarket.observers.contains(portfolio) 
+                              ? 'Detach Portfolio' 
+                              : 'Attach Portfolio'),
+                        ),
+                        ElevatedButton(
+                          onPressed: stockMarket.observers.contains(alertSystem) 
+                              ? () => _detachObserver(alertSystem)
+                              : () => _attachObserver(alertSystem),
+                          child: Text(stockMarket.observers.contains(alertSystem) 
+                              ? 'Detach Alerts' 
+                              : 'Attach Alerts'),
+                        ),
+                        ElevatedButton(
+                          onPressed: stockMarket.observers.contains(tradingBot) 
+                              ? () => _detachObserver(tradingBot)
+                              : () => _attachObserver(tradingBot),
+                          child: Text(stockMarket.observers.contains(tradingBot) 
+                              ? 'Detach Bot' 
+                              : 'Attach Bot'),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+            ),
+            const SizedBox(height: 16),
+
+            // Portfolio Observer
+            Card(
+              color: stockMarket.observers.contains(portfolio) 
+                  ? Colors.green.shade900 
+                  : Colors.grey.shade800,
+              child: Padding(
+                padding: const EdgeInsets.all(16),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Portfolio Tracker Observer ${stockMarket.observers.contains(portfolio) ? '(Active)' : '(Detached)'}',
+                      style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                    ),
+                    const SizedBox(height: 8),
+                    Text('Holdings: ${portfolio.holdings.entries.map((e) => '${e.key}: ${e.value}').join(', ')}'),
+                    const SizedBox(height: 8),
+                    const Text('Recent Transactions:', style: TextStyle(fontWeight: FontWeight.bold)),
+                    ...portfolio.transactions.map((transaction) => 
+                      Text(transaction, style: const TextStyle(fontSize: 12))
+                    ),
+                  ],
+                ),
+              ),
+            ),
+            const SizedBox(height: 16),
+
+            // Alert System Observer
+            Card(
+              color: stockMarket.observers.contains(alertSystem) 
+                  ? Colors.orange.shade900 
+                  : Colors.grey.shade800,
+              child: Padding(
+                padding: const EdgeInsets.all(16),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Alert System Observer ${stockMarket.observers.contains(alertSystem) ? '(Active)' : '(Detached)'}',
+                      style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                    ),
+                    const SizedBox(height: 8),
+                    Text('Active Alerts: ${alertSystem.priceAlerts.entries.map((e) => '${e.key}: \$${e.value}').join(', ')}'),
+                    const SizedBox(height: 8),
+                    const Text('Recent Alerts:', style: TextStyle(fontWeight: FontWeight.bold)),
+                    ...alertSystem.alerts.map((alert) => 
+                      Text(alert, style: const TextStyle(fontSize: 12))
+                    ),
+                  ],
+                ),
+              ),
+            ),
+            const SizedBox(height: 16),
+
+            // News Generator Observer
+            Card(
+              color: stockMarket.observers.contains(newsGenerator) 
+                  ? Colors.blue.shade900 
+                  : Colors.grey.shade800,
+              child: Padding(
+                padding: const EdgeInsets.all(16),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'News Generator Observer ${stockMarket.observers.contains(newsGenerator) ? '(Active)' : '(Detached)'}',
+                      style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                    ),
+                    const SizedBox(height: 8),
+                    const Text('Recent News:', style: TextStyle(fontWeight: FontWeight.bold)),
+                    ...newsGenerator.news.map((news) => 
+                      Text(news, style: const TextStyle(fontSize: 12))
+                    ),
+                  ],
+                ),
+              ),
+            ),
+            const SizedBox(height: 16),
+
+            // Trading Bot Observer
+            Card(
+              color: stockMarket.observers.contains(tradingBot) 
+                  ? Colors.purple.shade900 
+                  : Colors.grey.shade800,
+              child: Padding(
+                padding: const EdgeInsets.all(16),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Trading Bot Observer ${stockMarket.observers.contains(tradingBot) ? '(Active)' : '(Detached)'}',
+                      style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                    ),
+                    const SizedBox(height: 8),
+                    Text('Buy Thresholds: ${tradingBot.buyThresholds.entries.map((e) => '${e.key}: \$${e.value}').join(', ')}'),
+                    Text('Sell Thresholds: ${tradingBot.sellThresholds.entries.map((e) => '${e.key}: \$${e.value}').join(', ')}'),
+                    const SizedBox(height: 8),
+                    const Text('Recent Trades:', style: TextStyle(fontWeight: FontWeight.bold)),
+                    ...tradingBot.trades.map((trade) => 
+                      Text(trade, style: const TextStyle(fontSize: 12))
+                    ),
+                  ],
+                ),
+              ),
+            ),
+            const SizedBox(height: 16),
+
+            Card(
+              child: Padding(
+                padding: const EdgeInsets.all(16),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text(
+                      'Observer Pattern Concepts Demonstrated',
+                      style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                    ),
+                    const SizedBox(height: 8),
+                    const Text('• Subject-Observer relationship: StockMarket notifies multiple observers'),
+                    const Text('• Loose coupling: Observers don\'t know about each other'),
+                    const Text('• Dynamic subscription: Observers can attach/detach at runtime'),
+                    const Text('• Event-driven architecture: Price changes trigger notifications'),
+                    const Text('• One-to-many communication: Single event, multiple handlers'),
+                    const Text('• Push model: Subject pushes data to all observers'),
+                    const Text('• Interface segregation: Observer interface defines contract'),
+                    const Text('• Separation of concerns: Each observer handles specific functionality'),
+                  ],
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+```
+
+This example demonstrates the observer pattern through a stock market  
+simulation. The StockMarket subject maintains a list of observers and  
+notifies them of price changes. Different observers (Portfolio,  
+AlertSystem, NewsGenerator, TradingBot) respond to the same events in  
+their own specialized ways, promoting loose coupling and separation  
+of concerns.
+
+## Strategy Pattern and Algorithm Selection
+
+Implementing strategy pattern for interchangeable algorithms.
+
+```dart
+import 'package:flutter/material.dart';
+import 'dart:math' as math;
+
+void main() {
+  runApp(const MyApp());
+}
+
+class MyApp extends StatelessWidget {
+  const MyApp({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return MaterialApp(
+      title: 'Strategy Pattern',
+      theme: ThemeData.dark(),
+      home: const StrategyDemo(),
+    );
+  }
+}
+
+// Strategy interface for sorting algorithms
+abstract class SortingStrategy {
+  String get name;
+  List<int> sort(List<int> data);
+  String get description;
+  String get timeComplexity;
+}
+
+// Concrete strategies
+class BubbleSortStrategy implements SortingStrategy {
+  @override
+  String get name => 'Bubble Sort';
+  
+  @override
+  String get description => 'Simple comparison-based algorithm that repeatedly steps through the list';
+  
+  @override
+  String get timeComplexity => 'O(n²)';
+
+  @override
+  List<int> sort(List<int> data) {
+    List<int> result = List.from(data);
+    int n = result.length;
+    
+    for (int i = 0; i < n - 1; i++) {
+      for (int j = 0; j < n - i - 1; j++) {
+        if (result[j] > result[j + 1]) {
+          int temp = result[j];
+          result[j] = result[j + 1];
+          result[j + 1] = temp;
+        }
+      }
+    }
+    
+    return result;
+  }
+}
+
+class QuickSortStrategy implements SortingStrategy {
+  @override
+  String get name => 'Quick Sort';
+  
+  @override
+  String get description => 'Efficient divide-and-conquer algorithm using partitioning';
+  
+  @override
+  String get timeComplexity => 'O(n log n) average, O(n²) worst';
+
+  @override
+  List<int> sort(List<int> data) {
+    List<int> result = List.from(data);
+    _quickSort(result, 0, result.length - 1);
+    return result;
+  }
+
+  void _quickSort(List<int> arr, int low, int high) {
+    if (low < high) {
+      int pi = _partition(arr, low, high);
+      _quickSort(arr, low, pi - 1);
+      _quickSort(arr, pi + 1, high);
+    }
+  }
+
+  int _partition(List<int> arr, int low, int high) {
+    int pivot = arr[high];
+    int i = low - 1;
+
+    for (int j = low; j < high; j++) {
+      if (arr[j] < pivot) {
+        i++;
+        int temp = arr[i];
+        arr[i] = arr[j];
+        arr[j] = temp;
+      }
+    }
+
+    int temp = arr[i + 1];
+    arr[i + 1] = arr[high];
+    arr[high] = temp;
+
+    return i + 1;
+  }
+}
+
+class MergeSortStrategy implements SortingStrategy {
+  @override
+  String get name => 'Merge Sort';
+  
+  @override
+  String get description => 'Stable divide-and-conquer algorithm with consistent performance';
+  
+  @override
+  String get timeComplexity => 'O(n log n)';
+
+  @override
+  List<int> sort(List<int> data) {
+    List<int> result = List.from(data);
+    _mergeSort(result, 0, result.length - 1);
+    return result;
+  }
+
+  void _mergeSort(List<int> arr, int left, int right) {
+    if (left < right) {
+      int middle = (left + right) ~/ 2;
+      _mergeSort(arr, left, middle);
+      _mergeSort(arr, middle + 1, right);
+      _merge(arr, left, middle, right);
+    }
+  }
+
+  void _merge(List<int> arr, int left, int middle, int right) {
+    List<int> leftArray = arr.sublist(left, middle + 1);
+    List<int> rightArray = arr.sublist(middle + 1, right + 1);
+
+    int i = 0, j = 0, k = left;
+
+    while (i < leftArray.length && j < rightArray.length) {
+      if (leftArray[i] <= rightArray[j]) {
+        arr[k] = leftArray[i];
+        i++;
+      } else {
+        arr[k] = rightArray[j];
+        j++;
+      }
+      k++;
+    }
+
+    while (i < leftArray.length) {
+      arr[k] = leftArray[i];
+      i++;
+      k++;
+    }
+
+    while (j < rightArray.length) {
+      arr[k] = rightArray[j];
+      j++;
+      k++;
+    }
+  }
+}
+
+// Strategy context
+class SortingContext {
+  SortingStrategy _strategy;
+  
+  SortingContext(this._strategy);
+  
+  void setStrategy(SortingStrategy strategy) {
+    _strategy = strategy;
+  }
+  
+  List<int> executeSort(List<int> data) {
+    return _strategy.sort(data);
+  }
+  
+  String get currentStrategyName => _strategy.name;
+  String get currentStrategyDescription => _strategy.description;
+  String get currentTimeComplexity => _strategy.timeComplexity;
+}
+
+class StrategyDemo extends StatefulWidget {
+  const StrategyDemo({super.key});
+
+  @override
+  State<StrategyDemo> createState() => _StrategyDemoState();
+}
+
+class _StrategyDemoState extends State<StrategyDemo> {
+  late SortingContext sortingContext;
+  final List<SortingStrategy> strategies = [
+    BubbleSortStrategy(),
+    QuickSortStrategy(),
+    MergeSortStrategy(),
+  ];
+  
+  List<int> originalData = [];
+  List<int> sortedData = [];
+  String operationResult = '';
+  int operationTime = 0;
+
+  @override
+  void initState() {
+    super.initState();
+    sortingContext = SortingContext(strategies[0]);
+    _generateRandomData();
+  }
+
+  void _generateRandomData() {
+    final random = math.Random();
+    originalData = List.generate(20, (index) => random.nextInt(100) + 1);
+    setState(() {
+      sortedData = [];
+      operationResult = '';
+      operationTime = 0;
+    });
+  }
+
+  void _performSort() {
+    final stopwatch = Stopwatch()..start();
+    
+    setState(() {
+      sortedData = sortingContext.executeSort(originalData);
+      operationTime = stopwatch.elapsedMicroseconds;
+      operationResult = 'Sorted ${originalData.length} elements using ${sortingContext.currentStrategyName}';
+    });
+    
+    stopwatch.stop();
+  }
+
+  void _changeStrategy(SortingStrategy strategy) {
+    setState(() {
+      sortingContext.setStrategy(strategy);
+      sortedData = [];
+      operationResult = '';
+      operationTime = 0;
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text('Strategy Pattern - Sorting Algorithms'),
+      ),
+      body: SingleChildScrollView(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // Strategy Selection
+            Card(
+              child: Padding(
+                padding: const EdgeInsets.all(16),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text(
+                      'Select Sorting Strategy',
+                      style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                    ),
+                    const SizedBox(height: 12),
+                    ...strategies.map((strategy) => RadioListTile<SortingStrategy>(
+                      title: Text(strategy.name),
+                      subtitle: Text('${strategy.timeComplexity} - ${strategy.description}'),
+                      value: strategy,
+                      groupValue: sortingContext._strategy,
+                      onChanged: (value) => _changeStrategy(value!),
+                    )),
+                  ],
+                ),
+              ),
+            ),
+            const SizedBox(height: 16),
+
+            // Current Strategy Info
+            Card(
+              child: Padding(
+                padding: const EdgeInsets.all(16),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text(
+                      'Current Strategy',
+                      style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                    ),
+                    const SizedBox(height: 8),
+                    Text('Algorithm: ${sortingContext.currentStrategyName}'),
+                    Text('Time Complexity: ${sortingContext.currentTimeComplexity}'),
+                    Text('Description: ${sortingContext.currentStrategyDescription}'),
+                  ],
+                ),
+              ),
+            ),
+            const SizedBox(height: 16),
+
+            // Data and Operations
+            Card(
+              child: Padding(
+                padding: const EdgeInsets.all(16),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text(
+                      'Data Operations',
+                      style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                    ),
+                    const SizedBox(height: 12),
+                    Row(
+                      children: [
+                        ElevatedButton(
+                          onPressed: _generateRandomData,
+                          child: const Text('Generate Random Data'),
+                        ),
+                        const SizedBox(width: 16),
+                        ElevatedButton(
+                          onPressed: _performSort,
+                          child: const Text('Sort Data'),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+            ),
+            const SizedBox(height: 16),
+
+            // Original Data
+            Card(
+              child: Padding(
+                padding: const EdgeInsets.all(16),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text(
+                      'Original Data',
+                      style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                    ),
+                    const SizedBox(height: 8),
+                    Wrap(
+                      spacing: 8,
+                      runSpacing: 8,
+                      children: originalData.map((number) => Container(
+                        padding: const EdgeInsets.all(8),
+                        decoration: BoxDecoration(
+                          color: Colors.blue.shade800,
+                          borderRadius: BorderRadius.circular(4),
+                        ),
+                        child: Text(number.toString()),
+                      )).toList(),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+            const SizedBox(height: 16),
+
+            // Sorted Data
+            if (sortedData.isNotEmpty) ...[
+              Card(
+                child: Padding(
+                  padding: const EdgeInsets.all(16),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Text(
+                        'Sorted Data',
+                        style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                      ),
+                      const SizedBox(height: 8),
+                      Wrap(
+                        spacing: 8,
+                        runSpacing: 8,
+                        children: sortedData.map((number) => Container(
+                          padding: const EdgeInsets.all(8),
+                          decoration: BoxDecoration(
+                            color: Colors.green.shade800,
+                            borderRadius: BorderRadius.circular(4),
+                          ),
+                          child: Text(number.toString()),
+                        )).toList(),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+              const SizedBox(height: 16),
+            ],
+
+            // Operation Result
+            if (operationResult.isNotEmpty) ...[
+              Card(
+                color: Colors.green.shade900,
+                child: Padding(
+                  padding: const EdgeInsets.all(16),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Text(
+                        'Operation Result',
+                        style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                      ),
+                      const SizedBox(height: 8),
+                      Text(operationResult),
+                      Text('Execution Time: ${operationTime} microseconds'),
+                    ],
+                  ),
+                ),
+              ),
+              const SizedBox(height: 16),
+            ],
+
+            Card(
+              child: Padding(
+                padding: const EdgeInsets.all(16),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text(
+                      'Strategy Pattern Concepts Demonstrated',
+                      style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                    ),
+                    const SizedBox(height: 8),
+                    const Text('• Strategy interface: Common contract for all algorithms'),
+                    const Text('• Concrete strategies: Different sorting algorithm implementations'),
+                    const Text('• Context class: SortingContext manages strategy selection'),
+                    const Text('• Runtime strategy switching: Change algorithms dynamically'),
+                    const Text('• Algorithm encapsulation: Each strategy encapsulates specific logic'),
+                    const Text('• Open/Closed principle: Easy to add new strategies without modification'),
+                    const Text('• Composition over inheritance: Context has-a strategy, not is-a strategy'),
+                  ],
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+```
+
+This example demonstrates the strategy pattern through interchangeable  
+sorting algorithms. The SortingContext can dynamically switch between  
+different sorting strategies (Bubble Sort, Quick Sort, Merge Sort)  
+without changing its interface. This promotes algorithm flexibility  
+and follows the Open/Closed Principle.
+
+## Command Pattern and Undo Operations
+
+Implementing command pattern for encapsulating operations and undo functionality.
+
+```dart
+import 'package:flutter/material.dart';
+
+void main() {
+  runApp(const MyApp());
+}
+
+class MyApp extends StatelessWidget {
+  const MyApp({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return MaterialApp(
+      title: 'Command Pattern',
+      theme: ThemeData.dark(),
+      home: const CommandDemo(),
+    );
+  }
+}
+
+// Command interface
+abstract class Command {
+  void execute();
+  void undo();
+  String get description;
+}
+
+// Receiver - Text Editor
+class TextEditor {
+  String _content = '';
+  int _cursorPosition = 0;
+  
+  String get content => _content;
+  int get cursorPosition => _cursorPosition;
+  
+  void insertText(String text, int position) {
+    if (position >= 0 && position <= _content.length) {
+      _content = _content.substring(0, position) + text + _content.substring(position);
+      _cursorPosition = position + text.length;
+    }
+  }
+  
+  void deleteText(int startPosition, int length) {
+    if (startPosition >= 0 && startPosition + length <= _content.length) {
+      _content = _content.substring(0, startPosition) + _content.substring(startPosition + length);
+      _cursorPosition = startPosition;
+    }
+  }
+  
+  void setCursorPosition(int position) {
+    if (position >= 0 && position <= _content.length) {
+      _cursorPosition = position;
+    }
+  }
+  
+  void replaceAll(String oldText, String newText) {
+    _content = _content.replaceAll(oldText, newText);
+  }
+  
+  void clear() {
+    _content = '';
+    _cursorPosition = 0;
+  }
+  
+  void append(String text) {
+    _content += text;
+    _cursorPosition = _content.length;
+  }
+}
+
+// Concrete Commands
+class InsertTextCommand implements Command {
+  final TextEditor _editor;
+  final String _text;
+  final int _position;
+  
+  InsertTextCommand(this._editor, this._text, this._position);
+  
+  @override
+  void execute() {
+    _editor.insertText(_text, _position);
+  }
+  
+  @override
+  void undo() {
+    _editor.deleteText(_position, _text.length);
+  }
+  
+  @override
+  String get description => 'Insert "$_text" at position $_position';
+}
+
+class DeleteTextCommand implements Command {
+  final TextEditor _editor;
+  final int _startPosition;
+  final int _length;
+  String _deletedText = '';
+  
+  DeleteTextCommand(this._editor, this._startPosition, this._length);
+  
+  @override
+  void execute() {
+    _deletedText = _editor.content.substring(_startPosition, _startPosition + _length);
+    _editor.deleteText(_startPosition, _length);
+  }
+  
+  @override
+  void undo() {
+    _editor.insertText(_deletedText, _startPosition);
+  }
+  
+  @override
+  String get description => 'Delete $_length characters at position $_startPosition';
+}
+
+class ReplaceTextCommand implements Command {
+  final TextEditor _editor;
+  final String _oldText;
+  final String _newText;
+  String _originalContent = '';
+  
+  ReplaceTextCommand(this._editor, this._oldText, this._newText);
+  
+  @override
+  void execute() {
+    _originalContent = _editor.content;
+    _editor.replaceAll(_oldText, _newText);
+  }
+  
+  @override
+  void undo() {
+    _editor.clear();
+    _editor.append(_originalContent);
+  }
+  
+  @override
+  String get description => 'Replace "$_oldText" with "$_newText"';
+}
+
+class ClearTextCommand implements Command {
+  final TextEditor _editor;
+  String _originalContent = '';
+  int _originalPosition = 0;
+  
+  ClearTextCommand(this._editor);
+  
+  @override
+  void execute() {
+    _originalContent = _editor.content;
+    _originalPosition = _editor.cursorPosition;
+    _editor.clear();
+  }
+  
+  @override
+  void undo() {
+    _editor.append(_originalContent);
+    _editor.setCursorPosition(_originalPosition);
+  }
+  
+  @override
+  String get description => 'Clear all text';
+}
+
+// Macro Command - composite command
+class MacroCommand implements Command {
+  final List<Command> _commands;
+  final String _description;
+  
+  MacroCommand(this._commands, this._description);
+  
+  @override
+  void execute() {
+    for (var command in _commands) {
+      command.execute();
+    }
+  }
+  
+  @override
+  void undo() {
+    for (var command in _commands.reversed) {
+      command.undo();
+    }
+  }
+  
+  @override
+  String get description => _description;
+}
+
+// Command Invoker
+class CommandManager {
+  final List<Command> _history = [];
+  int _currentPosition = -1;
+  
+  void executeCommand(Command command) {
+    // Remove any commands after current position (for redo functionality)
+    if (_currentPosition < _history.length - 1) {
+      _history.removeRange(_currentPosition + 1, _history.length);
+    }
+    
+    command.execute();
+    _history.add(command);
+    _currentPosition++;
+  }
+  
+  bool canUndo() {
+    return _currentPosition >= 0;
+  }
+  
+  bool canRedo() {
+    return _currentPosition < _history.length - 1;
+  }
+  
+  void undo() {
+    if (canUndo()) {
+      _history[_currentPosition].undo();
+      _currentPosition--;
+    }
+  }
+  
+  void redo() {
+    if (canRedo()) {
+      _currentPosition++;
+      _history[_currentPosition].execute();
+    }
+  }
+  
+  List<String> get commandHistory {
+    return _history.take(_currentPosition + 1).map((cmd) => cmd.description).toList();
+  }
+  
+  void clearHistory() {
+    _history.clear();
+    _currentPosition = -1;
+  }
+  
+  int get historySize => _history.length;
+  int get currentPosition => _currentPosition;
+}
+
+class CommandDemo extends StatefulWidget {
+  const CommandDemo({super.key});
+
+  @override
+  State<CommandDemo> createState() => _CommandDemoState();
+}
+
+class _CommandDemoState extends State<CommandDemo> {
+  final TextEditor editor = TextEditor();
+  final CommandManager commandManager = CommandManager();
+  final TextEditingController _inputController = TextEditingController();
+  final TextEditingController _replaceOldController = TextEditingController();
+  final TextEditingController _replaceNewController = TextEditingController();
+
+  void _executeCommand(Command command) {
+    setState(() {
+      commandManager.executeCommand(command);
+    });
+  }
+
+  void _undo() {
+    setState(() {
+      commandManager.undo();
+    });
+  }
+
+  void _redo() {
+    setState(() {
+      commandManager.redo();
+    });
+  }
+
+  void _insertText() {
+    if (_inputController.text.isNotEmpty) {
+      final command = InsertTextCommand(
+        editor, 
+        _inputController.text, 
+        editor.cursorPosition
+      );
+      _executeCommand(command);
+      _inputController.clear();
+    }
+  }
+
+  void _deleteText() {
+    if (editor.content.isNotEmpty && editor.cursorPosition > 0) {
+      final command = DeleteTextCommand(editor, editor.cursorPosition - 1, 1);
+      _executeCommand(command);
+    }
+  }
+
+  void _replaceText() {
+    if (_replaceOldController.text.isNotEmpty) {
+      final command = ReplaceTextCommand(
+        editor,
+        _replaceOldController.text,
+        _replaceNewController.text,
+      );
+      _executeCommand(command);
+      _replaceOldController.clear();
+      _replaceNewController.clear();
+    }
+  }
+
+  void _clearText() {
+    final command = ClearTextCommand(editor);
+    _executeCommand(command);
+  }
+
+  void _executeMacro() {
+    final commands = [
+      InsertTextCommand(editor, 'Hello ', editor.cursorPosition),
+      InsertTextCommand(editor, 'World! ', editor.cursorPosition + 6),
+      InsertTextCommand(editor, 'This is a macro command.', editor.cursorPosition + 13),
+    ];
+    
+    final macroCommand = MacroCommand(commands, 'Insert greeting macro');
+    _executeCommand(macroCommand);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text('Command Pattern - Text Editor'),
+      ),
+      body: SingleChildScrollView(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // Text Editor Display
+            Card(
+              child: Padding(
+                padding: const EdgeInsets.all(16),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text(
+                      'Text Editor',
+                      style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                    ),
+                    const SizedBox(height: 12),
+                    Container(
+                      width: double.infinity,
+                      height: 120,
+                      padding: const EdgeInsets.all(12),
+                      decoration: BoxDecoration(
+                        color: Colors.grey.shade900,
+                        borderRadius: BorderRadius.circular(8),
+                        border: Border.all(color: Colors.grey.shade700),
+                      ),
+                      child: Text(
+                        editor.content.isEmpty ? '(empty)' : editor.content,
+                        style: const TextStyle(fontFamily: 'monospace'),
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    Text('Cursor Position: ${editor.cursorPosition}'),
+                    Text('Content Length: ${editor.content.length}'),
+                  ],
+                ),
+              ),
+            ),
+            const SizedBox(height: 16),
+
+            // Command Controls
+            Card(
+              child: Padding(
+                padding: const EdgeInsets.all(16),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text(
+                      'Command Controls',
+                      style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                    ),
+                    const SizedBox(height: 12),
+                    
+                    // Insert Text
+                    Row(
+                      children: [
+                        Expanded(
+                          child: TextField(
+                            controller: _inputController,
+                            decoration: const InputDecoration(
+                              labelText: 'Text to insert',
+                              border: OutlineInputBorder(),
+                            ),
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                        ElevatedButton(
+                          onPressed: _insertText,
+                          child: const Text('Insert'),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 12),
+
+                    // Replace Text
+                    Row(
+                      children: [
+                        Expanded(
+                          child: TextField(
+                            controller: _replaceOldController,
+                            decoration: const InputDecoration(
+                              labelText: 'Find',
+                              border: OutlineInputBorder(),
+                            ),
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: TextField(
+                            controller: _replaceNewController,
+                            decoration: const InputDecoration(
+                              labelText: 'Replace with',
+                              border: OutlineInputBorder(),
+                            ),
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                        ElevatedButton(
+                          onPressed: _replaceText,
+                          child: const Text('Replace'),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 12),
+
+                    // Other Commands
+                    Wrap(
+                      spacing: 8,
+                      runSpacing: 8,
+                      children: [
+                        ElevatedButton(
+                          onPressed: _deleteText,
+                          child: const Text('Delete Char'),
+                        ),
+                        ElevatedButton(
+                          onPressed: _clearText,
+                          child: const Text('Clear All'),
+                        ),
+                        ElevatedButton(
+                          onPressed: _executeMacro,
+                          child: const Text('Execute Macro'),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+            ),
+            const SizedBox(height: 16),
+
+            // Undo/Redo Controls
+            Card(
+              child: Padding(
+                padding: const EdgeInsets.all(16),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text(
+                      'Undo/Redo Controls',
+                      style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                    ),
+                    const SizedBox(height: 12),
+                    Row(
+                      children: [
+                        ElevatedButton(
+                          onPressed: commandManager.canUndo() ? _undo : null,
+                          child: const Text('Undo'),
+                        ),
+                        const SizedBox(width: 16),
+                        ElevatedButton(
+                          onPressed: commandManager.canRedo() ? _redo : null,
+                          child: const Text('Redo'),
+                        ),
+                        const SizedBox(width: 16),
+                        ElevatedButton(
+                          onPressed: () {
+                            setState(() {
+                              commandManager.clearHistory();
+                            });
+                          },
+                          child: const Text('Clear History'),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 8),
+                    Text('Can Undo: ${commandManager.canUndo()}'),
+                    Text('Can Redo: ${commandManager.canRedo()}'),
+                    Text('History Size: ${commandManager.historySize}'),
+                    Text('Current Position: ${commandManager.currentPosition}'),
+                  ],
+                ),
+              ),
+            ),
+            const SizedBox(height: 16),
+
+            // Command History
+            if (commandManager.commandHistory.isNotEmpty) ...[
+              Card(
+                child: Padding(
+                  padding: const EdgeInsets.all(16),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Text(
+                        'Command History',
+                        style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                      ),
+                      const SizedBox(height: 8),
+                      Container(
+                        height: 150,
+                        width: double.infinity,
+                        padding: const EdgeInsets.all(8),
+                        decoration: BoxDecoration(
+                          color: Colors.grey.shade900,
+                          borderRadius: BorderRadius.circular(4),
+                          border: Border.all(color: Colors.grey.shade700),
+                        ),
+                        child: SingleChildScrollView(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: commandManager.commandHistory.asMap().entries.map((entry) {
+                              int index = entry.key;
+                              String command = entry.value;
+                              bool isCurrent = index == commandManager.currentPosition;
+                              
+                              return Padding(
+                                padding: const EdgeInsets.symmetric(vertical: 1),
+                                child: Text(
+                                  '${index + 1}. $command${isCurrent ? ' ← Current' : ''}',
+                                  style: TextStyle(
+                                    fontSize: 12,
+                                    fontFamily: 'monospace',
+                                    color: isCurrent ? Colors.yellow : null,
+                                    fontWeight: isCurrent ? FontWeight.bold : FontWeight.normal,
+                                  ),
+                                ),
+                              );
+                            }).toList(),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+              const SizedBox(height: 16),
+            ],
+
+            Card(
+              child: Padding(
+                padding: const EdgeInsets.all(16),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text(
+                      'Command Pattern Concepts Demonstrated',
+                      style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                    ),
+                    const SizedBox(height: 8),
+                    const Text('• Command interface: Common contract for all operations'),
+                    const Text('• Concrete commands: Specific operations (Insert, Delete, Replace)'),
+                    const Text('• Receiver: TextEditor that performs actual operations'),
+                    const Text('• Invoker: CommandManager that executes and tracks commands'),
+                    const Text('• Undo functionality: Commands can reverse their operations'),
+                    const Text('• Command history: Track and navigate through executed commands'),
+                    const Text('• Macro commands: Composite commands combining multiple operations'),
+                    const Text('• Decoupling: Commands decouple invoker from receiver'),
+                  ],
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+```
+
+This example demonstrates the command pattern through a text editor  
+with undo/redo functionality. Commands encapsulate operations as  
+objects, enabling undo operations, command history tracking, and  
+macro commands. The pattern decouples the invoker (CommandManager)  
+from the receiver (TextEditor) and provides flexible operation  
+management.
+
+## State Pattern and State Machines
+
+Implementing state pattern for managing object behavior based on state.
+
+```dart
+import 'package:flutter/material.dart';
+
+void main() {
+  runApp(const MyApp());
+}
+
+class MyApp extends StatelessWidget {
+  const MyApp({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return MaterialApp(
+      title: 'State Pattern',
+      theme: ThemeData.dark(),
+      home: const StatePatternDemo(),
+    );
+  }
+}
+
+// State interface
+abstract class VendingMachineState {
+  String get stateName;
+  String insertCoin(VendingMachine machine, double amount);
+  String selectProduct(VendingMachine machine, String product);
+  String dispenseProduct(VendingMachine machine);
+  String cancel(VendingMachine machine);
+}
+
+// Context - Vending Machine
+class VendingMachine {
+  VendingMachineState _state = IdleState();
+  double _insertedAmount = 0.0;
+  String? _selectedProduct;
+  final Map<String, double> _products = {
+    'Coke': 1.50,
+    'Water': 1.00,
+    'Chips': 2.00,
+    'Candy': 1.25,
+  };
+  final Map<String, int> _inventory = {
+    'Coke': 5,
+    'Water': 3,
+    'Chips': 2,
+    'Candy': 4,
+  };
+
+  void setState(VendingMachineState state) {
+    _state = state;
+  }
+
+  String insertCoin(double amount) => _state.insertCoin(this, amount);
+  String selectProduct(String product) => _state.selectProduct(this, product);
+  String dispenseProduct() => _state.dispenseProduct(this);
+  String cancel() => _state.cancel(this);
+
+  // Getters and setters
+  String get currentState => _state.stateName;
+  double get insertedAmount => _insertedAmount;
+  String? get selectedProduct => _selectedProduct;
+  Map<String, double> get products => Map.unmodifiable(_products);
+  Map<String, int> get inventory => Map.unmodifiable(_inventory);
+
+  void addAmount(double amount) => _insertedAmount += amount;
+  void resetAmount() => _insertedAmount = 0.0;
+  void setSelectedProduct(String? product) => _selectedProduct = product;
+  
+  bool hasProduct(String product) => _inventory[product] != null && _inventory[product]! > 0;
+  double getProductPrice(String product) => _products[product] ?? 0.0;
+  
+  void decrementInventory(String product) {
+    if (_inventory[product] != null && _inventory[product]! > 0) {
+      _inventory[product] = _inventory[product]! - 1;
+    }
+  }
+}
+
+// Concrete States
+class IdleState implements VendingMachineState {
+  @override
+  String get stateName => 'Idle';
+
+  @override
+  String insertCoin(VendingMachine machine, double amount) {
+    machine.addAmount(amount);
+    machine.setState(HasMoneyState());
+    return 'Inserted \$${amount.toStringAsFixed(2)}. Total: \$${machine.insertedAmount.toStringAsFixed(2)}';
+  }
+
+  @override
+  String selectProduct(VendingMachine machine, String product) {
+    return 'Please insert money first';
+  }
+
+  @override
+  String dispenseProduct(VendingMachine machine) {
+    return 'No product selected';
+  }
+
+  @override
+  String cancel(VendingMachine machine) {
+    return 'Nothing to cancel';
+  }
+}
+
+class HasMoneyState implements VendingMachineState {
+  @override
+  String get stateName => 'Has Money';
+
+  @override
+  String insertCoin(VendingMachine machine, double amount) {
+    machine.addAmount(amount);
+    return 'Added \$${amount.toStringAsFixed(2)}. Total: \$${machine.insertedAmount.toStringAsFixed(2)}';
+  }
+
+  @override
+  String selectProduct(VendingMachine machine, String product) {
+    if (!machine.hasProduct(product)) {
+      return '$product is out of stock';
+    }
+    
+    double price = machine.getProductPrice(product);
+    if (machine.insertedAmount < price) {
+      return 'Insufficient funds. Need \$${(price - machine.insertedAmount).toStringAsFixed(2)} more';
+    }
+    
+    machine.setSelectedProduct(product);
+    machine.setState(ProductSelectedState());
+    return 'Selected $product (\$${price.toStringAsFixed(2)})';
+  }
+
+  @override
+  String dispenseProduct(VendingMachine machine) {
+    return 'Please select a product first';
+  }
+
+  @override
+  String cancel(VendingMachine machine) {
+    double refund = machine.insertedAmount;
+    machine.resetAmount();
+    machine.setState(IdleState());
+    return 'Transaction cancelled. Refunded \$${refund.toStringAsFixed(2)}';
+  }
+}
+
+class ProductSelectedState implements VendingMachineState {
+  @override
+  String get stateName => 'Product Selected';
+
+  @override
+  String insertCoin(VendingMachine machine, double amount) {
+    machine.addAmount(amount);
+    return 'Added \$${amount.toStringAsFixed(2)}. Total: \$${machine.insertedAmount.toStringAsFixed(2)}';
+  }
+
+  @override
+  String selectProduct(VendingMachine machine, String product) {
+    if (!machine.hasProduct(product)) {
+      return '$product is out of stock';
+    }
+    
+    double price = machine.getProductPrice(product);
+    if (machine.insertedAmount < price) {
+      return 'Insufficient funds for $product';
+    }
+    
+    machine.setSelectedProduct(product);
+    return 'Changed selection to $product (\$${price.toStringAsFixed(2)})';
+  }
+
+  @override
+  String dispenseProduct(VendingMachine machine) {
+    String product = machine.selectedProduct!;
+    double price = machine.getProductPrice(product);
+    double change = machine.insertedAmount - price;
+    
+    machine.decrementInventory(product);
+    machine.resetAmount();
+    machine.setSelectedProduct(null);
+    machine.setState(DispensingState());
+    
+    return 'Dispensing $product. Change: \$${change.toStringAsFixed(2)}';
+  }
+
+  @override
+  String cancel(VendingMachine machine) {
+    double refund = machine.insertedAmount;
+    machine.resetAmount();
+    machine.setSelectedProduct(null);
+    machine.setState(IdleState());
+    return 'Selection cancelled. Refunded \$${refund.toStringAsFixed(2)}';
+  }
+}
+
+class DispensingState implements VendingMachineState {
+  @override
+  String get stateName => 'Dispensing';
+
+  @override
+  String insertCoin(VendingMachine machine, double amount) {
+    return 'Please wait, dispensing product...';
+  }
+
+  @override
+  String selectProduct(VendingMachine machine, String product) {
+    return 'Please wait, dispensing product...';
+  }
+
+  @override
+  String dispenseProduct(VendingMachine machine) {
+    // Simulate dispensing complete
+    machine.setState(IdleState());
+    return 'Product dispensed. Thank you!';
+  }
+
+  @override
+  String cancel(VendingMachine machine) {
+    return 'Cannot cancel during dispensing';
+  }
+}
+
+class OutOfOrderState implements VendingMachineState {
+  @override
+  String get stateName => 'Out of Order';
+
+  @override
+  String insertCoin(VendingMachine machine, double amount) {
+    return 'Machine is out of order';
+  }
+
+  @override
+  String selectProduct(VendingMachine machine, String product) {
+    return 'Machine is out of order';
+  }
+
+  @override
+  String dispenseProduct(VendingMachine machine) {
+    return 'Machine is out of order';
+  }
+
+  @override
+  String cancel(VendingMachine machine) {
+    return 'Machine is out of order';
+  }
+}
+
+class StatePatternDemo extends StatefulWidget {
+  const StatePatternDemo({super.key});
+
+  @override
+  State<StatePatternDemo> createState() => _StatePatternDemoState();
+}
+
+class _StatePatternDemoState extends State<StatePatternDemo> {
+  final VendingMachine machine = VendingMachine();
+  String _lastAction = '';
+  List<String> _actionLog = [];
+
+  void _performAction(String action, [dynamic param]) {
+    String result = '';
+    
+    switch (action) {
+      case 'insert_coin':
+        result = machine.insertCoin(param as double);
+        break;
+      case 'select_product':
+        result = machine.selectProduct(param as String);
+        break;
+      case 'dispense':
+        result = machine.dispenseProduct();
+        break;
+      case 'cancel':
+        result = machine.cancel();
+        break;
+      case 'out_of_order':
+        machine.setState(OutOfOrderState());
+        result = 'Machine set to out of order';
+        break;
+      case 'reset':
+        machine.setState(IdleState());
+        machine.resetAmount();
+        machine.setSelectedProduct(null);
+        result = 'Machine reset to idle state';
+        break;
+    }
+
+    setState(() {
+      _lastAction = result;
+      _actionLog.insert(0, '${DateTime.now().toString().substring(11, 19)}: $result');
+      if (_actionLog.length > 8) {
+        _actionLog.removeLast();
+      }
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text('State Pattern - Vending Machine'),
+      ),
+      body: SingleChildScrollView(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // Machine Status
+            Card(
+              color: machine.currentState == 'Out of Order' 
+                  ? Colors.red.shade900 
+                  : Colors.blue.shade900,
+              child: Padding(
+                padding: const EdgeInsets.all(16),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text(
+                      'Vending Machine Status',
+                      style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                    ),
+                    const SizedBox(height: 8),
+                    Text('State: ${machine.currentState}'),
+                    Text('Inserted Amount: \$${machine.insertedAmount.toStringAsFixed(2)}'),
+                    Text('Selected Product: ${machine.selectedProduct ?? 'None'}'),
+                  ],
+                ),
+              ),
+            ),
+            const SizedBox(height: 16),
+
+            // Products and Inventory
+            Card(
+              child: Padding(
+                padding: const EdgeInsets.all(16),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text(
+                      'Products & Inventory',
+                      style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                    ),
+                    const SizedBox(height: 8),
+                    ...machine.products.entries.map((product) => Padding(
+                      padding: const EdgeInsets.symmetric(vertical: 4),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Text('${product.key}: \$${product.value.toStringAsFixed(2)}'),
+                          Text('Stock: ${machine.inventory[product.key]}'),
+                          ElevatedButton(
+                            onPressed: () => _performAction('select_product', product.key),
+                            child: const Text('Select'),
+                          ),
+                        ],
+                      ),
+                    )),
+                  ],
+                ),
+              ),
+            ),
+            const SizedBox(height: 16),
+
+            // Coin Operations
+            Card(
+              child: Padding(
+                padding: const EdgeInsets.all(16),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text(
+                      'Coin Operations',
+                      style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                    ),
+                    const SizedBox(height: 12),
+                    Wrap(
+                      spacing: 8,
+                      runSpacing: 8,
+                      children: [
+                        ElevatedButton(
+                          onPressed: () => _performAction('insert_coin', 0.25),
+                          child: const Text('Insert \$0.25'),
+                        ),
+                        ElevatedButton(
+                          onPressed: () => _performAction('insert_coin', 0.50),
+                          child: const Text('Insert \$0.50'),
+                        ),
+                        ElevatedButton(
+                          onPressed: () => _performAction('insert_coin', 1.00),
+                          child: const Text('Insert \$1.00'),
+                        ),
+                        ElevatedButton(
+                          onPressed: () => _performAction('cancel'),
+                          child: const Text('Cancel/Refund'),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+            ),
+            const SizedBox(height: 16),
+
+            // Machine Operations
+            Card(
+              child: Padding(
+                padding: const EdgeInsets.all(16),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text(
+                      'Machine Operations',
+                      style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                    ),
+                    const SizedBox(height: 12),
+                    Wrap(
+                      spacing: 8,
+                      runSpacing: 8,
+                      children: [
+                        ElevatedButton(
+                          onPressed: () => _performAction('dispense'),
+                          child: const Text('Dispense Product'),
+                        ),
+                        ElevatedButton(
+                          onPressed: () => _performAction('out_of_order'),
+                          style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
+                          child: const Text('Set Out of Order'),
+                        ),
+                        ElevatedButton(
+                          onPressed: () => _performAction('reset'),
+                          style: ElevatedButton.styleFrom(backgroundColor: Colors.green),
+                          child: const Text('Reset Machine'),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+            ),
+            const SizedBox(height: 16),
+
+            // Last Action
+            if (_lastAction.isNotEmpty) ...[
+              Card(
+                color: _lastAction.contains('out of order') || _lastAction.contains('Insufficient') 
+                    ? Colors.red.shade900 
+                    : Colors.green.shade900,
+                child: Padding(
+                  padding: const EdgeInsets.all(16),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Text(
+                        'Last Action Result',
+                        style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                      ),
+                      const SizedBox(height: 8),
+                      Text(_lastAction),
+                    ],
+                  ),
+                ),
+              ),
+              const SizedBox(height: 16),
+            ],
+
+            // Action Log
+            if (_actionLog.isNotEmpty) ...[
+              Card(
+                child: Padding(
+                  padding: const EdgeInsets.all(16),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Text(
+                        'Action Log',
+                        style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                      ),
+                      const SizedBox(height: 8),
+                      Container(
+                        height: 120,
+                        width: double.infinity,
+                        padding: const EdgeInsets.all(8),
+                        decoration: BoxDecoration(
+                          color: Colors.grey.shade900,
+                          borderRadius: BorderRadius.circular(4),
+                          border: Border.all(color: Colors.grey.shade700),
+                        ),
+                        child: SingleChildScrollView(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: _actionLog.map((log) => Padding(
+                              padding: const EdgeInsets.only(bottom: 2),
+                              child: Text(
+                                log,
+                                style: const TextStyle(fontSize: 11, fontFamily: 'monospace'),
+                              ),
+                            )).toList(),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+              const SizedBox(height: 16),
+            ],
+
+            Card(
+              child: Padding(
+                padding: const EdgeInsets.all(16),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text(
+                      'State Pattern Concepts Demonstrated',
+                      style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                    ),
+                    const SizedBox(height: 8),
+                    const Text('• State interface: Common contract for all states'),
+                    const Text('• Concrete states: IdleState, HasMoneyState, ProductSelectedState, etc.'),
+                    const Text('• Context object: VendingMachine manages current state'),
+                    const Text('• State transitions: Dynamic behavior changes based on state'),
+                    const Text('• State-specific behavior: Same action produces different results'),
+                    const Text('• State encapsulation: Each state handles its own logic'),
+                    const Text('• Finite state machine: Clear state transitions and rules'),
+                  ],
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+```
+
+This example demonstrates the state pattern through a vending machine  
+simulation. Different states (Idle, HasMoney, ProductSelected,  
+Dispensing, OutOfOrder) handle the same operations differently,  
+enabling complex state-dependent behavior while maintaining clean  
+code organization.
+
+## Template Method Pattern
+
+Implementing template method for algorithm structure with customizable steps.
+
+```dart
+import 'package:flutter/material.dart';
+
+void main() {
+  runApp(const MyApp());
+}
+
+class MyApp extends StatelessWidget {
+  const MyApp({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return MaterialApp(
+      title: 'Template Method Pattern',
+      theme: ThemeData.dark(),
+      home: const TemplateMethodDemo(),
+    );
+  }
+}
+
+// Abstract template class
+abstract class DataProcessor {
+  final String processorName;
+  final List<String> _processingLog = [];
+
+  DataProcessor(this.processorName);
+
+  // Template method - defines algorithm structure
+  Future<Map<String, dynamic>> processData(List<Map<String, dynamic>> data) async {
+    _log('Starting data processing');
+    
+    // Step 1: Validate input
+    if (!validateInput(data)) {
+      _log('Input validation failed');
+      return {'success': false, 'error': 'Invalid input data'};
+    }
+    _log('Input validation passed');
+
+    // Step 2: Preprocess data
+    List<Map<String, dynamic>> preprocessedData = preprocessData(data);
+    _log('Data preprocessing completed');
+
+    // Step 3: Transform data (abstract method)
+    List<Map<String, dynamic>> transformedData = await transformData(preprocessedData);
+    _log('Data transformation completed');
+
+    // Step 4: Validate output
+    if (!validateOutput(transformedData)) {
+      _log('Output validation failed');
+      return {'success': false, 'error': 'Invalid output data'};
+    }
+    _log('Output validation passed');
+
+    // Step 5: Post-process results
+    Map<String, dynamic> result = postProcessResults(transformedData);
+    _log('Post-processing completed');
+
+    // Step 6: Generate report (hook method)
+    String? report = generateReport(result);
+    if (report != null) {
+      result['report'] = report;
+      _log('Report generated');
+    }
+
+    _log('Processing completed successfully');
+    return result;
+  }
+
+  // Hook method with default implementation (can be overridden)
+  bool validateInput(List<Map<String, dynamic>> data) {
+    return data.isNotEmpty;
+  }
+
+  // Concrete method with default implementation
+  List<Map<String, dynamic>> preprocessData(List<Map<String, dynamic>> data) {
+    _log('Applying default preprocessing');
+    return data.map((item) => Map<String, dynamic>.from(item)).toList();
+  }
+
+  // Abstract method - must be implemented by subclasses
+  Future<List<Map<String, dynamic>>> transformData(List<Map<String, dynamic>> data);
+
+  // Hook method with default implementation
+  bool validateOutput(List<Map<String, dynamic>> data) {
+    return data.isNotEmpty;
+  }
+
+  // Concrete method with default implementation
+  Map<String, dynamic> postProcessResults(List<Map<String, dynamic>> data) {
+    _log('Applying default post-processing');
+    return {
+      'success': true,
+      'processedCount': data.length,
+      'data': data,
+      'processor': processorName,
+      'timestamp': DateTime.now().toIso8601String(),
+    };
+  }
+
+  // Hook method - optional implementation
+  String? generateReport(Map<String, dynamic> result) {
+    return null; // Default: no report
+  }
+
+  // Utility method
+  void _log(String message) {
+    _processingLog.add('${DateTime.now().toString().substring(11, 19)}: $message');
+  }
+
+  List<String> get processingLog => List.unmodifiable(_processingLog);
+  void clearLog() => _processingLog.clear();
+}
+
+// Concrete implementation for statistical processing
+class StatisticalProcessor extends DataProcessor {
+  StatisticalProcessor() : super('Statistical Processor');
+
+  @override
+  bool validateInput(List<Map<String, dynamic>> data) {
+    // More strict validation for statistical data
+    return data.isNotEmpty && 
+           data.every((item) => item.containsKey('value') && item['value'] is num);
+  }
+
+  @override
+  List<Map<String, dynamic>> preprocessData(List<Map<String, dynamic>> data) {
+    _log('Statistical preprocessing: normalizing values');
+    return data.map((item) {
+      double value = (item['value'] as num).toDouble();
+      return {
+        ...item,
+        'value': value,
+        'normalized': value / 100.0, // Simple normalization
+      };
+    }).toList();
+  }
+
+  @override
+  Future<List<Map<String, dynamic>>> transformData(List<Map<String, dynamic>> data) async {
+    _log('Performing statistical transformations');
+    await Future.delayed(const Duration(milliseconds: 500)); // Simulate processing
+
+    List<double> values = data.map((item) => item['value'] as double).toList();
+    double mean = values.reduce((a, b) => a + b) / values.length;
+    double sum = values.reduce((a, b) => a + b);
+    double min = values.reduce((a, b) => a < b ? a : b);
+    double max = values.reduce((a, b) => a > b ? a : b);
+
+    return data.map((item) {
+      double value = item['value'] as double;
+      return {
+        ...item,
+        'deviation_from_mean': value - mean,
+        'percentage_of_total': (value / sum) * 100,
+        'is_outlier': (value - mean).abs() > (max - min) * 0.3,
+      };
+    }).toList();
+  }
+
+  @override
+  String? generateReport(Map<String, dynamic> result) {
+    List<Map<String, dynamic>> data = result['data'] as List<Map<String, dynamic>>;
+    List<double> values = data.map((item) => item['value'] as double).toList();
+    
+    double mean = values.reduce((a, b) => a + b) / values.length;
+    double min = values.reduce((a, b) => a < b ? a : b);
+    double max = values.reduce((a, b) => a > b ? a : b);
+    int outliers = data.where((item) => item['is_outlier'] == true).length;
+
+    return '''Statistical Analysis Report:
+- Total values: ${values.length}
+- Mean: ${mean.toStringAsFixed(2)}
+- Min: ${min.toStringAsFixed(2)}
+- Max: ${max.toStringAsFixed(2)}
+- Range: ${(max - min).toStringAsFixed(2)}
+- Outliers detected: $outliers''';
+  }
+}
+
+// Concrete implementation for text processing
+class TextProcessor extends DataProcessor {
+  TextProcessor() : super('Text Processor');
+
+  @override
+  bool validateInput(List<Map<String, dynamic>> data) {
+    return data.isNotEmpty && 
+           data.every((item) => item.containsKey('text') && item['text'] is String);
+  }
+
+  @override
+  List<Map<String, dynamic>> preprocessData(List<Map<String, dynamic>> data) {
+    _log('Text preprocessing: cleaning and normalizing');
+    return data.map((item) {
+      String text = item['text'] as String;
+      return {
+        ...item,
+        'text': text,
+        'cleaned_text': text.toLowerCase().trim(),
+        'original_length': text.length,
+      };
+    }).toList();
+  }
+
+  @override
+  Future<List<Map<String, dynamic>>> transformData(List<Map<String, dynamic>> data) async {
+    _log('Performing text analysis transformations');
+    await Future.delayed(const Duration(milliseconds: 300));
+
+    return data.map((item) {
+      String text = item['cleaned_text'] as String;
+      List<String> words = text.split(RegExp(r'\s+'));
+      
+      return {
+        ...item,
+        'word_count': words.length,
+        'character_count': text.length,
+        'sentence_count': text.split(RegExp(r'[.!?]+')).where((s) => s.isNotEmpty).length,
+        'average_word_length': words.isNotEmpty 
+            ? words.map((w) => w.length).reduce((a, b) => a + b) / words.length 
+            : 0.0,
+        'contains_numbers': RegExp(r'\d').hasMatch(text),
+      };
+    }).toList();
+  }
+
+  @override
+  String? generateReport(Map<String, dynamic> result) {
+    List<Map<String, dynamic>> data = result['data'] as List<Map<String, dynamic>>;
+    
+    int totalWords = data.fold(0, (sum, item) => sum + (item['word_count'] as int));
+    int totalChars = data.fold(0, (sum, item) => sum + (item['character_count'] as int));
+    double avgWordsPerText = data.isNotEmpty ? totalWords / data.length : 0.0;
+    int textsWithNumbers = data.where((item) => item['contains_numbers'] == true).length;
+
+    return '''Text Analysis Report:
+- Total texts processed: ${data.length}
+- Total words: $totalWords
+- Total characters: $totalChars
+- Average words per text: ${avgWordsPerText.toStringAsFixed(1)}
+- Texts containing numbers: $textsWithNumbers
+- Average text length: ${data.isNotEmpty ? totalChars / data.length : 0} characters''';
+  }
+}
+
+// Concrete implementation for image metadata processing
+class ImageMetadataProcessor extends DataProcessor {
+  ImageMetadataProcessor() : super('Image Metadata Processor');
+
+  @override
+  bool validateInput(List<Map<String, dynamic>> data) {
+    return data.isNotEmpty && 
+           data.every((item) => 
+               item.containsKey('filename') && 
+               item.containsKey('width') && 
+               item.containsKey('height'));
+  }
+
+  @override
+  List<Map<String, dynamic>> preprocessData(List<Map<String, dynamic>> data) {
+    _log('Image metadata preprocessing');
+    return data.map((item) {
+      int width = item['width'] as int;
+      int height = item['height'] as int;
+      return {
+        ...item,
+        'aspect_ratio': width / height,
+        'total_pixels': width * height,
+        'is_landscape': width > height,
+        'is_square': width == height,
+      };
+    }).toList();
+  }
+
+  @override
+  Future<List<Map<String, dynamic>>> transformData(List<Map<String, dynamic>> data) async {
+    _log('Processing image metadata transformations');
+    await Future.delayed(const Duration(milliseconds: 400));
+
+    return data.map((item) {
+      int pixels = item['total_pixels'] as int;
+      double aspectRatio = item['aspect_ratio'] as double;
+      
+      String resolution;
+      if (pixels > 8000000) resolution = 'Ultra High';
+      else if (pixels > 2000000) resolution = 'High';
+      else if (pixels > 500000) resolution = 'Medium';
+      else resolution = 'Low';
+      
+      String format;
+      if (aspectRatio > 1.7) format = 'Wide';
+      else if (aspectRatio > 1.2) format = 'Standard';
+      else if (aspectRatio > 0.8) format = 'Square';
+      else format = 'Tall';
+
+      return {
+        ...item,
+        'resolution_category': resolution,
+        'format_category': format,
+        'size_mb': (pixels * 3) / (1024 * 1024), // Rough estimate for RGB
+      };
+    }).toList();
+  }
+
+  @override
+  bool validateOutput(List<Map<String, dynamic>> data) {
+    return super.validateOutput(data) && 
+           data.every((item) => 
+               item.containsKey('resolution_category') && 
+               item.containsKey('format_category'));
+  }
+
+  @override
+  String? generateReport(Map<String, dynamic> result) {
+    List<Map<String, dynamic>> data = result['data'] as List<Map<String, dynamic>>;
+    
+    Map<String, int> resolutions = {};
+    Map<String, int> formats = {};
+    double totalSizeMb = 0;
+    
+    for (var item in data) {
+      String resolution = item['resolution_category'] as String;
+      String format = item['format_category'] as String;
+      double sizeMb = item['size_mb'] as double;
+      
+      resolutions[resolution] = (resolutions[resolution] ?? 0) + 1;
+      formats[format] = (formats[format] ?? 0) + 1;
+      totalSizeMb += sizeMb;
+    }
+
+    return '''Image Metadata Analysis Report:
+- Total images: ${data.length}
+- Total estimated size: ${totalSizeMb.toStringAsFixed(1)} MB
+- Resolution distribution: ${resolutions.entries.map((e) => '${e.key}: ${e.value}').join(', ')}
+- Format distribution: ${formats.entries.map((e) => '${e.key}: ${e.value}').join(', ')}
+- Average size per image: ${data.isNotEmpty ? (totalSizeMb / data.length).toStringAsFixed(1) : 0} MB''';
+  }
+}
+
+class TemplateMethodDemo extends StatefulWidget {
+  const TemplateMethodDemo({super.key});
+
+  @override
+  State<TemplateMethodDemo> createState() => _TemplateMethodDemoState();
+}
+
+class _TemplateMethodDemoState extends State<TemplateMethodDemo> {
+  DataProcessor? currentProcessor;
+  Map<String, dynamic>? processingResult;
+  bool isProcessing = false;
+
+  final List<DataProcessor> processors = [
+    StatisticalProcessor(),
+    TextProcessor(),
+    ImageMetadataProcessor(),
+  ];
+
+  final Map<String, List<Map<String, dynamic>>> sampleData = {
+    'Statistical Processor': [
+      {'id': 1, 'value': 85, 'category': 'A'},
+      {'id': 2, 'value': 92, 'category': 'B'},
+      {'id': 3, 'value': 78, 'category': 'A'},
+      {'id': 4, 'value': 95, 'category': 'C'},
+      {'id': 5, 'value': 67, 'category': 'B'},
+    ],
+    'Text Processor': [
+      {'id': 1, 'text': 'Hello world! This is a sample text.', 'author': 'Alice'},
+      {'id': 2, 'text': 'Flutter development is fun and engaging.', 'author': 'Bob'},
+      {'id': 3, 'text': 'Object-oriented programming concepts.', 'author': 'Charlie'},
+      {'id': 4, 'text': 'Template method pattern example with text processing.', 'author': 'Diana'},
+    ],
+    'Image Metadata Processor': [
+      {'filename': 'photo1.jpg', 'width': 1920, 'height': 1080, 'format': 'JPEG'},
+      {'filename': 'image2.png', 'width': 800, 'height': 600, 'format': 'PNG'},
+      {'filename': 'pic3.jpg', 'width': 1080, 'height': 1920, 'format': 'JPEG'},
+      {'filename': 'logo.png', 'width': 500, 'height': 500, 'format': 'PNG'},
+    ],
+  };
+
+  Future<void> _processData(DataProcessor processor) async {
+    setState(() {
+      currentProcessor = processor;
+      isProcessing = true;
+      processingResult = null;
+    });
+
+    processor.clearLog();
+    final data = sampleData[processor.processorName] ?? [];
+    final result = await processor.processData(data);
+
+    setState(() {
+      processingResult = result;
+      isProcessing = false;
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text('Template Method Pattern'),
+      ),
+      body: SingleChildScrollView(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // Processor Selection
+            Card(
+              child: Padding(
+                padding: const EdgeInsets.all(16),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text(
+                      'Select Data Processor',
+                      style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                    ),
+                    const SizedBox(height: 12),
+                    ...processors.map((processor) => Padding(
+                      padding: const EdgeInsets.symmetric(vertical: 4),
+                      child: ElevatedButton(
+                        onPressed: isProcessing ? null : () => _processData(processor),
+                        child: Text('Process with ${processor.processorName}'),
+                      ),
+                    )),
+                  ],
+                ),
+              ),
+            ),
+            const SizedBox(height: 16),
+
+            // Sample Data Display
+            if (currentProcessor != null) ...[
+              Card(
+                child: Padding(
+                  padding: const EdgeInsets.all(16),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'Sample Data for ${currentProcessor!.processorName}',
+                        style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                      ),
+                      const SizedBox(height: 8),
+                      Container(
+                        width: double.infinity,
+                        padding: const EdgeInsets.all(12),
+                        decoration: BoxDecoration(
+                          color: Colors.grey.shade900,
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child: Text(
+                          sampleData[currentProcessor!.processorName].toString(),
+                          style: const TextStyle(fontSize: 11, fontFamily: 'monospace'),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+              const SizedBox(height: 16),
+            ],
+
+            // Processing Status
+            if (isProcessing) ...[
+              const Card(
+                color: Colors.orange,
+                child: Padding(
+                  padding: EdgeInsets.all(16),
+                  child: Row(
+                    children: [
+                      CircularProgressIndicator(),
+                      SizedBox(width: 16),
+                      Text('Processing data...'),
+                    ],
+                  ),
+                ),
+              ),
+              const SizedBox(height: 16),
+            ],
+
+            // Processing Result
+            if (processingResult != null) ...[
+              Card(
+                color: processingResult!['success'] == true 
+                    ? Colors.green.shade900 
+                    : Colors.red.shade900,
+                child: Padding(
+                  padding: const EdgeInsets.all(16),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Text(
+                        'Processing Result',
+                        style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                      ),
+                      const SizedBox(height: 8),
+                      Text('Status: ${processingResult!['success'] == true ? 'Success' : 'Failed'}'),
+                      if (processingResult!.containsKey('error'))
+                        Text('Error: ${processingResult!['error']}'),
+                      if (processingResult!.containsKey('processedCount'))
+                        Text('Processed Count: ${processingResult!['processedCount']}'),
+                      if (processingResult!.containsKey('report')) ...[
+                        const SizedBox(height: 12),
+                        const Text('Report:', style: TextStyle(fontWeight: FontWeight.bold)),
+                        Container(
+                          width: double.infinity,
+                          padding: const EdgeInsets.all(8),
+                          margin: const EdgeInsets.only(top: 4),
+                          decoration: BoxDecoration(
+                            color: Colors.grey.shade800,
+                            borderRadius: BorderRadius.circular(4),
+                          ),
+                          child: Text(
+                            processingResult!['report'],
+                            style: const TextStyle(fontSize: 12, fontFamily: 'monospace'),
+                          ),
+                        ),
+                      ],
+                    ],
+                  ),
+                ),
+              ),
+              const SizedBox(height: 16),
+            ],
+
+            // Processing Log
+            if (currentProcessor != null && currentProcessor!.processingLog.isNotEmpty) ...[
+              Card(
+                child: Padding(
+                  padding: const EdgeInsets.all(16),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Text(
+                        'Processing Log',
+                        style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                      ),
+                      const SizedBox(height: 8),
+                      Container(
+                        height: 150,
+                        width: double.infinity,
+                        padding: const EdgeInsets.all(8),
+                        decoration: BoxDecoration(
+                          color: Colors.grey.shade900,
+                          borderRadius: BorderRadius.circular(4),
+                          border: Border.all(color: Colors.grey.shade700),
+                        ),
+                        child: SingleChildScrollView(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: currentProcessor!.processingLog.map((log) => 
+                              Text(log, style: const TextStyle(fontSize: 11, fontFamily: 'monospace'))
+                            ).toList(),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+              const SizedBox(height: 16),
+            ],
+
+            Card(
+              child: Padding(
+                padding: const EdgeInsets.all(16),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text(
+                      'Template Method Pattern Concepts Demonstrated',
+                      style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                    ),
+                    const SizedBox(height: 8),
+                    const Text('• Template method: processData() defines algorithm structure'),
+                    const Text('• Abstract methods: transformData() must be implemented'),
+                    const Text('• Hook methods: generateReport() with optional override'),
+                    const Text('• Concrete methods: preprocessData(), postProcessResults()'),
+                    const Text('• Algorithm invariance: Processing steps remain consistent'),
+                    const Text('• Step customization: Subclasses customize specific steps'),
+                    const Text('• Code reuse: Common processing logic shared across processors'),
+                    const Text('• Inversion of control: Template controls algorithm flow'),
+                  ],
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+```
+
+This example demonstrates the template method pattern through data  
+processing workflows. The abstract DataProcessor defines the algorithm  
+structure while concrete implementations (StatisticalProcessor,  
+TextProcessor, ImageMetadataProcessor) customize specific steps. This  
+ensures consistent processing flow while allowing specialized behavior.
+
+## Decorator Pattern and Dynamic Behavior
+
+Adding behavior to objects dynamically through decoration.
+
+```dart
+import 'package:flutter/material.dart';
+
+void main() {
+  runApp(const MyApp());
+}
+
+class MyApp extends StatelessWidget {
+  const MyApp({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return MaterialApp(
+      title: 'Decorator Pattern',
+      theme: ThemeData.dark(),
+      home: const DecoratorDemo(),
+    );
+  }
+}
+
+// Component interface
+abstract class Coffee {
+  String get description;
+  double get cost;
+}
+
+// Concrete component
+class BasicCoffee implements Coffee {
+  @override
+  String get description => 'Basic Coffee';
+  
+  @override
+  double get cost => 2.00;
+}
+
+// Base decorator
+abstract class CoffeeDecorator implements Coffee {
+  final Coffee coffee;
+  
+  CoffeeDecorator(this.coffee);
+}
+
+// Concrete decorators
+class MilkDecorator extends CoffeeDecorator {
+  MilkDecorator(Coffee coffee) : super(coffee);
+  
+  @override
+  String get description => '${coffee.description}, Milk';
+  
+  @override
+  double get cost => coffee.cost + 0.50;
+}
+
+class SugarDecorator extends CoffeeDecorator {
+  SugarDecorator(Coffee coffee) : super(coffee);
+  
+  @override
+  String get description => '${coffee.description}, Sugar';
+  
+  @override
+  double get cost => coffee.cost + 0.25;
+}
+
+class VanillaDecorator extends CoffeeDecorator {
+  VanillaDecorator(Coffee coffee) : super(coffee);
+  
+  @override
+  String get description => '${coffee.description}, Vanilla';
+  
+  @override
+  double get cost => coffee.cost + 0.75;
+}
+
+class WhipCreamDecorator extends CoffeeDecorator {
+  WhipCreamDecorator(Coffee coffee) : super(coffee);
+  
+  @override
+  String get description => '${coffee.description}, Whip Cream';
+  
+  @override
+  double get cost => coffee.cost + 1.00;
+}
+
+class DecoratorDemo extends StatefulWidget {
+  const DecoratorDemo({super.key});
+
+  @override
+  State<DecoratorDemo> createState() => _DecoratorDemoState();
+}
+
+class _DecoratorDemoState extends State<DecoratorDemo> {
+  Coffee currentCoffee = BasicCoffee();
+  List<String> decoratorHistory = ['Basic Coffee'];
+
+  void _addDecorator(String decorator) {
+    setState(() {
+      switch (decorator) {
+        case 'Milk':
+          currentCoffee = MilkDecorator(currentCoffee);
+          break;
+        case 'Sugar':
+          currentCoffee = SugarDecorator(currentCoffee);
+          break;
+        case 'Vanilla':
+          currentCoffee = VanillaDecorator(currentCoffee);
+          break;
+        case 'Whip Cream':
+          currentCoffee = WhipCreamDecorator(currentCoffee);
+          break;
+      }
+      decoratorHistory.add(decorator);
+    });
+  }
+
+  void _reset() {
+    setState(() {
+      currentCoffee = BasicCoffee();
+      decoratorHistory = ['Basic Coffee'];
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(title: const Text('Decorator Pattern - Coffee Shop')),
+      body: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          children: [
+            Card(
+              child: Padding(
+                padding: const EdgeInsets.all(16),
+                child: Column(
+                  children: [
+                    Text('Current Order: ${currentCoffee.description}', 
+                         style: const TextStyle(fontSize: 18)),
+                    Text('Total Cost: \$${currentCoffee.cost.toStringAsFixed(2)}', 
+                         style: const TextStyle(fontSize: 16, color: Colors.green)),
+                  ],
+                ),
+              ),
+            ),
+            const SizedBox(height: 16),
+            Wrap(
+              spacing: 8,
+              children: ['Milk', 'Sugar', 'Vanilla', 'Whip Cream']
+                  .map((decorator) => ElevatedButton(
+                        onPressed: () => _addDecorator(decorator),
+                        child: Text('Add $decorator'),
+                      ))
+                  .toList(),
+            ),
+            const SizedBox(height: 16),
+            ElevatedButton(onPressed: _reset, child: const Text('Reset Order')),
+          ],
+        ),
+      ),
+    );
+  }
+}
+```
+
+The decorator pattern allows adding behavior to objects dynamically  
+without altering their structure. Each decorator wraps the previous  
+component and extends its functionality, enabling flexible composition  
+of features at runtime.
+
+## Chain of Responsibility Pattern
+
+Implementing chain of responsibility for request processing.
+
+```dart
+import 'package:flutter/material.dart';
+
+void main() {
+  runApp(const MyApp());
+}
+
+class MyApp extends StatelessWidget {
+  const MyApp({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return MaterialApp(
+      title: 'Chain of Responsibility',
+      theme: ThemeData.dark(),
+      home: const ChainOfResponsibilityDemo(),
+    );
+  }
+}
+
+// Request class
+class SupportRequest {
+  final String issue;
+  final int priority;
+  final String customerType;
+  
+  SupportRequest(this.issue, this.priority, this.customerType);
+}
+
+// Handler interface
+abstract class SupportHandler {
+  SupportHandler? nextHandler;
+  
+  void setNext(SupportHandler handler) {
+    nextHandler = handler;
+  }
+  
+  String handle(SupportRequest request);
+}
+
+// Concrete handlers
+class Level1Support extends SupportHandler {
+  @override
+  String handle(SupportRequest request) {
+    if (request.priority <= 2) {
+      return 'Level 1 Support: Handled "${request.issue}"';
+    }
+    return nextHandler?.handle(request) ?? 'No handler available';
+  }
+}
+
+class Level2Support extends SupportHandler {
+  @override
+  String handle(SupportRequest request) {
+    if (request.priority <= 4) {
+      return 'Level 2 Support: Handled "${request.issue}"';
+    }
+    return nextHandler?.handle(request) ?? 'No handler available';
+  }
+}
+
+class Level3Support extends SupportHandler {
+  @override
+  String handle(SupportRequest request) {
+    if (request.priority <= 5) {
+      return 'Level 3 Support: Handled "${request.issue}"';
+    }
+    return nextHandler?.handle(request) ?? 'Request escalated to management';
+  }
+}
+
+class ChainOfResponsibilityDemo extends StatefulWidget {
+  const ChainOfResponsibilityDemo({super.key});
+
+  @override
+  State<ChainOfResponsibilityDemo> createState() => _ChainOfResponsibilityDemoState();
+}
+
+class _ChainOfResponsibilityDemoState extends State<ChainOfResponsibilityDemo> {
+  late SupportHandler chain;
+  String result = '';
+
+  @override
+  void initState() {
+    super.initState();
+    // Build the chain
+    final level1 = Level1Support();
+    final level2 = Level2Support();
+    final level3 = Level3Support();
+    
+    level1.setNext(level2);
+    level2.setNext(level3);
+    
+    chain = level1;
+  }
+
+  void _handleRequest(String issue, int priority, String customerType) {
+    final request = SupportRequest(issue, priority, customerType);
+    setState(() {
+      result = chain.handle(request);
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(title: const Text('Chain of Responsibility')),
+      body: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          children: [
+            if (result.isNotEmpty)
+              Card(
+                color: Colors.green.shade900,
+                child: Padding(
+                  padding: const EdgeInsets.all(16),
+                  child: Text('Result: $result'),
+                ),
+              ),
+            const SizedBox(height: 16),
+            const Text('Sample Support Requests:', style: TextStyle(fontSize: 18)),
+            const SizedBox(height: 8),
+            ...[(('Login Issue', 1)), ('Billing Question', 3)), ('System Crash', 5))]
+                .map((request) => ElevatedButton(
+                      onPressed: () => _handleRequest(request.$1, request.$2, 'Standard'),
+                      child: Text('${request.$1} (Priority ${request.$2})'),
+                    ))
+                .toList(),
+          ],
+        ),
+      ),
+    );
+  }
+}
+```
+
+Chain of responsibility passes requests along a chain of handlers  
+until one handles it. This decouples senders from receivers and  
+allows multiple objects to handle requests without explicit knowledge  
+of which one will process it.
+
+## Builder Pattern for Complex Objects
+
+Constructing complex objects step by step using builder pattern.
+
+```dart
+import 'package:flutter/material.dart';
+
+void main() {
+  runApp(const MyApp());
+}
+
+class MyApp extends StatelessWidget {
+  const MyApp({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return MaterialApp(
+      title: 'Builder Pattern',
+      theme: ThemeData.dark(),
+      home: const BuilderDemo(),
+    );
+  }
+}
+
+// Product class
+class Computer {
+  final String cpu;
+  final String ram;
+  final String storage;
+  final String gpu;
+  final String motherboard;
+  final bool hasWifi;
+  final bool hasBluetooth;
+  
+  Computer._builder(ComputerBuilder builder)
+      : cpu = builder._cpu,
+        ram = builder._ram,
+        storage = builder._storage,
+        gpu = builder._gpu,
+        motherboard = builder._motherboard,
+        hasWifi = builder._hasWifi,
+        hasBluetooth = builder._hasBluetooth;
+
+  @override
+  String toString() {
+    return 'Computer: CPU=$cpu, RAM=$ram, Storage=$storage, GPU=$gpu, MB=$motherboard, WiFi=$hasWifi, BT=$hasBluetooth';
+  }
+}
+
+// Builder class
+class ComputerBuilder {
+  String _cpu = '';
+  String _ram = '';
+  String _storage = '';
+  String _gpu = '';
+  String _motherboard = '';
+  bool _hasWifi = false;
+  bool _hasBluetooth = false;
+  
+  ComputerBuilder setCpu(String cpu) {
+    _cpu = cpu;
+    return this;
+  }
+  
+  ComputerBuilder setRam(String ram) {
+    _ram = ram;
+    return this;
+  }
+  
+  ComputerBuilder setStorage(String storage) {
+    _storage = storage;
+    return this;
+  }
+  
+  ComputerBuilder setGpu(String gpu) {
+    _gpu = gpu;
+    return this;
+  }
+  
+  ComputerBuilder setMotherboard(String motherboard) {
+    _motherboard = motherboard;
+    return this;
+  }
+  
+  ComputerBuilder setWifi(bool hasWifi) {
+    _hasWifi = hasWifi;
+    return this;
+  }
+  
+  ComputerBuilder setBluetooth(bool hasBluetooth) {
+    _hasBluetooth = hasBluetooth;
+    return this;
+  }
+  
+  Computer build() {
+    return Computer._builder(this);
+  }
+}
+
+class BuilderDemo extends StatefulWidget {
+  const BuilderDemo({super.key});
+
+  @override
+  State<BuilderDemo> createState() => _BuilderDemoState();
+}
+
+class _BuilderDemoState extends State<BuilderDemo> {
+  Computer? builtComputer;
+  
+  void _buildGamingComputer() {
+    final computer = ComputerBuilder()
+        .setCpu('Intel i9-12900K')
+        .setRam('32GB DDR4')
+        .setStorage('1TB NVMe SSD')
+        .setGpu('NVIDIA RTX 3080')
+        .setMotherboard('ASUS ROG Strix')
+        .setWifi(true)
+        .setBluetooth(true)
+        .build();
+    
+    setState(() {
+      builtComputer = computer;
+    });
+  }
+  
+  void _buildOfficeComputer() {
+    final computer = ComputerBuilder()
+        .setCpu('Intel i5-12400')
+        .setRam('16GB DDR4')
+        .setStorage('512GB SSD')
+        .setGpu('Integrated')
+        .setMotherboard('Standard ATX')
+        .setWifi(true)
+        .setBluetooth(false)
+        .build();
+    
+    setState(() {
+      builtComputer = computer;
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(title: const Text('Builder Pattern')),
+      body: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          children: [
+            ElevatedButton(
+              onPressed: _buildGamingComputer,
+              child: const Text('Build Gaming Computer'),
+            ),
+            const SizedBox(height: 8),
+            ElevatedButton(
+              onPressed: _buildOfficeComputer,
+              child: const Text('Build Office Computer'),
+            ),
+            const SizedBox(height: 16),
+            if (builtComputer != null)
+              Card(
+                child: Padding(
+                  padding: const EdgeInsets.all(16),
+                  child: Text(builtComputer.toString()),
+                ),
+              ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+```
+
+The builder pattern constructs complex objects step by step, providing  
+a fluent interface for object creation. It separates construction from  
+representation, allowing the same construction process to create  
+different representations.
+
+## Adapter Pattern for Interface Compatibility
+
+Adapting incompatible interfaces to work together.
+
+```dart
+import 'package:flutter/material.dart';
+
+void main() {
+  runApp(const MyApp());
+}
+
+class MyApp extends StatelessWidget {
+  const MyApp({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return MaterialApp(
+      title: 'Adapter Pattern',
+      theme: ThemeData.dark(),
+      home: const AdapterDemo(),
+    );
+  }
+}
+
+// Target interface (what client expects)
+abstract class MediaPlayer {
+  void play(String audioType, String fileName);
+}
+
+// Legacy media players (adaptees)
+class Mp3Player {
+  void playMp3(String fileName) {
+    print('Playing MP3: $fileName');
+  }
+}
+
+class Mp4Player {
+  void playMp4(String fileName) {
+    print('Playing MP4: $fileName');
+  }
+}
+
+// Adapter
+class MediaAdapter implements MediaPlayer {
+  final Mp3Player _mp3Player = Mp3Player();
+  final Mp4Player _mp4Player = Mp4Player();
+  
+  @override
+  void play(String audioType, String fileName) {
+    switch (audioType.toLowerCase()) {
+      case 'mp3':
+        _mp3Player.playMp3(fileName);
+        break;
+      case 'mp4':
+        _mp4Player.playMp4(fileName);
+        break;
+      default:
+        throw UnsupportedError('$audioType format not supported');
+    }
+  }
+}
+
+class AdapterDemo extends StatefulWidget {
+  const AdapterDemo({super.key});
+
+  @override
+  State<AdapterDemo> createState() => _AdapterDemoState();
+}
+
+class _AdapterDemoState extends State<AdapterDemo> {
+  final MediaPlayer player = MediaAdapter();
+  String result = '';
+
+  void _playMedia(String type, String fileName) {
+    try {
+      player.play(type, fileName);
+      setState(() {
+        result = 'Successfully played $fileName ($type)';
+      });
+    } catch (e) {
+      setState(() {
+        result = 'Error: $e';
+      });
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(title: const Text('Adapter Pattern')),
+      body: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          children: [
+            if (result.isNotEmpty)
+              Card(
+                child: Padding(
+                  padding: const EdgeInsets.all(16),
+                  child: Text(result),
+                ),
+              ),
+            const SizedBox(height: 16),
+            ElevatedButton(
+              onPressed: () => _playMedia('mp3', 'song.mp3'),
+              child: const Text('Play MP3'),
+            ),
+            const SizedBox(height: 8),
+            ElevatedButton(
+              onPressed: () => _playMedia('mp4', 'video.mp4'),
+              child: const Text('Play MP4'),
+            ),
+            const SizedBox(height: 8),
+            ElevatedButton(
+              onPressed: () => _playMedia('avi', 'movie.avi'),
+              child: const Text('Play AVI (Unsupported)'),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+```
+
+The adapter pattern allows incompatible interfaces to work together  
+by wrapping existing classes with a new interface. It enables legacy  
+code integration without modifying existing implementations.
+
+## Facade Pattern for Simplified Interfaces
+
+Providing a simplified interface to complex subsystems.
+
+```dart
+import 'package:flutter/material.dart';
+
+void main() {
+  runApp(const MyApp());
+}
+
+class MyApp extends StatelessWidget {
+  const MyApp({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return MaterialApp(
+      title: 'Facade Pattern',
+      theme: ThemeData.dark(),
+      home: const FacadeDemo(),
+    );
+  }
+}
+
+// Complex subsystem classes
+class AudioSystem {
+  void turnOn() => print('Audio system on');
+  void setVolume(int level) => print('Volume set to $level');
+  void turnOff() => print('Audio system off');
+}
+
+class VideoSystem {
+  void turnOn() => print('Video system on');
+  void setResolution(String resolution) => print('Resolution: $resolution');
+  void turnOff() => print('Video system off');
+}
+
+class LightingSystem {
+  void turnOn() => print('Lights on');
+  void dim(int level) => print('Lights dimmed to $level%');
+  void turnOff() => print('Lights off');
+}
+
+// Facade
+class HomeTheaterFacade {
+  final AudioSystem _audio = AudioSystem();
+  final VideoSystem _video = VideoSystem();
+  final LightingSystem _lights = LightingSystem();
+  
+  void watchMovie() {
+    print('Getting ready to watch movie...');
+    _lights.dim(10);
+    _audio.turnOn();
+    _audio.setVolume(5);
+    _video.turnOn();
+    _video.setResolution('1080p');
+    print('Movie mode activated!');
+  }
+  
+  void endMovie() {
+    print('Shutting down movie mode...');
+    _video.turnOff();
+    _audio.turnOff();
+    _lights.turnOff();
+    print('Movie mode deactivated!');
+  }
+}
+
+class FacadeDemo extends StatefulWidget {
+  const FacadeDemo({super.key});
+
+  @override
+  State<FacadeDemo> createState() => _FacadeDemoState();
+}
+
+class _FacadeDemoState extends State<FacadeDemo> {
+  final HomeTheaterFacade facade = HomeTheaterFacade();
+  List<String> operations = [];
+
+  void _watchMovie() {
+    facade.watchMovie();
+    setState(() {
+      operations.add('Movie mode started');
+    });
+  }
+
+  void _endMovie() {
+    facade.endMovie();
+    setState(() {
+      operations.add('Movie mode ended');
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(title: const Text('Facade Pattern')),
+      body: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          children: [
+            ElevatedButton(
+              onPressed: _watchMovie,
+              child: const Text('Start Movie'),
+            ),
+            const SizedBox(height: 8),
+            ElevatedButton(
+              onPressed: _endMovie,
+              child: const Text('End Movie'),
+            ),
+            const SizedBox(height: 16),
+            if (operations.isNotEmpty)
+              Card(
+                child: Padding(
+                  padding: const EdgeInsets.all(16),
+                  child: Column(
+                    children: operations.map((op) => Text(op)).toList(),
+                  ),
+                ),
+              ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+```
+
+The facade pattern provides a simplified interface to complex  
+subsystems. It hides complexity from clients and provides a unified  
+interface for common operations, making the system easier to use.
+
+## Flyweight Pattern for Memory Efficiency
+
+Sharing objects efficiently to minimize memory usage.
+
+```dart
+import 'package:flutter/material.dart';
+
+void main() {
+  runApp(const MyApp());
+}
+
+class MyApp extends StatelessWidget {
+  const MyApp({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return MaterialApp(
+      title: 'Flyweight Pattern',
+      theme: ThemeData.dark(),
+      home: const FlyweightDemo(),
+    );
+  }
+}
+
+// Flyweight interface
+abstract class TreeType {
+  void render(Canvas canvas, double x, double y, Color color);
+}
+
+// Concrete flyweight
+class ConcreteTreeType implements TreeType {
+  final String name;
+  final String sprite;
+  
+  ConcreteTreeType(this.name, this.sprite);
+  
+  @override
+  void render(Canvas canvas, double x, double y, Color color) {
+    // Simulate rendering tree with intrinsic data
+    final paint = Paint()..color = color;
+    canvas.drawCircle(Offset(x, y), 20, paint);
+  }
+}
+
+// Flyweight factory
+class TreeTypeFactory {
+  static final Map<String, TreeType> _treeTypes = {};
+  
+  static TreeType getTreeType(String name, String sprite) {
+    return _treeTypes.putIfAbsent(name, () => ConcreteTreeType(name, sprite));
+  }
+  
+  static int get createdTreeTypes => _treeTypes.length;
+}
+
+// Context class
+class Tree {
+  final double x, y;
+  final Color color;
+  final TreeType type;
+  
+  Tree(this.x, this.y, this.color, this.type);
+  
+  void render(Canvas canvas) {
+    type.render(canvas, x, y, color);
+  }
+}
+
+class FlyweightDemo extends StatefulWidget {
+  const FlyweightDemo({super.key});
+
+  @override
+  State<FlyweightDemo> createState() => _FlyweightDemoState();
+}
+
+class _FlyweightDemoState extends State<FlyweightDemo> {
+  final List<Tree> trees = [];
+  
+  void _addTrees() {
+    final random = DateTime.now().millisecond;
+    for (int i = 0; i < 10; i++) {
+      final type = TreeTypeFactory.getTreeType('Oak', 'oak_sprite');
+      trees.add(Tree(
+        (random + i * 30) % 300.0,
+        (random + i * 20) % 200.0,
+        Colors.green,
+        type,
+      ));
+    }
+    setState(() {});
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(title: const Text('Flyweight Pattern')),
+      body: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          children: [
+            Text('Trees: ${trees.length}'),
+            Text('Tree Types Created: ${TreeTypeFactory.createdTreeTypes}'),
+            const SizedBox(height: 16),
+            ElevatedButton(
+              onPressed: _addTrees,
+              child: const Text('Add 10 Trees'),
+            ),
+            const SizedBox(height: 16),
+            Expanded(
+              child: Container(
+                decoration: BoxDecoration(border: Border.all()),
+                child: CustomPaint(
+                  painter: ForestPainter(trees),
+                  size: Size.infinite,
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class ForestPainter extends CustomPainter {
+  final List<Tree> trees;
+  
+  ForestPainter(this.trees);
+  
+  @override
+  void paint(Canvas canvas, Size size) {
+    for (final tree in trees) {
+      tree.render(canvas);
+    }
+  }
+  
+  @override
+  bool shouldRepaint(covariant CustomPainter oldDelegate) => true;
+}
+```
+
+The flyweight pattern minimizes memory usage by sharing common data  
+between multiple objects. Intrinsic state is shared while extrinsic  
+state is passed as parameters, enabling efficient object management.
+
+## Model-View-Controller Architecture
+
+Implementing MVC pattern for separation of concerns.
+
+```dart
+import 'package:flutter/material.dart';
+
+void main() {
+  runApp(const MyApp());
+}
+
+class MyApp extends StatelessWidget {
+  const MyApp({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return MaterialApp(
+      title: 'MVC Pattern',
+      theme: ThemeData.dark(),
+      home: const MVCDemo(),
+    );
+  }
+}
+
+// Model
+class CounterModel {
+  int _count = 0;
+  final List<Function()> _observers = [];
+  
+  int get count => _count;
+  
+  void addObserver(Function() observer) {
+    _observers.add(observer);
+  }
+  
+  void removeObserver(Function() observer) {
+    _observers.remove(observer);
+  }
+  
+  void increment() {
+    _count++;
+    _notifyObservers();
+  }
+  
+  void decrement() {
+    _count--;
+    _notifyObservers();
+  }
+  
+  void reset() {
+    _count = 0;
+    _notifyObservers();
+  }
+  
+  void _notifyObservers() {
+    for (final observer in _observers) {
+      observer();
+    }
+  }
+}
+
+// Controller
+class CounterController {
+  final CounterModel _model;
+  
+  CounterController(this._model);
+  
+  void increment() => _model.increment();
+  void decrement() => _model.decrement();
+  void reset() => _model.reset();
+  
+  int get count => _model.count;
+}
+
+// View
+class MVCDemo extends StatefulWidget {
+  const MVCDemo({super.key});
+
+  @override
+  State<MVCDemo> createState() => _MVCDemoState();
+}
+
+class _MVCDemoState extends State<MVCDemo> {
+  late CounterModel model;
+  late CounterController controller;
+  
+  @override
+  void initState() {
+    super.initState();
+    model = CounterModel();
+    controller = CounterController(model);
+    
+    // View observes model changes
+    model.addObserver(() {
+      setState(() {}); // Update view when model changes
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(title: const Text('MVC Pattern')),
+      body: Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Text('Count: ${controller.count}', style: const TextStyle(fontSize: 24)),
+            const SizedBox(height: 20),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+              children: [
+                ElevatedButton(
+                  onPressed: controller.decrement,
+                  child: const Text('-'),
+                ),
+                ElevatedButton(
+                  onPressed: controller.reset,
+                  child: const Text('Reset'),
+                ),
+                ElevatedButton(
+                  onPressed: controller.increment,
+                  child: const Text('+'),
+                ),
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+```
+
+The MVC pattern separates application logic into three interconnected  
+components: Model manages data, View handles presentation, and  
+Controller coordinates between them, promoting maintainability and  
+testability.
+
+## Prototype Pattern for Object Cloning
+
+Creating objects through cloning existing prototypes.
+
+```dart
+import 'package:flutter/material.dart';
+
+void main() {
+  runApp(const MyApp());
+}
+
+class MyApp extends StatelessWidget {
+  const MyApp({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return MaterialApp(
+      title: 'Prototype Pattern',
+      theme: ThemeData.dark(),
+      home: const PrototypeDemo(),
+    );
+  }
+}
+
+abstract class Prototype {
+  Prototype clone();
+}
+
+class Document implements Prototype {
+  String title;
+  String content;
+  List<String> tags;
+  DateTime created;
+  
+  Document(this.title, this.content, this.tags, this.created);
+  
+  @override
+  Document clone() {
+    return Document(title, content, List.from(tags), created);
+  }
+  
+  @override
+  String toString() => '$title: $content (${tags.join(', ')})';
+}
+
+class PrototypeDemo extends StatefulWidget {
+  const PrototypeDemo({super.key});
+
+  @override
+  State<PrototypeDemo> createState() => _PrototypeDemoState();
+}
+
+class _PrototypeDemoState extends State<PrototypeDemo> {
+  final List<Document> documents = [];
+  late Document prototype;
+
+  @override
+  void initState() {
+    super.initState();
+    prototype = Document('Template', 'Default content', ['template'], DateTime.now());
+  }
+
+  void _cloneDocument() {
+    final cloned = prototype.clone();
+    cloned.title = 'Cloned Doc ${documents.length + 1}';
+    setState(() {
+      documents.add(cloned);
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(title: const Text('Prototype Pattern')),
+      body: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          children: [
+            ElevatedButton(
+              onPressed: _cloneDocument,
+              child: const Text('Clone Document'),
+            ),
+            const SizedBox(height: 16),
+            Expanded(
+              child: ListView.builder(
+                itemCount: documents.length,
+                itemBuilder: (context, index) => Card(
+                  child: Padding(
+                    padding: const EdgeInsets.all(8),
+                    child: Text(documents[index].toString()),
+                  ),
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+```
+
+The prototype pattern creates objects by cloning existing instances  
+rather than creating new ones from scratch. This is useful when object  
+creation is expensive or when you need objects similar to existing ones.
+
+## Visitor Pattern for Operations on Object Structures
+
+Implementing visitor pattern for adding operations to object hierarchies.
+
+```dart
+import 'package:flutter/material.dart';
+
+void main() {
+  runApp(const MyApp());
+}
+
+class MyApp extends StatelessWidget {
+  const MyApp({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return MaterialApp(
+      title: 'Visitor Pattern',
+      theme: ThemeData.dark(),
+      home: const VisitorDemo(),
+    );
+  }
+}
+
+abstract class Visitor {
+  void visitCircle(Circle circle);
+  void visitRectangle(Rectangle rectangle);
+}
+
+abstract class Shape {
+  void accept(Visitor visitor);
+}
+
+class Circle implements Shape {
+  final double radius;
+  Circle(this.radius);
+  
+  @override
+  void accept(Visitor visitor) => visitor.visitCircle(this);
+}
+
+class Rectangle implements Shape {
+  final double width, height;
+  Rectangle(this.width, this.height);
+  
+  @override
+  void accept(Visitor visitor) => visitor.visitRectangle(this);
+}
+
+class AreaVisitor implements Visitor {
+  double totalArea = 0;
+  
+  @override
+  void visitCircle(Circle circle) {
+    totalArea += 3.14159 * circle.radius * circle.radius;
+  }
+  
+  @override
+  void visitRectangle(Rectangle rectangle) {
+    totalArea += rectangle.width * rectangle.height;
+  }
+}
+
+class VisitorDemo extends StatefulWidget {
+  const VisitorDemo({super.key});
+
+  @override
+  State<VisitorDemo> createState() => _VisitorDemoState();
+}
+
+class _VisitorDemoState extends State<VisitorDemo> {
+  final List<Shape> shapes = [
+    Circle(5),
+    Rectangle(4, 6),
+    Circle(3),
+  ];
+  
+  double totalArea = 0;
+
+  void _calculateArea() {
+    final visitor = AreaVisitor();
+    for (final shape in shapes) {
+      shape.accept(visitor);
+    }
+    setState(() {
+      totalArea = visitor.totalArea;
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(title: const Text('Visitor Pattern')),
+      body: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          children: [
+            Text('Shapes: ${shapes.length}'),
+            ElevatedButton(
+              onPressed: _calculateArea,
+              child: const Text('Calculate Total Area'),
+            ),
+            if (totalArea > 0)
+              Text('Total Area: ${totalArea.toStringAsFixed(2)}'),
+          ],
+        ),
+      ),
+    );
+  }
+}
+```
+
+The visitor pattern separates algorithms from object structures,  
+allowing new operations to be added without modifying existing classes.  
+It's useful for operations across different types in a hierarchy.
+
+## Memento Pattern for State Snapshots
+
+Capturing and restoring object state using memento pattern.
+
+```dart
+import 'package:flutter/material.dart';
+
+void main() {
+  runApp(const MyApp());
+}
+
+class MyApp extends StatelessWidget {
+  const MyApp({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return MaterialApp(
+      title: 'Memento Pattern',
+      theme: ThemeData.dark(),
+      home: const MementoDemo(),
+    );
+  }
+}
+
+class TextMemento {
+  final String text;
+  final int cursorPosition;
+  final DateTime timestamp;
+  
+  TextMemento(this.text, this.cursorPosition) : timestamp = DateTime.now();
+}
+
+class TextEditor {
+  String _text = '';
+  int _cursorPosition = 0;
+  
+  String get text => _text;
+  int get cursorPosition => _cursorPosition;
+  
+  void write(String text) {
+    _text += text;
+    _cursorPosition = _text.length;
+  }
+  
+  void setText(String text) {
+    _text = text;
+    _cursorPosition = text.length;
+  }
+  
+  TextMemento createMemento() {
+    return TextMemento(_text, _cursorPosition);
+  }
+  
+  void restoreFromMemento(TextMemento memento) {
+    _text = memento.text;
+    _cursorPosition = memento.cursorPosition;
+  }
+}
+
+class MementoDemo extends StatefulWidget {
+  const MementoDemo({super.key});
+
+  @override
+  State<MementoDemo> createState() => _MementoDemoState();
+}
+
+class _MementoDemoState extends State<MementoDemo> {
+  final TextEditor editor = TextEditor();
+  final List<TextMemento> history = [];
+  final TextEditingController controller = TextEditingController();
+
+  void _saveState() {
+    setState(() {
+      history.add(editor.createMemento());
+    });
+  }
+
+  void _restoreState(int index) {
+    editor.restoreFromMemento(history[index]);
+    setState(() {
+      controller.text = editor.text;
+    });
+  }
+
+  void _updateText() {
+    editor.setText(controller.text);
+    setState(() {});
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(title: const Text('Memento Pattern')),
+      body: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          children: [
+            TextField(
+              controller: controller,
+              onChanged: (_) => _updateText(),
+              decoration: const InputDecoration(labelText: 'Text Editor'),
+            ),
+            const SizedBox(height: 16),
+            ElevatedButton(
+              onPressed: _saveState,
+              child: const Text('Save State'),
+            ),
+            const SizedBox(height: 16),
+            Text('Current: ${editor.text}'),
+            const SizedBox(height: 16),
+            const Text('History:'),
+            Expanded(
+              child: ListView.builder(
+                itemCount: history.length,
+                itemBuilder: (context, index) => ListTile(
+                  title: Text(history[index].text),
+                  subtitle: Text(history[index].timestamp.toString()),
+                  trailing: ElevatedButton(
+                    onPressed: () => _restoreState(index),
+                    child: const Text('Restore'),
+                  ),
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+```
+
+The memento pattern captures object state without violating  
+encapsulation, enabling undo functionality and state restoration.  
+It's essential for implementing undo/redo operations in applications.
+
+## Mediator Pattern for Object Communication
+
+Implementing mediator pattern to handle complex object interactions.
+
+```dart
+import 'package:flutter/material.dart';
+
+void main() {
+  runApp(const MyApp());
+}
+
+class MyApp extends StatelessWidget {
+  const MyApp({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return MaterialApp(
+      title: 'Mediator Pattern',
+      theme: ThemeData.dark(),
+      home: const MediatorDemo(),
+    );
+  }
+}
+
+abstract class Mediator {
+  void notify(Component sender, String event);
+}
+
+abstract class Component {
+  Mediator? mediator;
+  
+  Component([this.mediator]);
+  
+  void setMediator(Mediator mediator) {
+    this.mediator = mediator;
+  }
+}
+
+class Button extends Component {
+  final String name;
+  bool _enabled = true;
+  
+  Button(this.name);
+  
+  bool get enabled => _enabled;
+  
+  void click() {
+    mediator?.notify(this, 'click');
+  }
+  
+  void setEnabled(bool enabled) {
+    _enabled = enabled;
+  }
+}
+
+class CheckBox extends Component {
+  final String name;
+  bool _checked = false;
+  
+  CheckBox(this.name);
+  
+  bool get checked => _checked;
+  
+  void toggle() {
+    _checked = !_checked;
+    mediator?.notify(this, 'change');
+  }
+}
+
+class DialogMediator implements Mediator {
+  late Button submitButton;
+  late CheckBox termsCheckBox;
+  
+  void initialize(Button submit, CheckBox terms) {
+    submitButton = submit;
+    termsCheckBox = terms;
+    
+    submit.setMediator(this);
+    terms.setMediator(this);
+    
+    // Initial state
+    submitButton.setEnabled(false);
+  }
+  
+  @override
+  void notify(Component sender, String event) {
+    if (sender == termsCheckBox && event == 'change') {
+      submitButton.setEnabled(termsCheckBox.checked);
+    }
+  }
+}
+
+class MediatorDemo extends StatefulWidget {
+  const MediatorDemo({super.key});
+
+  @override
+  State<MediatorDemo> createState() => _MediatorDemoState();
+}
+
+class _MediatorDemoState extends State<MediatorDemo> {
+  late DialogMediator mediator;
+  late Button submitButton;
+  late CheckBox termsCheckBox;
+
+  @override
+  void initState() {
+    super.initState();
+    mediator = DialogMediator();
+    submitButton = Button('Submit');
+    termsCheckBox = CheckBox('Accept Terms');
+    
+    mediator.initialize(submitButton, termsCheckBox);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(title: const Text('Mediator Pattern')),
+      body: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          children: [
+            CheckboxListTile(
+              title: Text('Accept Terms and Conditions'),
+              value: termsCheckBox.checked,
+              onChanged: (_) {
+                termsCheckBox.toggle();
+                setState(() {});
+              },
+            ),
+            const SizedBox(height: 16),
+            ElevatedButton(
+              onPressed: submitButton.enabled ? submitButton.click : null,
+              child: const Text('Submit'),
+            ),
+            const SizedBox(height: 16),
+            Text('Submit button enabled: ${submitButton.enabled}'),
+          ],
+        ),
+      ),
+    );
+  }
+}
+```
+
+The mediator pattern defines how objects communicate without explicit  
+references to each other. It promotes loose coupling by centralizing  
+complex communications in a mediator object.
+
+## Abstract Factory Pattern
+
+Creating families of related objects using abstract factories.
+
+```dart
+import 'package:flutter/material.dart';
+
+void main() {
+  runApp(const MyApp());
+}
+
+class MyApp extends StatelessWidget {
+  const MyApp({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return MaterialApp(
+      title: 'Abstract Factory Pattern',
+      theme: ThemeData.dark(),
+      home: const AbstractFactoryDemo(),
+    );
+  }
+}
+
+// Abstract products
+abstract class Button {
+  void render();
+  String get style;
+}
+
+abstract class Checkbox {
+  void render();
+  String get style;
+}
+
+// Concrete products for Windows
+class WindowsButton implements Button {
+  @override
+  void render() => print('Rendering Windows button');
+  
+  @override
+  String get style => 'Windows Button';
+}
+
+class WindowsCheckbox implements Checkbox {
+  @override
+  void render() => print('Rendering Windows checkbox');
+  
+  @override
+  String get style => 'Windows Checkbox';
+}
+
+// Concrete products for Mac
+class MacButton implements Button {
+  @override
+  void render() => print('Rendering Mac button');
+  
+  @override
+  String get style => 'Mac Button';
+}
+
+class MacCheckbox implements Checkbox {
+  @override
+  void render() => print('Rendering Mac checkbox');
+  
+  @override
+  String get style => 'Mac Checkbox';
+}
+
+// Abstract factory
+abstract class UIFactory {
+  Button createButton();
+  Checkbox createCheckbox();
+}
+
+// Concrete factories
+class WindowsFactory implements UIFactory {
+  @override
+  Button createButton() => WindowsButton();
+  
+  @override
+  Checkbox createCheckbox() => WindowsCheckbox();
+}
+
+class MacFactory implements UIFactory {
+  @override
+  Button createButton() => MacButton();
+  
+  @override
+  Checkbox createCheckbox() => MacCheckbox();
+}
+
+class AbstractFactoryDemo extends StatefulWidget {
+  const AbstractFactoryDemo({super.key});
+
+  @override
+  State<AbstractFactoryDemo> createState() => _AbstractFactoryDemoState();
+}
+
+class _AbstractFactoryDemoState extends State<AbstractFactoryDemo> {
+  UIFactory? currentFactory;
+  Button? button;
+  Checkbox? checkbox;
+
+  void _selectFactory(String type) {
+    setState(() {
+      currentFactory = type == 'Windows' ? WindowsFactory() : MacFactory();
+      button = currentFactory!.createButton();
+      checkbox = currentFactory!.createCheckbox();
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(title: const Text('Abstract Factory Pattern')),
+      body: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          children: [
+            Row(
+              children: [
+                ElevatedButton(
+                  onPressed: () => _selectFactory('Windows'),
+                  child: const Text('Windows UI'),
+                ),
+                const SizedBox(width: 16),
+                ElevatedButton(
+                  onPressed: () => _selectFactory('Mac'),
+                  child: const Text('Mac UI'),
+                ),
+              ],
+            ),
+            const SizedBox(height: 16),
+            if (button != null && checkbox != null) ...[
+              Text('Button: ${button!.style}'),
+              Text('Checkbox: ${checkbox!.style}'),
+            ],
+          ],
+        ),
+      ),
+    );
+  }
+}
+```
+
+The abstract factory pattern creates families of related objects  
+without specifying concrete classes. It ensures compatibility between  
+products and enables easy switching between product families.
+
+## Bridge Pattern for Implementation Independence
+
+Separating abstraction from implementation using bridge pattern.
+
+```dart
+import 'package:flutter/material.dart';
+
+void main() {
+  runApp(const MyApp());
+}
+
+class MyApp extends StatelessWidget {
+  const MyApp({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return MaterialApp(
+      title: 'Bridge Pattern',
+      theme: ThemeData.dark(),
+      home: const BridgeDemo(),
+    );
+  }
+}
+
+// Implementation interface
+abstract class DrawingAPI {
+  void drawCircle(double x, double y, double radius);
+  void drawRectangle(double x, double y, double width, double height);
+  String get apiName;
+}
+
+// Concrete implementations
+class Canvas2D implements DrawingAPI {
+  @override
+  void drawCircle(double x, double y, double radius) {
+    print('Canvas2D: Drawing circle at ($x, $y) with radius $radius');
+  }
+  
+  @override
+  void drawRectangle(double x, double y, double width, double height) {
+    print('Canvas2D: Drawing rectangle at ($x, $y) with size ${width}x$height');
+  }
+  
+  @override
+  String get apiName => 'Canvas 2D';
+}
+
+class SVG implements DrawingAPI {
+  @override
+  void drawCircle(double x, double y, double radius) {
+    print('SVG: <circle cx="$x" cy="$y" r="$radius"/>');
+  }
+  
+  @override
+  void drawRectangle(double x, double y, double width, double height) {
+    print('SVG: <rect x="$x" y="$y" width="$width" height="$height"/>');
+  }
+  
+  @override
+  String get apiName => 'SVG';
+}
+
+// Abstraction
+abstract class Shape {
+  final DrawingAPI drawingAPI;
+  
+  Shape(this.drawingAPI);
+  
+  void draw();
+  void resize(double factor);
+}
+
+// Refined abstractions
+class Circle extends Shape {
+  double x, y, radius;
+  
+  Circle(DrawingAPI drawingAPI, this.x, this.y, this.radius) : super(drawingAPI);
+  
+  @override
+  void draw() {
+    drawingAPI.drawCircle(x, y, radius);
+  }
+  
+  @override
+  void resize(double factor) {
+    radius *= factor;
+  }
+}
+
+class Rectangle extends Shape {
+  double x, y, width, height;
+  
+  Rectangle(DrawingAPI drawingAPI, this.x, this.y, this.width, this.height) 
+      : super(drawingAPI);
+  
+  @override
+  void draw() {
+    drawingAPI.drawRectangle(x, y, width, height);
+  }
+  
+  @override
+  void resize(double factor) {
+    width *= factor;
+    height *= factor;
+  }
+}
+
+class BridgeDemo extends StatefulWidget {
+  const BridgeDemo({super.key});
+
+  @override
+  State<BridgeDemo> createState() => _BridgeDemoState();
+}
+
+class _BridgeDemoState extends State<BridgeDemo> {
+  DrawingAPI currentAPI = Canvas2D();
+  List<Shape> shapes = [];
+  List<String> operations = [];
+
+  void _switchAPI() {
+    setState(() {
+      currentAPI = currentAPI is Canvas2D ? SVG() : Canvas2D();
+      operations.add('Switched to ${currentAPI.apiName}');
+    });
+  }
+
+  void _addCircle() {
+    final circle = Circle(currentAPI, 50, 50, 25);
+    shapes.add(circle);
+    circle.draw();
+    setState(() {
+      operations.add('Added circle using ${currentAPI.apiName}');
+    });
+  }
+
+  void _addRectangle() {
+    final rectangle = Rectangle(currentAPI, 100, 100, 50, 30);
+    shapes.add(rectangle);
+    rectangle.draw();
+    setState(() {
+      operations.add('Added rectangle using ${currentAPI.apiName}');
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(title: const Text('Bridge Pattern')),
+      body: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          children: [
+            Text('Current API: ${currentAPI.apiName}'),
+            const SizedBox(height: 16),
+            Row(
+              children: [
+                ElevatedButton(
+                  onPressed: _switchAPI,
+                  child: const Text('Switch API'),
+                ),
+                const SizedBox(width: 16),
+                ElevatedButton(
+                  onPressed: _addCircle,
+                  child: const Text('Add Circle'),
+                ),
+                const SizedBox(width: 16),
+                ElevatedButton(
+                  onPressed: _addRectangle,
+                  child: const Text('Add Rectangle'),
+                ),
+              ],
+            ),
+            const SizedBox(height: 16),
+            Text('Total shapes: ${shapes.length}'),
+            const SizedBox(height: 16),
+            Expanded(
+              child: ListView.builder(
+                itemCount: operations.length,
+                itemBuilder: (context, index) => ListTile(
+                  title: Text(operations[index]),
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+```
+
+The bridge pattern separates abstraction from implementation,  
+allowing both to vary independently. It's useful when you want to  
+avoid permanent binding between abstraction and implementation.
