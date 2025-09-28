@@ -79,7 +79,7 @@ useful for showing brief messages to users.
 
 Display a floating SnackBar at the top of the screen using custom margins.  
 
-```flutter
+```dart
 import 'package:flutter/material.dart';
 
 void main() {
