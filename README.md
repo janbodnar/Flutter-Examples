@@ -17,6 +17,56 @@ to learn about Flutter's history, installation, and basic concepts.
 
 ## Examples
 
+### Notification 
+
+```dart
+import 'package:flutter/material.dart';
+
+void main() {
+  runApp(const MyApp());
+}
+
+class MyApp extends StatelessWidget {
+  const MyApp({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return MaterialApp(
+      title: 'Notification Button Demo',
+      theme: ThemeData.dark(),
+      home: const MyHomePage(),
+    );
+  }
+}
+
+class MyHomePage extends StatelessWidget {
+  const MyHomePage({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text('Notification Button'),
+      ),
+      body: Center(
+        child: ElevatedButton(
+          onPressed: () {
+            // Show SnackBar when button is pressed
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(
+                content: Text('Button Clicked!'),
+                duration: Duration(seconds: 3),
+              ),
+            );
+          },
+          child: const Text('Show Notification'),
+        ),
+      ),
+    );
+  }
+}
+```
+
 ### Exit button
 
 Button inside application bar
