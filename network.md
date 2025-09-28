@@ -5393,3 +5393,1874 @@ This example demonstrates batch API request handling with concurrency
 control. It executes multiple requests simultaneously or with limits,  
 providing detailed timing and success metrics. The UI allows adjusting  
 concurrency levels and shows comprehensive results analysis.  
+
+## Server-Sent Events (SSE)
+
+Implementing server-sent events for real-time data streaming.  
+
+```dart
+import 'package:flutter/material.dart';
+import 'package:http/http.dart' as http;
+import 'dart:convert';
+import 'dart:async';
+
+void main() {
+  runApp(const MyApp());
+}
+
+class MyApp extends StatelessWidget {
+  const MyApp({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return MaterialApp(
+      darkTheme: ThemeData.dark(),
+      themeMode: ThemeMode.dark,
+      title: 'Server-Sent Events',
+      home: const SSEPage(),
+    );
+  }
+}
+
+class SSEEvent {
+  final String? id;
+  final String event;
+  final String data;
+  final DateTime timestamp;
+
+  SSEEvent({
+    this.id,
+    required this.event,
+    required this.data,
+    required this.timestamp,
+  });
+}
+
+class SSEClient {
+  final String url;
+  StreamController<SSEEvent>? _controller;
+  StreamSubscription? _subscription;
+  http.Client? _client;
+
+  SSEClient(this.url);
+
+  Stream<SSEEvent> connect() {
+    _controller = StreamController<SSEEvent>.broadcast();
+    _client = http.Client();
+    
+    _startListening();
+    
+    return _controller!.stream;
+  }
+
+  void _startListening() async {
+    try {
+      final request = http.Request('GET', Uri.parse(url));
+      request.headers['Accept'] = 'text/event-stream';
+      request.headers['Cache-Control'] = 'no-cache';
+
+      final response = await _client!.send(request);
+      
+      if (response.statusCode == 200) {
+        _subscription = response.stream
+            .transform(utf8.decoder)
+            .transform(const LineSplitter())
+            .listen(
+              _processLine,
+              onError: (error) => _controller?.addError(error),
+              onDone: () => _controller?.close(),
+            );
+      } else {
+        _controller?.addError('HTTP ${response.statusCode}');
+      }
+    } catch (e) {
+      _controller?.addError(e);
+    }
+  }
+
+  String _eventType = 'message';
+  String _eventData = '';
+  String? _eventId;
+
+  void _processLine(String line) {
+    if (line.isEmpty) {
+      // Empty line indicates end of event
+      if (_eventData.isNotEmpty) {
+        _controller?.add(SSEEvent(
+          id: _eventId,
+          event: _eventType,
+          data: _eventData,
+          timestamp: DateTime.now(),
+        ));
+      }
+      _resetEvent();
+    } else if (line.startsWith('data: ')) {
+      _eventData = line.substring(6);
+    } else if (line.startsWith('event: ')) {
+      _eventType = line.substring(7);
+    } else if (line.startsWith('id: ')) {
+      _eventId = line.substring(4);
+    } else if (line.startsWith('retry: ')) {
+      // Retry interval - could be implemented
+    }
+  }
+
+  void _resetEvent() {
+    _eventType = 'message';
+    _eventData = '';
+    _eventId = null;
+  }
+
+  void disconnect() {
+    _subscription?.cancel();
+    _client?.close();
+    _controller?.close();
+  }
+}
+
+// Mock SSE server for demonstration
+class MockSSEServer {
+  static Timer? _timer;
+  static int _messageCount = 0;
+
+  static Stream<String> generateMockEvents() async* {
+    while (true) {
+      await Future.delayed(const Duration(seconds: 2));
+      
+      _messageCount++;
+      final eventType = _messageCount % 5 == 0 ? 'heartbeat' : 'message';
+      
+      if (eventType == 'heartbeat') {
+        yield 'event: heartbeat\n';
+        yield 'data: {"type":"heartbeat","timestamp":"${DateTime.now().toIso8601String()}"}\n';
+        yield '\n';
+      } else {
+        yield 'id: $_messageCount\n';
+        yield 'event: message\n';
+        yield 'data: {"id":$_messageCount,"message":"Server message $_messageCount","timestamp":"${DateTime.now().toIso8601String()}"}\n';
+        yield '\n';
+      }
+    }
+  }
+}
+
+class SSEPage extends StatefulWidget {
+  const SSEPage({super.key});
+
+  @override
+  State<SSEPage> createState() => _SSEPageState();
+}
+
+class _SSEPageState extends State<SSEPage> {
+  SSEClient? _sseClient;
+  StreamSubscription<SSEEvent>? _sseSubscription;
+  final List<SSEEvent> _events = [];
+  bool _isConnected = false;
+  String _connectionStatus = 'Disconnected';
+  int _messageCount = 0;
+  int _heartbeatCount = 0;
+
+  void _connect() {
+    if (_isConnected) return;
+
+    setState(() {
+      _connectionStatus = 'Connecting...';
+    });
+
+    // Using httpbin.org/stream-bytes for demonstration
+    // In real app, you would use your SSE endpoint
+    _sseClient = SSEClient('https://httpbin.org/stream-bytes/1024');
+    
+    _sseSubscription = _sseClient!.connect().listen(
+      (event) {
+        setState(() {
+          _events.insert(0, event);
+          if (event.event == 'heartbeat') {
+            _heartbeatCount++;
+          } else {
+            _messageCount++;
+          }
+        });
+      },
+      onError: (error) {
+        setState(() {
+          _connectionStatus = 'Error: $error';
+          _isConnected = false;
+        });
+      },
+      onDone: () {
+        setState(() {
+          _connectionStatus = 'Connection closed';
+          _isConnected = false;
+        });
+      },
+    );
+
+    // Simulate connection success and mock events
+    Timer(const Duration(seconds: 1), () {
+      if (mounted) {
+        setState(() {
+          _connectionStatus = 'Connected';
+          _isConnected = true;
+        });
+        _startMockEvents();
+      }
+    });
+  }
+
+  void _startMockEvents() {
+    Timer.periodic(const Duration(seconds: 3), (timer) {
+      if (!_isConnected) {
+        timer.cancel();
+        return;
+      }
+
+      final eventType = _messageCount % 4 == 0 ? 'heartbeat' : 'message';
+      
+      if (eventType == 'heartbeat') {
+        final event = SSEEvent(
+          event: 'heartbeat',
+          data: json.encode({
+            'type': 'heartbeat',
+            'timestamp': DateTime.now().toIso8601String(),
+          }),
+          timestamp: DateTime.now(),
+        );
+        
+        setState(() {
+          _events.insert(0, event);
+          _heartbeatCount++;
+        });
+      } else {
+        _messageCount++;
+        final event = SSEEvent(
+          id: _messageCount.toString(),
+          event: 'message',
+          data: json.encode({
+            'id': _messageCount,
+            'message': 'Mock server message $_messageCount',
+            'timestamp': DateTime.now().toIso8601String(),
+          }),
+          timestamp: DateTime.now(),
+        );
+        
+        setState(() {
+          _events.insert(0, event);
+        });
+      }
+    });
+  }
+
+  void _disconnect() {
+    _sseClient?.disconnect();
+    _sseSubscription?.cancel();
+    
+    setState(() {
+      _isConnected = false;
+      _connectionStatus = 'Disconnected';
+    });
+  }
+
+  Widget _buildConnectionStatus() {
+    Color statusColor;
+    IconData statusIcon;
+
+    if (_isConnected) {
+      statusColor = Colors.green;
+      statusIcon = Icons.radio_button_checked;
+    } else if (_connectionStatus.contains('Connecting')) {
+      statusColor = Colors.orange;
+      statusIcon = Icons.sync;
+    } else if (_connectionStatus.contains('Error')) {
+      statusColor = Colors.red;
+      statusIcon = Icons.error;
+    } else {
+      statusColor = Colors.grey;
+      statusIcon = Icons.radio_button_unchecked;
+    }
+
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(16.0),
+        child: Column(
+          children: [
+            Row(
+              children: [
+                Icon(statusIcon, color: statusColor),
+                const SizedBox(width: 8),
+                Text(
+                  _connectionStatus,
+                  style: TextStyle(
+                    fontWeight: FontWeight.bold,
+                    color: statusColor,
+                  ),
+                ),
+                const Spacer(),
+                if (!_isConnected)
+                  ElevatedButton(
+                    onPressed: _connect,
+                    child: const Text('Connect'),
+                  )
+                else
+                  ElevatedButton(
+                    onPressed: _disconnect,
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.red.withOpacity(0.8),
+                    ),
+                    child: const Text('Disconnect'),
+                  ),
+              ],
+            ),
+            if (_isConnected) ...[
+              const SizedBox(height: 12),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceAround,
+                children: [
+                  Column(
+                    children: [
+                      Text('$_messageCount', style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+                      const Text('Messages', style: TextStyle(fontSize: 12)),
+                    ],
+                  ),
+                  Column(
+                    children: [
+                      Text('$_heartbeatCount', style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+                      const Text('Heartbeats', style: TextStyle(fontSize: 12)),
+                    ],
+                  ),
+                  Column(
+                    children: [
+                      Text('${_events.length}', style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+                      const Text('Total Events', style: TextStyle(fontSize: 12)),
+                    ],
+                  ),
+                ],
+              ),
+            ],
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildEventItem(SSEEvent event) {
+    final isHeartbeat = event.event == 'heartbeat';
+    final color = isHeartbeat ? Colors.blue : Colors.green;
+    
+    Map<String, dynamic>? parsedData;
+    try {
+      parsedData = json.decode(event.data);
+    } catch (e) {
+      // Data is not JSON
+    }
+
+    return Card(
+      color: color.withOpacity(0.1),
+      child: ListTile(
+        leading: Icon(
+          isHeartbeat ? Icons.favorite : Icons.message,
+          color: color,
+        ),
+        title: Text(
+          event.event.toUpperCase(),
+          style: TextStyle(
+            fontWeight: FontWeight.bold,
+            color: color,
+          ),
+        ),
+        subtitle: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            if (event.id != null)
+              Text('ID: ${event.id}', style: const TextStyle(fontSize: 10)),
+            const SizedBox(height: 4),
+            Text(
+              parsedData?['message'] ?? event.data,
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
+            ),
+            const SizedBox(height: 4),
+            Text(
+              event.timestamp.toString().substring(11, 19),
+              style: const TextStyle(fontSize: 10, color: Colors.grey),
+            ),
+          ],
+        ),
+        onTap: () {
+          showDialog(
+            context: context,
+            builder: (context) => AlertDialog(
+              title: Text('${event.event.toUpperCase()} Event'),
+              content: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  if (event.id != null) Text('ID: ${event.id}'),
+                  const SizedBox(height: 8),
+                  const Text('Data:', style: TextStyle(fontWeight: FontWeight.bold)),
+                  const SizedBox(height: 4),
+                  Text(event.data),
+                  const SizedBox(height: 8),
+                  Text('Timestamp: ${event.timestamp}'),
+                ],
+              ),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.of(context).pop(),
+                  child: const Text('Close'),
+                ),
+              ],
+            ),
+          );
+        },
+      ),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text('Server-Sent Events'),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.clear_all),
+            onPressed: () {
+              setState(() {
+                _events.clear();
+                _messageCount = 0;
+                _heartbeatCount = 0;
+              });
+            },
+          ),
+        ],
+      ),
+      body: Column(
+        children: [
+          Padding(
+            padding: const EdgeInsets.all(16.0),
+            child: _buildConnectionStatus(),
+          ),
+          Expanded(
+            child: _events.isEmpty
+                ? const Center(
+                    child: Text(
+                      'No events received yet.\nConnect to start receiving events.',
+                      textAlign: TextAlign.center,
+                    ),
+                  )
+                : ListView.builder(
+                    itemCount: _events.length,
+                    itemBuilder: (context, index) {
+                      return Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 2),
+                        child: _buildEventItem(_events[index]),
+                      );
+                    },
+                  ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  @override
+  void dispose() {
+    _disconnect();
+    super.dispose();
+  }
+}
+```
+
+This example demonstrates Server-Sent Events (SSE) for real-time data  
+streaming. It includes event parsing, connection management, and different  
+event types like messages and heartbeats. The UI shows live connection  
+status and event statistics.  
+
+## Request/Response Logging
+
+Comprehensive logging system for network requests and responses.  
+
+```dart
+import 'package:flutter/material.dart';
+import 'package:http/http.dart' as http;
+import 'dart:convert';
+
+void main() {
+  runApp(const MyApp());
+}
+
+class MyApp extends StatelessWidget {
+  const MyApp({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return MaterialApp(
+      darkTheme: ThemeData.dark(),
+      themeMode: ThemeMode.dark,
+      title: 'Request Logging',
+      home: const RequestLoggingPage(),
+    );
+  }
+}
+
+enum LogLevel { debug, info, warning, error }
+
+class NetworkLog {
+  final String id;
+  final DateTime timestamp;
+  final String method;
+  final String url;
+  final Map<String, String> requestHeaders;
+  final String? requestBody;
+  final int? responseStatusCode;
+  final Map<String, String> responseHeaders;
+  final String? responseBody;
+  final Duration? responseTime;
+  final String? error;
+  final LogLevel level;
+
+  NetworkLog({
+    required this.id,
+    required this.timestamp,
+    required this.method,
+    required this.url,
+    required this.requestHeaders,
+    this.requestBody,
+    this.responseStatusCode,
+    this.responseHeaders = const {},
+    this.responseBody,
+    this.responseTime,
+    this.error,
+    required this.level,
+  });
+
+  bool get isSuccess => 
+      error == null && 
+      responseStatusCode != null && 
+      responseStatusCode! >= 200 && 
+      responseStatusCode! < 300;
+}
+
+class NetworkLogger {
+  static final List<NetworkLog> _logs = [];
+  static const int maxLogs = 100;
+
+  static void logRequest(
+    String method,
+    String url,
+    Map<String, String> headers,
+    String? body,
+  ) {
+    final log = NetworkLog(
+      id: DateTime.now().millisecondsSinceEpoch.toString(),
+      timestamp: DateTime.now(),
+      method: method,
+      url: url,
+      requestHeaders: headers,
+      requestBody: body,
+      level: LogLevel.info,
+    );
+
+    _addLog(log);
+    print('→ $method $url');
+    if (body != null) print('  Body: $body');
+  }
+
+  static void logResponse(
+    String requestId,
+    int statusCode,
+    Map<String, String> headers,
+    String body,
+    Duration responseTime,
+  ) {
+    final existingLogIndex = _logs.indexWhere((log) => log.id == requestId);
+    
+    if (existingLogIndex != -1) {
+      final existingLog = _logs[existingLogIndex];
+      final updatedLog = NetworkLog(
+        id: existingLog.id,
+        timestamp: existingLog.timestamp,
+        method: existingLog.method,
+        url: existingLog.url,
+        requestHeaders: existingLog.requestHeaders,
+        requestBody: existingLog.requestBody,
+        responseStatusCode: statusCode,
+        responseHeaders: headers,
+        responseBody: body,
+        responseTime: responseTime,
+        level: statusCode >= 400 ? LogLevel.error : LogLevel.info,
+      );
+      
+      _logs[existingLogIndex] = updatedLog;
+    }
+
+    print('← $statusCode • ${responseTime.inMilliseconds}ms');
+    print('  Response: ${body.length > 100 ? body.substring(0, 100) + '...' : body}');
+  }
+
+  static void logError(String requestId, String error) {
+    final existingLogIndex = _logs.indexWhere((log) => log.id == requestId);
+    
+    if (existingLogIndex != -1) {
+      final existingLog = _logs[existingLogIndex];
+      final updatedLog = NetworkLog(
+        id: existingLog.id,
+        timestamp: existingLog.timestamp,
+        method: existingLog.method,
+        url: existingLog.url,
+        requestHeaders: existingLog.requestHeaders,
+        requestBody: existingLog.requestBody,
+        error: error,
+        level: LogLevel.error,
+      );
+      
+      _logs[existingLogIndex] = updatedLog;
+    } else {
+      _addLog(NetworkLog(
+        id: requestId,
+        timestamp: DateTime.now(),
+        method: 'UNKNOWN',
+        url: 'UNKNOWN',
+        requestHeaders: {},
+        error: error,
+        level: LogLevel.error,
+      ));
+    }
+
+    print('✗ Error: $error');
+  }
+
+  static void _addLog(NetworkLog log) {
+    _logs.insert(0, log);
+    if (_logs.length > maxLogs) {
+      _logs.removeRange(maxLogs, _logs.length);
+    }
+  }
+
+  static List<NetworkLog> get logs => List.unmodifiable(_logs);
+
+  static void clearLogs() {
+    _logs.clear();
+  }
+
+  static List<NetworkLog> getLogsByLevel(LogLevel level) {
+    return _logs.where((log) => log.level == level).toList();
+  }
+
+  static List<NetworkLog> getLogsInTimeRange(DateTime start, DateTime end) {
+    return _logs.where((log) => 
+        log.timestamp.isAfter(start) && log.timestamp.isBefore(end)
+    ).toList();
+  }
+}
+
+class LoggingHttpClient extends http.BaseClient {
+  final http.Client _inner = http.Client();
+
+  @override
+  Future<http.StreamedResponse> send(http.BaseRequest request) async {
+    final requestId = DateTime.now().millisecondsSinceEpoch.toString();
+    final startTime = DateTime.now();
+
+    NetworkLogger.logRequest(
+      request.method,
+      request.url.toString(),
+      request.headers,
+      request is http.Request ? request.body : null,
+    );
+
+    try {
+      final response = await _inner.send(request);
+      final responseBody = await response.stream.bytesToString();
+      final endTime = DateTime.now();
+      final responseTime = endTime.difference(startTime);
+
+      NetworkLogger.logResponse(
+        requestId,
+        response.statusCode,
+        response.headers,
+        responseBody,
+        responseTime,
+      );
+
+      return http.StreamedResponse(
+        Stream.value(utf8.encode(responseBody)),
+        response.statusCode,
+        headers: response.headers,
+        isRedirect: response.isRedirect,
+        persistentConnection: response.persistentConnection,
+        reasonPhrase: response.reasonPhrase,
+      );
+    } catch (error) {
+      NetworkLogger.logError(requestId, error.toString());
+      rethrow;
+    }
+  }
+
+  @override
+  void close() {
+    _inner.close();
+    super.close();
+  }
+}
+
+class RequestLoggingPage extends StatefulWidget {
+  const RequestLoggingPage({super.key});
+
+  @override
+  State<RequestLoggingPage> createState() => _RequestLoggingPageState();
+}
+
+class _RequestLoggingPageState extends State<RequestLoggingPage> {
+  late LoggingHttpClient _client;
+  LogLevel _selectedLevel = LogLevel.info;
+  bool _isLoading = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _client = LoggingHttpClient();
+  }
+
+  Future<void> _makeSuccessRequest() async {
+    setState(() {
+      _isLoading = true;
+    });
+
+    try {
+      await _client.get(Uri.parse('https://jsonplaceholder.typicode.com/posts/1'));
+    } catch (e) {
+      // Error already logged
+    } finally {
+      setState(() {
+        _isLoading = false;
+      });
+    }
+  }
+
+  Future<void> _makeErrorRequest() async {
+    setState(() {
+      _isLoading = true;
+    });
+
+    try {
+      await _client.get(Uri.parse('https://jsonplaceholder.typicode.com/posts/999999'));
+    } catch (e) {
+      // Error already logged
+    } finally {
+      setState(() {
+        _isLoading = false;
+      });
+    }
+  }
+
+  Future<void> _makePostRequest() async {
+    setState(() {
+      _isLoading = true;
+    });
+
+    try {
+      await _client.post(
+        Uri.parse('https://jsonplaceholder.typicode.com/posts'),
+        headers: {'Content-Type': 'application/json'},
+        body: json.encode({
+          'title': 'Test Post',
+          'body': 'This is a test post with logging',
+          'userId': 1,
+        }),
+      );
+    } catch (e) {
+      // Error already logged
+    } finally {
+      setState(() {
+        _isLoading = false;
+      });
+    }
+  }
+
+  Widget _buildLogLevelFilter() {
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(16.0),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text('Filter by Log Level:', style: TextStyle(fontWeight: FontWeight.bold)),
+            const SizedBox(height: 8),
+            Wrap(
+              spacing: 8,
+              children: LogLevel.values.map((level) {
+                final count = NetworkLogger.getLogsByLevel(level).length;
+                return FilterChip(
+                  label: Text('${level.name.toUpperCase()} ($count)'),
+                  selected: _selectedLevel == level,
+                  onSelected: (selected) {
+                    if (selected) {
+                      setState(() {
+                        _selectedLevel = level;
+                      });
+                    }
+                  },
+                );
+              }).toList(),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildLogItem(NetworkLog log) {
+    Color levelColor;
+    IconData levelIcon;
+
+    switch (log.level) {
+      case LogLevel.debug:
+        levelColor = Colors.grey;
+        levelIcon = Icons.bug_report;
+        break;
+      case LogLevel.info:
+        levelColor = log.isSuccess ? Colors.green : Colors.blue;
+        levelIcon = Icons.info;
+        break;
+      case LogLevel.warning:
+        levelColor = Colors.orange;
+        levelIcon = Icons.warning;
+        break;
+      case LogLevel.error:
+        levelColor = Colors.red;
+        levelIcon = Icons.error;
+        break;
+    }
+
+    return Card(
+      color: levelColor.withOpacity(0.1),
+      child: ExpansionTile(
+        leading: Icon(levelIcon, color: levelColor),
+        title: Text('${log.method} ${Uri.parse(log.url).path}'),
+        subtitle: Text(
+          '${log.timestamp.toString().substring(11, 19)} • '
+          '${log.responseStatusCode ?? 'Pending'} • '
+          '${log.responseTime?.inMilliseconds ?? 0}ms',
+          style: TextStyle(fontSize: 12, color: levelColor),
+        ),
+        children: [
+          Padding(
+            padding: const EdgeInsets.all(16.0),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text('Request:', style: TextStyle(fontWeight: FontWeight.bold)),
+                Text('URL: ${log.url}', style: const TextStyle(fontSize: 12)),
+                const SizedBox(height: 4),
+                const Text('Headers:', style: TextStyle(fontWeight: FontWeight.bold)),
+                ...log.requestHeaders.entries.take(3).map(
+                  (entry) => Text('${entry.key}: ${entry.value}',
+                      style: const TextStyle(fontSize: 12)),
+                ),
+                if (log.requestBody != null) ...[
+                  const SizedBox(height: 8),
+                  const Text('Body:', style: TextStyle(fontWeight: FontWeight.bold)),
+                  Text(log.requestBody!, style: const TextStyle(fontSize: 12)),
+                ],
+                const SizedBox(height: 12),
+                if (log.error != null) ...[
+                  const Text('Error:', style: TextStyle(fontWeight: FontWeight.bold, color: Colors.red)),
+                  Text(log.error!, style: const TextStyle(fontSize: 12, color: Colors.red)),
+                ] else if (log.responseBody != null) ...[
+                  const Text('Response:', style: TextStyle(fontWeight: FontWeight.bold)),
+                  Text(
+                    log.responseBody!.length > 200 
+                        ? '${log.responseBody!.substring(0, 200)}...'
+                        : log.responseBody!,
+                    style: const TextStyle(fontSize: 12),
+                  ),
+                ],
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final filteredLogs = _selectedLevel == LogLevel.info 
+        ? NetworkLogger.logs
+        : NetworkLogger.getLogsByLevel(_selectedLevel);
+
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text('Request Logging'),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.clear_all),
+            onPressed: () {
+              NetworkLogger.clearLogs();
+              setState(() {});
+            },
+          ),
+        ],
+      ),
+      body: Column(
+        children: [
+          Padding(
+            padding: const EdgeInsets.all(16.0),
+            child: Column(
+              children: [
+                Row(
+                  children: [
+                    Expanded(
+                      child: ElevatedButton(
+                        onPressed: _isLoading ? null : _makeSuccessRequest,
+                        child: const Text('Success Request'),
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: ElevatedButton(
+                        onPressed: _isLoading ? null : _makeErrorRequest,
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: Colors.red.withOpacity(0.8),
+                        ),
+                        child: const Text('Error Request'),
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 8),
+                ElevatedButton(
+                  onPressed: _isLoading ? null : _makePostRequest,
+                  child: const Text('POST Request'),
+                ),
+              ],
+            ),
+          ),
+          if (_isLoading)
+            const Padding(
+              padding: EdgeInsets.all(16.0),
+              child: CircularProgressIndicator(),
+            ),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16.0),
+            child: _buildLogLevelFilter(),
+          ),
+          Expanded(
+            child: filteredLogs.isEmpty
+                ? const Center(child: Text('No logs available'))
+                : ListView.builder(
+                    itemCount: filteredLogs.length,
+                    itemBuilder: (context, index) {
+                      return Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 2),
+                        child: _buildLogItem(filteredLogs[index]),
+                      );
+                    },
+                  ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  @override
+  void dispose() {
+    _client.close();
+    super.dispose();
+  }
+}
+```
+
+This example demonstrates comprehensive request/response logging with  
+filtering capabilities. It tracks all network activity with detailed  
+information including headers, body content, timing, and error states.  
+The logging system supports different log levels and provides searchable  
+history for debugging purposes.  
+
+## REST API Client Pattern
+
+Structured REST API client with resource-based organization.  
+
+```dart
+import 'package:flutter/material.dart';
+import 'package:http/http.dart' as http;
+import 'dart:convert';
+
+void main() {
+  runApp(const MyApp());
+}
+
+class MyApp extends StatelessWidget {
+  const MyApp({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return MaterialApp(
+      darkTheme: ThemeData.dark(),
+      themeMode: ThemeMode.dark,
+      title: 'REST API Client',
+      home: const ApiClientPage(),
+    );
+  }
+}
+
+class ApiException implements Exception {
+  final int statusCode;
+  final String message;
+  final Map<String, dynamic>? errorDetails;
+
+  ApiException(this.statusCode, this.message, [this.errorDetails]);
+
+  @override
+  String toString() => 'ApiException: $statusCode - $message';
+}
+
+abstract class BaseApiClient {
+  final String baseUrl;
+  final Map<String, String> defaultHeaders;
+
+  BaseApiClient({
+    required this.baseUrl,
+    Map<String, String>? headers,
+  }) : defaultHeaders = {
+          'Content-Type': 'application/json',
+          'Accept': 'application/json',
+          ...?headers,
+        };
+
+  Future<Map<String, dynamic>> get(String endpoint) async {
+    return _makeRequest('GET', endpoint);
+  }
+
+  Future<Map<String, dynamic>> post(String endpoint, {dynamic body}) async {
+    return _makeRequest('POST', endpoint, body: body);
+  }
+
+  Future<Map<String, dynamic>> put(String endpoint, {dynamic body}) async {
+    return _makeRequest('PUT', endpoint, body: body);
+  }
+
+  Future<Map<String, dynamic>> delete(String endpoint) async {
+    return _makeRequest('DELETE', endpoint);
+  }
+
+  Future<Map<String, dynamic>> _makeRequest(
+    String method,
+    String endpoint, {
+    dynamic body,
+  }) async {
+    final url = Uri.parse('$baseUrl$endpoint');
+    
+    try {
+      http.Response response;
+
+      switch (method) {
+        case 'GET':
+          response = await http.get(url, headers: defaultHeaders);
+          break;
+        case 'POST':
+          response = await http.post(
+            url,
+            headers: defaultHeaders,
+            body: body != null ? json.encode(body) : null,
+          );
+          break;
+        case 'PUT':
+          response = await http.put(
+            url,
+            headers: defaultHeaders,
+            body: body != null ? json.encode(body) : null,
+          );
+          break;
+        case 'DELETE':
+          response = await http.delete(url, headers: defaultHeaders);
+          break;
+        default:
+          throw ApiException(0, 'Unsupported HTTP method: $method');
+      }
+
+      return _handleResponse(response);
+    } catch (e) {
+      if (e is ApiException) rethrow;
+      throw ApiException(0, 'Network error: $e');
+    }
+  }
+
+  Map<String, dynamic> _handleResponse(http.Response response) {
+    if (response.statusCode >= 200 && response.statusCode < 300) {
+      if (response.body.isEmpty) return {};
+      
+      try {
+        return json.decode(response.body);
+      } catch (e) {
+        throw ApiException(
+          response.statusCode,
+          'Invalid JSON response',
+          {'originalBody': response.body},
+        );
+      }
+    } else {
+      String errorMessage = 'HTTP ${response.statusCode}';
+      Map<String, dynamic>? errorDetails;
+
+      try {
+        errorDetails = json.decode(response.body);
+        errorMessage = errorDetails['message'] ?? errorMessage;
+      } catch (e) {
+        // Response body is not JSON
+        errorDetails = {'body': response.body};
+      }
+
+      throw ApiException(response.statusCode, errorMessage, errorDetails);
+    }
+  }
+}
+
+// Models
+class Post {
+  final int id;
+  final String title;
+  final String body;
+  final int userId;
+
+  Post({
+    required this.id,
+    required this.title,
+    required this.body,
+    required this.userId,
+  });
+
+  factory Post.fromJson(Map<String, dynamic> json) {
+    return Post(
+      id: json['id'],
+      title: json['title'],
+      body: json['body'],
+      userId: json['userId'],
+    );
+  }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'id': id,
+      'title': title,
+      'body': body,
+      'userId': userId,
+    };
+  }
+}
+
+class User {
+  final int id;
+  final String name;
+  final String email;
+  final String phone;
+
+  User({
+    required this.id,
+    required this.name,
+    required this.email,
+    required this.phone,
+  });
+
+  factory User.fromJson(Map<String, dynamic> json) {
+    return User(
+      id: json['id'],
+      name: json['name'],
+      email: json['email'],
+      phone: json['phone'],
+    );
+  }
+}
+
+// Resource Services
+class PostService extends BaseApiClient {
+  PostService() : super(baseUrl: 'https://jsonplaceholder.typicode.com');
+
+  Future<List<Post>> getAllPosts() async {
+    final response = await get('/posts');
+    return (response as List).map((json) => Post.fromJson(json)).toList();
+  }
+
+  Future<Post> getPost(int id) async {
+    final response = await get('/posts/$id');
+    return Post.fromJson(response);
+  }
+
+  Future<Post> createPost(String title, String body, int userId) async {
+    final response = await post('/posts', body: {
+      'title': title,
+      'body': body,
+      'userId': userId,
+    });
+    return Post.fromJson(response);
+  }
+
+  Future<Post> updatePost(Post post) async {
+    final response = await put('/posts/${post.id}', body: post.toJson());
+    return Post.fromJson(response);
+  }
+
+  Future<void> deletePost(int id) async {
+    await delete('/posts/$id');
+  }
+
+  Future<List<Post>> getPostsByUser(int userId) async {
+    final response = await get('/posts?userId=$userId');
+    return (response as List).map((json) => Post.fromJson(json)).toList();
+  }
+}
+
+class UserService extends BaseApiClient {
+  UserService() : super(baseUrl: 'https://jsonplaceholder.typicode.com');
+
+  Future<List<User>> getAllUsers() async {
+    final response = await get('/users');
+    return (response as List).map((json) => User.fromJson(json)).toList();
+  }
+
+  Future<User> getUser(int id) async {
+    final response = await get('/users/$id');
+    return User.fromJson(response);
+  }
+}
+
+// Combined API Client
+class ApiClient {
+  late final PostService posts;
+  late final UserService users;
+
+  ApiClient() {
+    posts = PostService();
+    users = UserService();
+  }
+}
+
+class ApiClientPage extends StatefulWidget {
+  const ApiClientPage({super.key});
+
+  @override
+  State<ApiClientPage> createState() => _ApiClientPageState();
+}
+
+class _ApiClientPageState extends State<ApiClientPage> {
+  late final ApiClient _apiClient;
+  String _result = '';
+  bool _isLoading = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _apiClient = ApiClient();
+  }
+
+  Future<void> _executeOperation(String operation) async {
+    setState(() {
+      _isLoading = true;
+      _result = '';
+    });
+
+    try {
+      switch (operation) {
+        case 'getAllPosts':
+          final posts = await _apiClient.posts.getAllPosts();
+          setState(() {
+            _result = 'Fetched ${posts.length} posts:\n\n' +
+                posts.take(3).map((p) => '${p.id}. ${p.title}').join('\n');
+          });
+          break;
+
+        case 'getPost':
+          final post = await _apiClient.posts.getPost(1);
+          setState(() {
+            _result = 'Post Details:\n\n'
+                'ID: ${post.id}\n'
+                'Title: ${post.title}\n'
+                'Body: ${post.body}\n'
+                'User ID: ${post.userId}';
+          });
+          break;
+
+        case 'createPost':
+          final newPost = await _apiClient.posts.createPost(
+            'Flutter REST Example',
+            'This post was created using the REST API client pattern.',
+            1,
+          );
+          setState(() {
+            _result = 'Created Post:\n\n'
+                'ID: ${newPost.id}\n'
+                'Title: ${newPost.title}\n'
+                'Body: ${newPost.body}';
+          });
+          break;
+
+        case 'getUsers':
+          final users = await _apiClient.users.getAllUsers();
+          setState(() {
+            _result = 'Fetched ${users.length} users:\n\n' +
+                users.take(5).map((u) => '${u.id}. ${u.name} (${u.email})').join('\n');
+          });
+          break;
+
+        case 'getUserPosts':
+          final user = await _apiClient.users.getUser(1);
+          final posts = await _apiClient.posts.getPostsByUser(1);
+          setState(() {
+            _result = 'Posts by ${user.name}:\n\n' +
+                posts.take(3).map((p) => '• ${p.title}').join('\n');
+          });
+          break;
+
+        case 'errorTest':
+          await _apiClient.posts.getPost(999999); // Non-existent post
+          break;
+      }
+    } catch (e) {
+      setState(() {
+        if (e is ApiException) {
+          _result = 'API Error:\n\n'
+              'Status: ${e.statusCode}\n'
+              'Message: ${e.message}\n'
+              '${e.errorDetails != null ? 'Details: ${e.errorDetails}' : ''}';
+        } else {
+          _result = 'Error: $e';
+        }
+      });
+    } finally {
+      setState(() {
+        _isLoading = false;
+      });
+    }
+  }
+
+  Widget _buildOperationButton(String title, String operation, {Color? color}) {
+    return Expanded(
+      child: ElevatedButton(
+        onPressed: _isLoading ? null : () => _executeOperation(operation),
+        style: color != null
+            ? ElevatedButton.styleFrom(backgroundColor: color.withOpacity(0.8))
+            : null,
+        child: Text(
+          title,
+          textAlign: TextAlign.center,
+          style: const TextStyle(fontSize: 12),
+        ),
+      ),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text('REST API Client'),
+      ),
+      body: Padding(
+        padding: const EdgeInsets.all(16.0),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            const Card(
+              child: Padding(
+                padding: EdgeInsets.all(16.0),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'REST API Client Pattern:',
+                      style: TextStyle(fontWeight: FontWeight.bold),
+                    ),
+                    SizedBox(height: 8),
+                    Text('• Resource-based service organization'),
+                    Text('• Consistent error handling'),
+                    Text('• Type-safe model classes'),
+                    Text('• Reusable HTTP client base'),
+                  ],
+                ),
+              ),
+            ),
+            const SizedBox(height: 16),
+            const Text(
+              'Post Operations:',
+              style: TextStyle(fontWeight: FontWeight.bold),
+            ),
+            const SizedBox(height: 8),
+            Row(
+              children: [
+                _buildOperationButton('Get All\nPosts', 'getAllPosts'),
+                const SizedBox(width: 8),
+                _buildOperationButton('Get Single\nPost', 'getPost'),
+                const SizedBox(width: 8),
+                _buildOperationButton('Create\nPost', 'createPost'),
+              ],
+            ),
+            const SizedBox(height: 16),
+            const Text(
+              'User Operations:',
+              style: TextStyle(fontWeight: FontWeight.bold),
+            ),
+            const SizedBox(height: 8),
+            Row(
+              children: [
+                _buildOperationButton('Get All\nUsers', 'getUsers'),
+                const SizedBox(width: 8),
+                _buildOperationButton('User\'s\nPosts', 'getUserPosts'),
+                const SizedBox(width: 8),
+                _buildOperationButton('Error\nTest', 'errorTest', color: Colors.red),
+              ],
+            ),
+            const SizedBox(height: 20),
+            if (_isLoading)
+              const Center(child: CircularProgressIndicator())
+            else if (_result.isNotEmpty)
+              Expanded(
+                child: Container(
+                  padding: const EdgeInsets.all(16),
+                  decoration: BoxDecoration(
+                    color: _result.contains('Error')
+                        ? Colors.red.withOpacity(0.1)
+                        : Colors.green.withOpacity(0.1),
+                    border: Border.all(
+                      color: _result.contains('Error') ? Colors.red : Colors.green,
+                    ),
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: SingleChildScrollView(
+                    child: Text(
+                      _result,
+                      style: const TextStyle(fontSize: 14),
+                    ),
+                  ),
+                ),
+              ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+```
+
+This example demonstrates a structured REST API client pattern with  
+resource-based organization. It includes type-safe model classes,  
+consistent error handling, and reusable service patterns. The client  
+provides a clean interface for different API resources.  
+
+## Network Image Caching
+
+Advanced image loading with caching and placeholder handling.  
+
+```dart
+import 'package:flutter/material.dart';
+import 'package:http/http.dart' as http;
+import 'dart:typed_data';
+import 'dart:ui' as ui;
+
+void main() {
+  runApp(const MyApp());
+}
+
+class MyApp extends StatelessWidget {
+  const MyApp({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return MaterialApp(
+      darkTheme: ThemeData.dark(),
+      themeMode: ThemeMode.dark,
+      title: 'Network Image Caching',
+      home: const ImageCachingPage(),
+    );
+  }
+}
+
+class CachedImageData {
+  final Uint8List bytes;
+  final DateTime timestamp;
+  final String contentType;
+  final int sizeInBytes;
+
+  CachedImageData({
+    required this.bytes,
+    required this.timestamp,
+    required this.contentType,
+    required this.sizeInBytes,
+  });
+
+  bool isExpired(Duration maxAge) {
+    return DateTime.now().difference(timestamp) > maxAge;
+  }
+}
+
+class ImageCache {
+  static final Map<String, CachedImageData> _cache = {};
+  static const Duration defaultMaxAge = Duration(hours: 1);
+  static const int maxCacheSize = 50 * 1024 * 1024; // 50MB
+
+  static void put(String url, Uint8List bytes, String contentType) {
+    _cleanupExpired();
+    _enforceSizeLimit();
+
+    _cache[url] = CachedImageData(
+      bytes: bytes,
+      timestamp: DateTime.now(),
+      contentType: contentType,
+      sizeInBytes: bytes.length,
+    );
+  }
+
+  static CachedImageData? get(String url, {Duration? maxAge}) {
+    final cached = _cache[url];
+    if (cached == null) return null;
+
+    if (cached.isExpired(maxAge ?? defaultMaxAge)) {
+      _cache.remove(url);
+      return null;
+    }
+
+    return cached;
+  }
+
+  static void _cleanupExpired() {
+    final now = DateTime.now();
+    _cache.removeWhere((key, value) => 
+        now.difference(value.timestamp) > defaultMaxAge);
+  }
+
+  static void _enforceSizeLimit() {
+    int totalSize = _cache.values.fold(0, (sum, data) => sum + data.sizeInBytes);
+    
+    if (totalSize > maxCacheSize) {
+      // Remove oldest entries until under limit
+      final entries = _cache.entries.toList();
+      entries.sort((a, b) => a.value.timestamp.compareTo(b.value.timestamp));
+      
+      for (final entry in entries) {
+        _cache.remove(entry.key);
+        totalSize -= entry.value.sizeInBytes;
+        if (totalSize <= maxCacheSize * 0.8) break; // Remove to 80% of limit
+      }
+    }
+  }
+
+  static void clear() {
+    _cache.clear();
+  }
+
+  static int get cacheSize => _cache.length;
+  static int get cacheSizeInBytes => 
+      _cache.values.fold(0, (sum, data) => sum + data.sizeInBytes);
+
+  static Map<String, DateTime> getCacheInfo() {
+    return Map.fromEntries(
+      _cache.entries.map((e) => MapEntry(e.key, e.value.timestamp)),
+    );
+  }
+}
+
+class CachedNetworkImage extends StatefulWidget {
+  final String imageUrl;
+  final double? width;
+  final double? height;
+  final BoxFit fit;
+  final Widget? placeholder;
+  final Widget? errorWidget;
+
+  const CachedNetworkImage({
+    super.key,
+    required this.imageUrl,
+    this.width,
+    this.height,
+    this.fit = BoxFit.cover,
+    this.placeholder,
+    this.errorWidget,
+  });
+
+  @override
+  State<CachedNetworkImage> createState() => _CachedNetworkImageState();
+}
+
+class _CachedNetworkImageState extends State<CachedNetworkImage> {
+  Uint8List? _imageBytes;
+  bool _isLoading = true;
+  String? _error;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadImage();
+  }
+
+  Future<void> _loadImage() async {
+    setState(() {
+      _isLoading = true;
+      _error = null;
+    });
+
+    try {
+      // Check cache first
+      final cached = ImageCache.get(widget.imageUrl);
+      if (cached != null) {
+        setState(() {
+          _imageBytes = cached.bytes;
+          _isLoading = false;
+        });
+        return;
+      }
+
+      // Load from network
+      final response = await http.get(Uri.parse(widget.imageUrl));
+      
+      if (response.statusCode == 200) {
+        final bytes = response.bodyBytes;
+        final contentType = response.headers['content-type'] ?? 'image/jpeg';
+        
+        // Cache the image
+        ImageCache.put(widget.imageUrl, bytes, contentType);
+        
+        setState(() {
+          _imageBytes = bytes;
+          _isLoading = false;
+        });
+      } else {
+        throw Exception('HTTP ${response.statusCode}');
+      }
+    } catch (e) {
+      setState(() {
+        _error = e.toString();
+        _isLoading = false;
+      });
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    if (_isLoading) {
+      return widget.placeholder ?? 
+          Container(
+            width: widget.width,
+            height: widget.height,
+            decoration: BoxDecoration(
+              color: Colors.grey.withOpacity(0.3),
+              borderRadius: BorderRadius.circular(8),
+            ),
+            child: const Center(
+              child: CircularProgressIndicator(),
+            ),
+          );
+    }
+
+    if (_error != null) {
+      return widget.errorWidget ?? 
+          Container(
+            width: widget.width,
+            height: widget.height,
+            decoration: BoxDecoration(
+              color: Colors.red.withOpacity(0.1),
+              border: Border.all(color: Colors.red),
+              borderRadius: BorderRadius.circular(8),
+            ),
+            child: const Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Icon(Icons.error, color: Colors.red),
+                SizedBox(height: 8),
+                Text('Failed to load image', style: TextStyle(fontSize: 12)),
+              ],
+            ),
+          );
+    }
+
+    if (_imageBytes != null) {
+      return Image.memory(
+        _imageBytes!,
+        width: widget.width,
+        height: widget.height,
+        fit: widget.fit,
+      );
+    }
+
+    return const SizedBox.shrink();
+  }
+}
+
+class ImageCachingPage extends StatefulWidget {
+  const ImageCachingPage({super.key});
+
+  @override
+  State<ImageCachingPage> createState() => _ImageCachingPageState();
+}
+
+class _ImageCachingPageState extends State<ImageCachingPage> {
+  final List<String> _imageUrls = [
+    'https://picsum.photos/300/200?random=1',
+    'https://picsum.photos/300/200?random=2',
+    'https://picsum.photos/300/200?random=3',
+    'https://picsum.photos/300/200?random=4',
+    'https://picsum.photos/300/200?random=5',
+    'https://picsum.photos/300/200?random=6',
+    'https://httpbin.org/status/404', // Error URL
+    'https://picsum.photos/300/200?random=7',
+  ];
+
+  Widget _buildCacheInfo() {
+    final cacheInfo = ImageCache.getCacheInfo();
+    final cacheSizeInMB = ImageCache.cacheSizeInBytes / (1024 * 1024);
+
+    return Card(
+      child: ExpansionTile(
+        title: Text('Image Cache (${ImageCache.cacheSize} images)'),
+        subtitle: Text('Size: ${cacheSizeInMB.toStringAsFixed(2)} MB'),
+        children: [
+          Padding(
+            padding: const EdgeInsets.all(16.0),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                ...cacheInfo.entries.map((entry) {
+                  final age = DateTime.now().difference(entry.value);
+                  final url = entry.key;
+                  final displayUrl = url.length > 40 
+                      ? '${url.substring(0, 37)}...' 
+                      : url;
+                  
+                  return Padding(
+                    padding: const EdgeInsets.symmetric(vertical: 2.0),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Expanded(
+                          child: Text(
+                            displayUrl,
+                            style: const TextStyle(fontSize: 12),
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ),
+                        Text(
+                          '${age.inMinutes}m ago',
+                          style: const TextStyle(fontSize: 10),
+                        ),
+                      ],
+                    ),
+                  );
+                }),
+                if (cacheInfo.isEmpty)
+                  const Text('No cached images'),
+                const SizedBox(height: 16),
+                Row(
+                  children: [
+                    ElevatedButton(
+                      onPressed: () {
+                        ImageCache.clear();
+                        setState(() {});
+                      },
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.red.withOpacity(0.8),
+                      ),
+                      child: const Text('Clear Cache'),
+                    ),
+                    const SizedBox(width: 8),
+                    ElevatedButton(
+                      onPressed: () {
+                        setState(() {});
+                      },
+                      child: const Text('Refresh'),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text('Network Image Caching'),
+      ),
+      body: Column(
+        children: [
+          Padding(
+            padding: const EdgeInsets.all(16.0),
+            child: _buildCacheInfo(),
+          ),
+          Expanded(
+            child: GridView.builder(
+              padding: const EdgeInsets.all(16.0),
+              gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                crossAxisCount: 2,
+                crossAxisSpacing: 16,
+                mainAxisSpacing: 16,
+                childAspectRatio: 3 / 2,
+              ),
+              itemCount: _imageUrls.length,
+              itemBuilder: (context, index) {
+                return Card(
+                  clipBehavior: Clip.antiAlias,
+                  child: Column(
+                    children: [
+                      Expanded(
+                        child: CachedNetworkImage(
+                          imageUrl: _imageUrls[index],
+                          width: double.infinity,
+                          fit: BoxFit.cover,
+                          placeholder: Container(
+                            color: Colors.grey.withOpacity(0.3),
+                            child: const Column(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                CircularProgressIndicator(),
+                                SizedBox(height: 8),
+                                Text('Loading...', style: TextStyle(fontSize: 12)),
+                              ],
+                            ),
+                          ),
+                          errorWidget: Container(
+                            color: Colors.red.withOpacity(0.1),
+                            child: const Column(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                Icon(Icons.error, color: Colors.red),
+                                SizedBox(height: 8),
+                                Text('Error', style: TextStyle(fontSize: 12)),
+                              ],
+                            ),
+                          ),
+                        ),
+                      ),
+                      Padding(
+                        padding: const EdgeInsets.all(8.0),
+                        child: Text(
+                          'Image ${index + 1}',
+                          style: const TextStyle(fontSize: 12),
+                        ),
+                      ),
+                    ],
+                  ),
+                );
+              },
+            ),
+          ),
+        ],
+      ),
+      floatingActionButton: FloatingActionButton(
+        onPressed: () {
+          setState(() {});
+        },
+        child: const Icon(Icons.refresh),
+      ),
+    );
+  }
+}
+```
+
+This example demonstrates advanced network image caching with automatic  
+cache management. It includes size limits, expiration handling, placeholder  
+support, and error handling. The cache optimizes memory usage and provides  
+efficient image loading with fallback options.  
