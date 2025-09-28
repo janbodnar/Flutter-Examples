@@ -1764,3 +1764,1875 @@ Responsive text themes adapt to different screen sizes and device types.
 Scale factors adjust font sizes appropriately for mobile, tablet, and  
 desktop displays. Line height and letter spacing also adjust to maintain  
 optimal readability across form factors.  
+
+## AppBar Theme Customization
+
+Customizing AppBar appearance with colors, elevation, and text styles.  
+
+```dart
+import 'package:flutter/material.dart';
+
+void main() {
+  runApp(const MyApp());
+}
+
+class MyApp extends StatelessWidget {
+  const MyApp({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return MaterialApp(
+      title: 'AppBar Theme Customization',
+      theme: ThemeData(
+        useMaterial3: true,
+        colorScheme: ColorScheme.fromSeed(seedColor: Colors.indigo),
+        appBarTheme: const AppBarTheme(
+          backgroundColor: Color(0xFF1E88E5),
+          foregroundColor: Colors.white,
+          elevation: 4,
+          shadowColor: Colors.black26,
+          surfaceTintColor: Colors.transparent,
+          centerTitle: true,
+          titleTextStyle: TextStyle(
+            fontSize: 20,
+            fontWeight: FontWeight.w600,
+            color: Colors.white,
+            letterSpacing: 0.15,
+          ),
+          actionsIconTheme: IconThemeData(
+            color: Colors.white,
+            size: 24,
+          ),
+          iconTheme: IconThemeData(
+            color: Colors.white,
+            size: 24,
+          ),
+          systemOverlayStyle: SystemUiOverlayStyle.light,
+        ),
+      ),
+      home: const AppBarThemePage(),
+    );
+  }
+}
+
+class AppBarThemePage extends StatefulWidget {
+  const AppBarThemePage({super.key});
+
+  @override
+  State<AppBarThemePage> createState() => _AppBarThemePageState();
+}
+
+class _AppBarThemePageState extends State<AppBarThemePage>
+    with TickerProviderStateMixin {
+  late TabController _tabController;
+  bool _hasNotifications = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _tabController = TabController(length: 3, vsync: this);
+  }
+
+  @override
+  void dispose() {
+    _tabController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      body: NestedScrollView(
+        headerSliverBuilder: (context, innerBoxIsScrolled) {
+          return [
+            SliverAppBar(
+              title: const Text('AppBar Themes'),
+              pinned: true,
+              floating: true,
+              expandedHeight: 200,
+              leading: IconButton(
+                icon: const Icon(Icons.menu),
+                onPressed: () {
+                  _showCustomBottomSheet(context);
+                },
+              ),
+              actions: [
+                IconButton(
+                  icon: Stack(
+                    children: [
+                      const Icon(Icons.notifications),
+                      if (_hasNotifications)
+                        Positioned(
+                          right: 0,
+                          top: 0,
+                          child: Container(
+                            width: 8,
+                            height: 8,
+                            decoration: const BoxDecoration(
+                              color: Colors.red,
+                              shape: BoxShape.circle,
+                            ),
+                          ),
+                        ),
+                    ],
+                  ),
+                  onPressed: () {
+                    setState(() {
+                      _hasNotifications = !_hasNotifications;
+                    });
+                  },
+                ),
+                IconButton(
+                  icon: const Icon(Icons.search),
+                  onPressed: () {
+                    _showSearchDialog(context);
+                  },
+                ),
+                PopupMenuButton<String>(
+                  icon: const Icon(Icons.more_vert),
+                  onSelected: (value) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(content: Text('Selected: $value')),
+                    );
+                  },
+                  itemBuilder: (context) => [
+                    const PopupMenuItem(
+                      value: 'settings',
+                      child: Text('Settings'),
+                    ),
+                    const PopupMenuItem(
+                      value: 'help',
+                      child: Text('Help'),
+                    ),
+                    const PopupMenuItem(
+                      value: 'about',
+                      child: Text('About'),
+                    ),
+                  ],
+                ),
+              ],
+              flexibleSpace: const FlexibleSpaceBar(
+                title: Text(
+                  'Expandable AppBar',
+                  style: TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+                background: DecoratedBox(
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      begin: Alignment.topCenter,
+                      end: Alignment.bottomCenter,
+                      colors: [
+                        Color(0xFF1976D2),
+                        Color(0xFF1E88E5),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+              bottom: TabBar(
+                controller: _tabController,
+                indicatorColor: Colors.white,
+                labelColor: Colors.white,
+                unselectedLabelColor: Colors.white70,
+                tabs: const [
+                  Tab(text: 'Overview'),
+                  Tab(text: 'Examples'),
+                  Tab(text: 'Variants'),
+                ],
+              ),
+            ),
+          ];
+        },
+        body: TabBarView(
+          controller: _tabController,
+          children: [
+            _buildOverviewTab(),
+            _buildExamplesTab(),
+            _buildVariantsTab(),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildOverviewTab() {
+    return Padding(
+      padding: const EdgeInsets.all(16.0),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            'AppBar Theme Properties',
+            style: Theme.of(context).textTheme.headlineSmall,
+          ),
+          const SizedBox(height: 16),
+          _buildPropertyCard(
+            'backgroundColor',
+            'Sets the AppBar background color',
+            'Color(0xFF1E88E5)',
+          ),
+          _buildPropertyCard(
+            'foregroundColor',
+            'Color for text and icons',
+            'Colors.white',
+          ),
+          _buildPropertyCard(
+            'elevation',
+            'Shadow depth below the AppBar',
+            '4.0',
+          ),
+          _buildPropertyCard(
+            'centerTitle',
+            'Whether to center the title',
+            'true',
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildExamplesTab() {
+    return const Padding(
+      padding: EdgeInsets.all(16.0),
+      child: Column(
+        children: [
+          Card(
+            child: ListTile(
+              leading: Icon(Icons.palette),
+              title: Text('Color Customization'),
+              subtitle: Text('Custom background and foreground colors'),
+            ),
+          ),
+          Card(
+            child: ListTile(
+              leading: Icon(Icons.text_fields),
+              title: Text('Typography'),
+              subtitle: Text('Custom title text style and font weight'),
+            ),
+          ),
+          Card(
+            child: ListTile(
+              leading: Icon(Icons.shadow),
+              title: Text('Elevation & Shadow'),
+              subtitle: Text('Configurable shadow depth and color'),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildVariantsTab() {
+    return const Padding(
+      padding: EdgeInsets.all(16.0),
+      child: Column(
+        children: [
+          Card(
+            child: ListTile(
+              leading: Icon(Icons.expand),
+              title: Text('SliverAppBar'),
+              subtitle: Text('Collapsible and expandable app bars'),
+            ),
+          ),
+          Card(
+            child: ListTile(
+              leading: Icon(Icons.tab),
+              title: Text('TabBar Integration'),
+              subtitle: Text('AppBar with integrated tab navigation'),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildPropertyCard(String property, String description, String value) {
+    return Card(
+      margin: const EdgeInsets.only(bottom: 8),
+      child: Padding(
+        padding: const EdgeInsets.all(12),
+        child: Row(
+          children: [
+            Expanded(
+              flex: 2,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    property,
+                    style: const TextStyle(
+                      fontWeight: FontWeight.w600,
+                      fontFamily: 'monospace',
+                    ),
+                  ),
+                  Text(
+                    description,
+                    style: Theme.of(context).textTheme.bodySmall,
+                  ),
+                ],
+              ),
+            ),
+            Expanded(
+              child: Text(
+                value,
+                style: const TextStyle(
+                  fontFamily: 'monospace',
+                  color: Colors.blue,
+                ),
+                textAlign: TextAlign.right,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  void _showCustomBottomSheet(BuildContext context) {
+    showModalBottomSheet(
+      context: context,
+      builder: (context) => Container(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            ListTile(
+              leading: const Icon(Icons.home),
+              title: const Text('Home'),
+              onTap: () => Navigator.pop(context),
+            ),
+            ListTile(
+              leading: const Icon(Icons.settings),
+              title: const Text('Settings'),
+              onTap: () => Navigator.pop(context),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  void _showSearchDialog(BuildContext context) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Search'),
+        content: const TextField(
+          decoration: InputDecoration(
+            hintText: 'Enter search query...',
+            prefixIcon: Icon(Icons.search),
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Cancel'),
+          ),
+          ElevatedButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Search'),
+          ),
+        ],
+      ),
+    );
+  }
+}
+```
+
+AppBar themes control the appearance of app bars throughout your  
+application. Key properties include backgroundColor, foregroundColor,  
+elevation, and titleTextStyle. SliverAppBar provides additional  
+customization for collapsible and expandable app bars with flexible  
+space and scroll behaviors.  
+
+## Button Theme Styling
+
+Comprehensive button theming for all Flutter button types.  
+
+```dart
+import 'package:flutter/material.dart';
+
+void main() {
+  runApp(const MyApp());
+}
+
+class MyApp extends StatelessWidget {
+  const MyApp({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return MaterialApp(
+      title: 'Button Theme Styling',
+      theme: ThemeData(
+        useMaterial3: true,
+        colorScheme: ColorScheme.fromSeed(seedColor: Colors.deepPurple),
+        elevatedButtonTheme: ElevatedButtonThemeData(
+          style: ElevatedButton.styleFrom(
+            backgroundColor: Colors.deepPurple,
+            foregroundColor: Colors.white,
+            elevation: 3,
+            shadowColor: Colors.deepPurple.withOpacity(0.5),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(16),
+            ),
+            padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+            textStyle: const TextStyle(
+              fontSize: 16,
+              fontWeight: FontWeight.w600,
+              letterSpacing: 0.5,
+            ),
+          ),
+        ),
+        filledButtonTheme: FilledButtonThemeData(
+          style: FilledButton.styleFrom(
+            backgroundColor: Colors.deepPurple.shade600,
+            foregroundColor: Colors.white,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(12),
+            ),
+            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+          ),
+        ),
+        outlinedButtonTheme: OutlinedButtonThemeData(
+          style: OutlinedButton.styleFrom(
+            foregroundColor: Colors.deepPurple,
+            side: BorderSide(color: Colors.deepPurple, width: 2),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(12),
+            ),
+            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+          ),
+        ),
+        textButtonTheme: TextButtonThemeData(
+          style: TextButton.styleFrom(
+            foregroundColor: Colors.deepPurple,
+            textStyle: const TextStyle(
+              fontSize: 16,
+              fontWeight: FontWeight.w500,
+            ),
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+          ),
+        ),
+        iconButtonTheme: IconButtonThemeData(
+          style: IconButton.styleFrom(
+            backgroundColor: Colors.deepPurple.withOpacity(0.1),
+            foregroundColor: Colors.deepPurple,
+            padding: const EdgeInsets.all(12),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(8),
+            ),
+          ),
+        ),
+        floatingActionButtonTheme: const FloatingActionButtonThemeData(
+          backgroundColor: Colors.deepPurple,
+          foregroundColor: Colors.white,
+          elevation: 6,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.all(Radius.circular(16)),
+          ),
+        ),
+      ),
+      home: const ButtonThemePage(),
+    );
+  }
+}
+
+class ButtonThemePage extends StatefulWidget {
+  const ButtonThemePage({super.key});
+
+  @override
+  State<ButtonThemePage> createState() => _ButtonThemePageState();
+}
+
+class _ButtonThemePageState extends State<ButtonThemePage> {
+  bool _isLoading = false;
+  bool _isEnabled = true;
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text('Button Theme Styling'),
+        actions: [
+          Switch(
+            value: _isEnabled,
+            onChanged: (value) {
+              setState(() {
+                _isEnabled = value;
+              });
+            },
+          ),
+        ],
+      ),
+      body: Padding(
+        padding: const EdgeInsets.all(16.0),
+        child: SingleChildScrollView(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                'Button Styles',
+                style: Theme.of(context).textTheme.headlineSmall,
+              ),
+              const SizedBox(height: 20),
+              _buildButtonSection('Elevated Buttons', [
+                ElevatedButton(
+                  onPressed: _isEnabled ? () {} : null,
+                  child: const Text('Primary Action'),
+                ),
+                const SizedBox(height: 8),
+                ElevatedButton.icon(
+                  onPressed: _isEnabled ? () {} : null,
+                  icon: const Icon(Icons.favorite),
+                  label: const Text('With Icon'),
+                ),
+                const SizedBox(height: 8),
+                ElevatedButton(
+                  onPressed: _isEnabled ? _handleAsyncAction : null,
+                  child: _isLoading
+                      ? const SizedBox(
+                          width: 20,
+                          height: 20,
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2,
+                            valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                          ),
+                        )
+                      : const Text('Async Action'),
+                ),
+              ]),
+              const SizedBox(height: 24),
+              _buildButtonSection('Filled Buttons', [
+                FilledButton(
+                  onPressed: _isEnabled ? () {} : null,
+                  child: const Text('Filled Button'),
+                ),
+                const SizedBox(height: 8),
+                FilledButton.icon(
+                  onPressed: _isEnabled ? () {} : null,
+                  icon: const Icon(Icons.download),
+                  label: const Text('Download'),
+                ),
+                const SizedBox(height: 8),
+                FilledButton.tonal(
+                  onPressed: _isEnabled ? () {} : null,
+                  child: const Text('Tonal Variant'),
+                ),
+              ]),
+              const SizedBox(height: 24),
+              _buildButtonSection('Outlined Buttons', [
+                OutlinedButton(
+                  onPressed: _isEnabled ? () {} : null,
+                  child: const Text('Outlined'),
+                ),
+                const SizedBox(height: 8),
+                OutlinedButton.icon(
+                  onPressed: _isEnabled ? () {} : null,
+                  icon: const Icon(Icons.edit),
+                  label: const Text('Edit'),
+                ),
+              ]),
+              const SizedBox(height: 24),
+              _buildButtonSection('Text Buttons', [
+                TextButton(
+                  onPressed: _isEnabled ? () {} : null,
+                  child: const Text('Text Button'),
+                ),
+                const SizedBox(height: 8),
+                TextButton.icon(
+                  onPressed: _isEnabled ? () {} : null,
+                  icon: const Icon(Icons.share),
+                  label: const Text('Share'),
+                ),
+              ]),
+              const SizedBox(height: 24),
+              _buildButtonSection('Icon Buttons', [
+                Row(
+                  children: [
+                    IconButton(
+                      onPressed: _isEnabled ? () {} : null,
+                      icon: const Icon(Icons.thumb_up),
+                    ),
+                    IconButton(
+                      onPressed: _isEnabled ? () {} : null,
+                      icon: const Icon(Icons.bookmark),
+                    ),
+                    IconButton(
+                      onPressed: _isEnabled ? () {} : null,
+                      icon: const Icon(Icons.more_horiz),
+                    ),
+                    const Spacer(),
+                    IconButton.filled(
+                      onPressed: _isEnabled ? () {} : null,
+                      icon: const Icon(Icons.add),
+                    ),
+                  ],
+                ),
+              ]),
+              const SizedBox(height: 24),
+              _buildButtonCustomization(),
+            ],
+          ),
+        ),
+      ),
+      floatingActionButton: FloatingActionButton(
+        onPressed: _isEnabled ? () {} : null,
+        tooltip: 'Themed FAB',
+        child: const Icon(Icons.add),
+      ),
+    );
+  }
+
+  Widget _buildButtonSection(String title, List<Widget> buttons) {
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(16.0),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              title,
+              style: Theme.of(context).textTheme.titleMedium,
+            ),
+            const SizedBox(height: 12),
+            ...buttons,
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildButtonCustomization() {
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(16.0),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              'Button Customization',
+              style: Theme.of(context).textTheme.titleMedium,
+            ),
+            const SizedBox(height: 12),
+            const Text(
+              'Button themes define consistent styling across your app:\n\n'
+              '• Shape and border radius\n'
+              '• Colors and elevation\n'
+              '• Padding and text styles\n'
+              '• State-dependent behaviors',
+            ),
+            const SizedBox(height: 16),
+            Row(
+              children: [
+                ElevatedButton(
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.green,
+                    foregroundColor: Colors.white,
+                    shape: const CircleBorder(),
+                    padding: const EdgeInsets.all(16),
+                  ),
+                  onPressed: _isEnabled ? () {} : null,
+                  child: const Icon(Icons.check),
+                ),
+                const SizedBox(width: 12),
+                ElevatedButton(
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.orange,
+                    foregroundColor: Colors.white,
+                    shape: const StadiumBorder(),
+                  ),
+                  onPressed: _isEnabled ? () {} : null,
+                  child: const Text('Custom Shape'),
+                ),
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Future<void> _handleAsyncAction() async {
+    setState(() {
+      _isLoading = true;
+    });
+
+    await Future.delayed(const Duration(seconds: 2));
+
+    if (mounted) {
+      setState(() {
+        _isLoading = false;
+      });
+    }
+  }
+}
+```
+
+Button themes provide consistent styling across all button types in your  
+app. Each button type has its own theme data: ElevatedButtonTheme,  
+FilledButtonTheme, OutlinedButtonTheme, TextButtonTheme, and  
+IconButtonTheme. Themes can be overridden locally using the style  
+property for specific customization needs.  
+
+## Card Theme Configuration
+
+Customizing card appearance with elevation, shapes, and colors.  
+
+```dart
+import 'package:flutter/material.dart';
+
+void main() {
+  runApp(const MyApp());
+}
+
+class MyApp extends StatelessWidget {
+  const MyApp({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return MaterialApp(
+      title: 'Card Theme Configuration',
+      theme: ThemeData(
+        useMaterial3: true,
+        colorScheme: ColorScheme.fromSeed(seedColor: Colors.teal),
+        cardTheme: const CardTheme(
+          elevation: 2,
+          shadowColor: Color(0x1A000000),
+          surfaceTintColor: Color(0xFFE0F2F1),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.all(Radius.circular(12)),
+            side: BorderSide(color: Color(0xFFE0E0E0), width: 0.5),
+          ),
+          margin: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+          clipBehavior: Clip.antiAlias,
+        ),
+      ),
+      home: const CardThemePage(),
+    );
+  }
+}
+
+class CardThemePage extends StatefulWidget {
+  const CardThemePage({super.key});
+
+  @override
+  State<CardThemePage> createState() => _CardThemePageState();
+}
+
+class _CardThemePageState extends State<CardThemePage> {
+  double _currentElevation = 2;
+  BorderRadius _currentBorderRadius = BorderRadius.circular(12);
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text('Card Theme Configuration'),
+      ),
+      body: SingleChildScrollView(
+        padding: const EdgeInsets.all(16.0),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              'Card Variations',
+              style: Theme.of(context).textTheme.headlineSmall,
+            ),
+            const SizedBox(height: 20),
+            _buildBasicCard(),
+            _buildContentCard(),
+            _buildImageCard(),
+            _buildInteractiveCard(),
+            const SizedBox(height: 24),
+            _buildCustomizationControls(),
+            const SizedBox(height: 20),
+            _buildCustomCard(),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildBasicCard() {
+    return const Card(
+      child: Padding(
+        padding: EdgeInsets.all(16.0),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              'Basic Card',
+              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+            ),
+            SizedBox(height: 8),
+            Text(
+              'This is a basic card using the global card theme. It demonstrates '
+              'the default styling including elevation, border radius, and colors.',
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildContentCard() {
+    return Card(
+      child: Column(
+        children: [
+          const Padding(
+            padding: EdgeInsets.all(16.0),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Content Card',
+                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                ),
+                SizedBox(height: 8),
+                Text(
+                  'Cards can contain various types of content including text, '
+                  'images, buttons, and other widgets.',
+                ),
+              ],
+            ),
+          ),
+          const Divider(height: 1),
+          Padding(
+            padding: const EdgeInsets.all(16.0),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.end,
+              children: [
+                TextButton(
+                  onPressed: () {},
+                  child: const Text('ACTION 1'),
+                ),
+                const SizedBox(width: 8),
+                ElevatedButton(
+                  onPressed: () {},
+                  child: const Text('ACTION 2'),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildImageCard() {
+    return Card(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Container(
+            height: 140,
+            decoration: const BoxDecoration(
+              gradient: LinearGradient(
+                colors: [Colors.teal, Colors.tealAccent],
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+              ),
+            ),
+            child: const Center(
+              child: Icon(
+                Icons.landscape,
+                size: 48,
+                color: Colors.white,
+              ),
+            ),
+          ),
+          const Padding(
+            padding: EdgeInsets.all(16.0),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Image Card',
+                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                ),
+                SizedBox(height: 8),
+                Text(
+                  'Cards with images benefit from the clipBehavior property '
+                  'to ensure content respects the card\'s border radius.',
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildInteractiveCard() {
+    return Card(
+      child: InkWell(
+        onTap: () {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Card tapped!')),
+          );
+        },
+        borderRadius: BorderRadius.circular(12),
+        child: const Padding(
+          padding: EdgeInsets.all(16.0),
+          child: Row(
+            children: [
+              Icon(Icons.touch_app, size: 32, color: Colors.teal),
+              SizedBox(width: 16),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Interactive Card',
+                      style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                    ),
+                    SizedBox(height: 4),
+                    Text('Tap this card to see the ripple effect.'),
+                  ],
+                ),
+              ),
+              Icon(Icons.arrow_forward_ios, size: 16),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildCustomizationControls() {
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(16.0),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              'Customization Controls',
+              style: Theme.of(context).textTheme.titleLarge,
+            ),
+            const SizedBox(height: 16),
+            Text(
+              'Elevation: ${_currentElevation.toStringAsFixed(1)}',
+              style: Theme.of(context).textTheme.titleMedium,
+            ),
+            Slider(
+              value: _currentElevation,
+              min: 0,
+              max: 10,
+              divisions: 20,
+              onChanged: (value) {
+                setState(() {
+                  _currentElevation = value;
+                });
+              },
+            ),
+            const SizedBox(height: 16),
+            Text(
+              'Border Radius',
+              style: Theme.of(context).textTheme.titleMedium,
+            ),
+            const SizedBox(height: 8),
+            Row(
+              children: [
+                _buildRadiusOption('Square', BorderRadius.zero),
+                const SizedBox(width: 8),
+                _buildRadiusOption('Rounded', BorderRadius.circular(8)),
+                const SizedBox(width: 8),
+                _buildRadiusOption('Circular', BorderRadius.circular(20)),
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildRadiusOption(String label, BorderRadius radius) {
+    final isSelected = _currentBorderRadius == radius;
+    return Expanded(
+      child: OutlinedButton(
+        style: OutlinedButton.styleFrom(
+          backgroundColor: isSelected ? Colors.teal.withOpacity(0.1) : null,
+          foregroundColor: isSelected ? Colors.teal : null,
+          side: BorderSide(
+            color: isSelected ? Colors.teal : Colors.grey,
+            width: isSelected ? 2 : 1,
+          ),
+        ),
+        onPressed: () {
+          setState(() {
+            _currentBorderRadius = radius;
+          });
+        },
+        child: Text(label),
+      ),
+    );
+  }
+
+  Widget _buildCustomCard() {
+    return Card(
+      elevation: _currentElevation,
+      shape: RoundedRectangleBorder(
+        borderRadius: _currentBorderRadius,
+        side: const BorderSide(color: Colors.teal, width: 1),
+      ),
+      child: const Padding(
+        padding: EdgeInsets.all(16.0),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              'Custom Card',
+              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+            ),
+            SizedBox(height: 8),
+            Text(
+              'This card uses the customization settings above. Try adjusting '
+              'the elevation and border radius to see the changes.',
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+```
+
+Card themes define consistent styling for all Card widgets in your app.  
+Key properties include elevation for shadow depth, shape for border radius  
+and borders, margin for spacing, and clipBehavior for content clipping.  
+The surfaceTintColor property provides Material 3 surface tinting effects.  
+
+## Input Decoration Theme
+
+Styling text fields and form inputs with consistent decoration themes.  
+
+```dart
+import 'package:flutter/material.dart';
+
+void main() {
+  runApp(const MyApp());
+}
+
+class MyApp extends StatelessWidget {
+  const MyApp({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return MaterialApp(
+      title: 'Input Decoration Theme',
+      theme: ThemeData(
+        useMaterial3: true,
+        colorScheme: ColorScheme.fromSeed(seedColor: Colors.blue),
+        inputDecorationTheme: const InputDecorationTheme(
+          filled: true,
+          fillColor: Color(0xFFF5F5F5),
+          border: OutlineInputBorder(
+            borderRadius: BorderRadius.all(Radius.circular(12)),
+            borderSide: BorderSide(color: Color(0xFFE0E0E0)),
+          ),
+          enabledBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.all(Radius.circular(12)),
+            borderSide: BorderSide(color: Color(0xFFE0E0E0)),
+          ),
+          focusedBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.all(Radius.circular(12)),
+            borderSide: BorderSide(color: Colors.blue, width: 2),
+          ),
+          errorBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.all(Radius.circular(12)),
+            borderSide: BorderSide(color: Colors.red, width: 2),
+          ),
+          focusedErrorBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.all(Radius.circular(12)),
+            borderSide: BorderSide(color: Colors.red, width: 2),
+          ),
+          labelStyle: TextStyle(
+            fontSize: 16,
+            fontWeight: FontWeight.w500,
+            color: Color(0xFF666666),
+          ),
+          hintStyle: TextStyle(
+            fontSize: 16,
+            color: Color(0xFF999999),
+          ),
+          helperStyle: TextStyle(
+            fontSize: 14,
+            color: Color(0xFF666666),
+          ),
+          errorStyle: TextStyle(
+            fontSize: 14,
+            color: Colors.red,
+            fontWeight: FontWeight.w500,
+          ),
+          contentPadding: EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+          prefixIconColor: Color(0xFF666666),
+          suffixIconColor: Color(0xFF666666),
+        ),
+      ),
+      home: const InputDecorationPage(),
+    );
+  }
+}
+
+class InputDecorationPage extends StatefulWidget {
+  const InputDecorationPage({super.key});
+
+  @override
+  State<InputDecorationPage> createState() => _InputDecorationPageState();
+}
+
+class _InputDecorationPageState extends State<InputDecorationPage> {
+  final _formKey = GlobalKey<FormState>();
+  final _nameController = TextEditingController();
+  final _emailController = TextEditingController();
+  final _phoneController = TextEditingController();
+  final _passwordController = TextEditingController();
+  final _messageController = TextEditingController();
+
+  bool _obscurePassword = true;
+  String? _selectedCountry;
+  bool _agreeToTerms = false;
+
+  @override
+  void dispose() {
+    _nameController.dispose();
+    _emailController.dispose();
+    _phoneController.dispose();
+    _passwordController.dispose();
+    _messageController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text('Input Decoration Theme'),
+      ),
+      body: SingleChildScrollView(
+        padding: const EdgeInsets.all(16.0),
+        child: Form(
+          key: _formKey,
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                'Form Example',
+                style: Theme.of(context).textTheme.headlineSmall,
+              ),
+              const SizedBox(height: 20),
+              _buildBasicTextField(),
+              const SizedBox(height: 16),
+              _buildEmailTextField(),
+              const SizedBox(height: 16),
+              _buildPhoneTextField(),
+              const SizedBox(height: 16),
+              _buildPasswordTextField(),
+              const SizedBox(height: 16),
+              _buildDropdownField(),
+              const SizedBox(height: 16),
+              _buildMultilineTextField(),
+              const SizedBox(height: 16),
+              _buildCheckboxField(),
+              const SizedBox(height: 24),
+              _buildInputVariations(),
+              const SizedBox(height: 24),
+              _buildActionButtons(),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildBasicTextField() {
+    return TextFormField(
+      controller: _nameController,
+      decoration: const InputDecoration(
+        labelText: 'Full Name',
+        hintText: 'Enter your full name',
+        prefixIcon: Icon(Icons.person),
+        helperText: 'This field uses the global input decoration theme',
+      ),
+      validator: (value) {
+        if (value == null || value.isEmpty) {
+          return 'Please enter your name';
+        }
+        return null;
+      },
+    );
+  }
+
+  Widget _buildEmailTextField() {
+    return TextFormField(
+      controller: _emailController,
+      keyboardType: TextInputType.emailAddress,
+      decoration: const InputDecoration(
+        labelText: 'Email Address',
+        hintText: 'Enter your email',
+        prefixIcon: Icon(Icons.email),
+        suffixIcon: Icon(Icons.check_circle, color: Colors.green),
+      ),
+      validator: (value) {
+        if (value == null || value.isEmpty) {
+          return 'Please enter your email';
+        }
+        if (!value.contains('@')) {
+          return 'Please enter a valid email';
+        }
+        return null;
+      },
+    );
+  }
+
+  Widget _buildPhoneTextField() {
+    return TextFormField(
+      controller: _phoneController,
+      keyboardType: TextInputType.phone,
+      decoration: const InputDecoration(
+        labelText: 'Phone Number',
+        hintText: '+1 (555) 123-4567',
+        prefixIcon: Icon(Icons.phone),
+        prefixText: '+1 ',
+      ),
+    );
+  }
+
+  Widget _buildPasswordTextField() {
+    return TextFormField(
+      controller: _passwordController,
+      obscureText: _obscurePassword,
+      decoration: InputDecoration(
+        labelText: 'Password',
+        hintText: 'Enter your password',
+        prefixIcon: const Icon(Icons.lock),
+        suffixIcon: IconButton(
+          icon: Icon(_obscurePassword ? Icons.visibility : Icons.visibility_off),
+          onPressed: () {
+            setState(() {
+              _obscurePassword = !_obscurePassword;
+            });
+          },
+        ),
+        helperText: 'Password must be at least 8 characters',
+      ),
+      validator: (value) {
+        if (value == null || value.length < 8) {
+          return 'Password must be at least 8 characters';
+        }
+        return null;
+      },
+    );
+  }
+
+  Widget _buildDropdownField() {
+    return DropdownButtonFormField<String>(
+      value: _selectedCountry,
+      decoration: const InputDecoration(
+        labelText: 'Country',
+        prefixIcon: Icon(Icons.public),
+      ),
+      items: const [
+        DropdownMenuItem(value: 'US', child: Text('United States')),
+        DropdownMenuItem(value: 'CA', child: Text('Canada')),
+        DropdownMenuItem(value: 'UK', child: Text('United Kingdom')),
+        DropdownMenuItem(value: 'DE', child: Text('Germany')),
+        DropdownMenuItem(value: 'FR', child: Text('France')),
+      ],
+      onChanged: (value) {
+        setState(() {
+          _selectedCountry = value;
+        });
+      },
+    );
+  }
+
+  Widget _buildMultilineTextField() {
+    return TextFormField(
+      controller: _messageController,
+      maxLines: 4,
+      decoration: const InputDecoration(
+        labelText: 'Message',
+        hintText: 'Enter your message here...',
+        prefixIcon: Padding(
+          padding: EdgeInsets.only(bottom: 60),
+          child: Icon(Icons.message),
+        ),
+        alignLabelWithHint: true,
+      ),
+    );
+  }
+
+  Widget _buildCheckboxField() {
+    return CheckboxListTile(
+      value: _agreeToTerms,
+      onChanged: (value) {
+        setState(() {
+          _agreeToTerms = value ?? false;
+        });
+      },
+      title: const Text('I agree to the terms and conditions'),
+      controlAffinity: ListTileControlAffinity.leading,
+    );
+  }
+
+  Widget _buildInputVariations() {
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(16.0),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              'Input Variations',
+              style: Theme.of(context).textTheme.titleLarge,
+            ),
+            const SizedBox(height: 16),
+            TextField(
+              decoration: InputDecoration(
+                labelText: 'Underline Style',
+                border: const UnderlineInputBorder(),
+                enabledBorder: const UnderlineInputBorder(
+                  borderSide: BorderSide(color: Colors.grey),
+                ),
+                focusedBorder: UnderlineInputBorder(
+                  borderSide: BorderSide(color: Theme.of(context).primaryColor, width: 2),
+                ),
+              ),
+            ),
+            const SizedBox(height: 16),
+            TextField(
+              decoration: InputDecoration(
+                labelText: 'No Border Style',
+                border: InputBorder.none,
+                filled: true,
+                fillColor: Colors.grey.shade100,
+              ),
+            ),
+            const SizedBox(height: 16),
+            TextField(
+              decoration: InputDecoration(
+                labelText: 'Custom Colors',
+                border: const OutlineInputBorder(),
+                focusedBorder: const OutlineInputBorder(
+                  borderSide: BorderSide(color: Colors.purple, width: 2),
+                ),
+                labelStyle: const TextStyle(color: Colors.purple),
+                prefixIcon: const Icon(Icons.star, color: Colors.purple),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildActionButtons() {
+    return Row(
+      children: [
+        Expanded(
+          child: OutlinedButton(
+            onPressed: () {
+              _formKey.currentState?.reset();
+              _nameController.clear();
+              _emailController.clear();
+              _phoneController.clear();
+              _passwordController.clear();
+              _messageController.clear();
+              setState(() {
+                _selectedCountry = null;
+                _agreeToTerms = false;
+              });
+            },
+            child: const Text('Reset'),
+          ),
+        ),
+        const SizedBox(width: 16),
+        Expanded(
+          child: ElevatedButton(
+            onPressed: () {
+              if (_formKey.currentState?.validate() ?? false) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(content: Text('Form submitted successfully!')),
+                );
+              }
+            },
+            child: const Text('Submit'),
+          ),
+        ),
+      ],
+    );
+  }
+}
+```
+
+Input decoration themes provide consistent styling for all text input  
+fields in your app. Key properties include border styles for different  
+states, fill colors, text styles for labels and hints, padding, and  
+icon colors. This creates a cohesive form experience throughout your  
+application.  
+
+## Icon Theme Customization
+
+Configuring icon themes for consistent iconography across your app.  
+
+```dart
+import 'package:flutter/material.dart';
+
+void main() {
+  runApp(const MyApp());
+}
+
+class MyApp extends StatelessWidget {
+  const MyApp({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return MaterialApp(
+      title: 'Icon Theme Customization',
+      theme: ThemeData(
+        useMaterial3: true,
+        colorScheme: ColorScheme.fromSeed(seedColor: Colors.amber),
+        iconTheme: const IconThemeData(
+          color: Color(0xFF424242),
+          size: 24,
+          opacity: 0.87,
+        ),
+        primaryIconTheme: const IconThemeData(
+          color: Colors.white,
+          size: 24,
+          opacity: 1.0,
+        ),
+        appBarTheme: const AppBarTheme(
+          backgroundColor: Colors.amber,
+          iconTheme: IconThemeData(
+            color: Colors.white,
+            size: 24,
+          ),
+          actionsIconTheme: IconThemeData(
+            color: Colors.white,
+            size: 24,
+          ),
+        ),
+      ),
+      home: const IconThemePage(),
+    );
+  }
+}
+
+class IconThemePage extends StatefulWidget {
+  const IconThemePage({super.key});
+
+  @override
+  State<IconThemePage> createState() => _IconThemePageState();
+}
+
+class _IconThemePageState extends State<IconThemePage> {
+  int _selectedIndex = 0;
+  double _iconSize = 24.0;
+  double _iconOpacity = 1.0;
+  Color _iconColor = const Color(0xFF424242);
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text('Icon Theme Customization'),
+        leading: const Icon(Icons.menu),
+        actions: const [
+          Icon(Icons.search),
+          SizedBox(width: 8),
+          Icon(Icons.notifications),
+          SizedBox(width: 8),
+          Icon(Icons.more_vert),
+          SizedBox(width: 8),
+        ],
+      ),
+      body: SingleChildScrollView(
+        padding: const EdgeInsets.all(16.0),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              'Icon Theme Examples',
+              style: Theme.of(context).textTheme.headlineSmall,
+            ),
+            const SizedBox(height: 20),
+            _buildGlobalIconTheme(),
+            const SizedBox(height: 20),
+            _buildContextualIconThemes(),
+            const SizedBox(height: 20),
+            _buildIconSizeExamples(),
+            const SizedBox(height: 20),
+            _buildCustomIconTheme(),
+            const SizedBox(height: 20),
+            _buildIconCustomization(),
+          ],
+        ),
+      ),
+      bottomNavigationBar: BottomNavigationBar(
+        currentIndex: _selectedIndex,
+        onTap: (index) {
+          setState(() {
+            _selectedIndex = index;
+          });
+        },
+        type: BottomNavigationBarType.fixed,
+        items: const [
+          BottomNavigationBarItem(
+            icon: Icon(Icons.home),
+            label: 'Home',
+          ),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.explore),
+            label: 'Explore',
+          ),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.favorite),
+            label: 'Favorites',
+          ),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.person),
+            label: 'Profile',
+          ),
+        ],
+      ),
+      floatingActionButton: FloatingActionButton(
+        onPressed: () {},
+        child: const Icon(Icons.add),
+      ),
+    );
+  }
+
+  Widget _buildGlobalIconTheme() {
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(16.0),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              'Global Icon Theme',
+              style: Theme.of(context).textTheme.titleLarge,
+            ),
+            const SizedBox(height: 12),
+            const Text(
+              'These icons use the global icon theme settings:',
+            ),
+            const SizedBox(height: 16),
+            Wrap(
+              spacing: 16,
+              runSpacing: 16,
+              children: const [
+                Icon(Icons.home),
+                Icon(Icons.star),
+                Icon(Icons.favorite),
+                Icon(Icons.bookmark),
+                Icon(Icons.share),
+                Icon(Icons.download),
+                Icon(Icons.settings),
+                Icon(Icons.help),
+              ],
+            ),
+            const SizedBox(height: 16),
+            Row(
+              children: [
+                const Text('Size: '),
+                Text(
+                  '${Theme.of(context).iconTheme.size}px',
+                  style: const TextStyle(fontWeight: FontWeight.bold),
+                ),
+                const SizedBox(width: 20),
+                const Text('Opacity: '),
+                Text(
+                  '${(Theme.of(context).iconTheme.opacity! * 100).toInt()}%',
+                  style: const TextStyle(fontWeight: FontWeight.bold),
+                ),
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildContextualIconThemes() {
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(16.0),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              'Contextual Icon Themes',
+              style: Theme.of(context).textTheme.titleLarge,
+            ),
+            const SizedBox(height: 12),
+            const Text(
+              'Different contexts can have different icon themes:',
+            ),
+            const SizedBox(height: 16),
+            _buildIconThemeExample(
+              'Primary Icons (AppBar)',
+              Theme.of(context).primaryIconTheme,
+              const [
+                Icon(Icons.menu),
+                Icon(Icons.search),
+                Icon(Icons.notifications),
+                Icon(Icons.more_vert),
+              ],
+            ),
+            const SizedBox(height: 16),
+            _buildIconThemeExample(
+              'Success Icons',
+              const IconThemeData(color: Colors.green, size: 28),
+              const [
+                Icon(Icons.check_circle),
+                Icon(Icons.verified),
+                Icon(Icons.task_alt),
+                Icon(Icons.done),
+              ],
+            ),
+            const SizedBox(height: 16),
+            _buildIconThemeExample(
+              'Error Icons',
+              const IconThemeData(color: Colors.red, size: 28),
+              const [
+                Icon(Icons.error),
+                Icon(Icons.warning),
+                Icon(Icons.cancel),
+                Icon(Icons.dangerous),
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildIconThemeExample(
+    String title,
+    IconThemeData theme,
+    List<Icon> icons,
+  ) {
+    return Container(
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: Colors.grey.shade50,
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(color: Colors.grey.shade200),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            title,
+            style: Theme.of(context).textTheme.titleSmall,
+          ),
+          const SizedBox(height: 8),
+          IconTheme(
+            data: theme,
+            child: Wrap(
+              spacing: 16,
+              children: icons,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildIconSizeExamples() {
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(16.0),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              'Icon Size Examples',
+              style: Theme.of(context).textTheme.titleLarge,
+            ),
+            const SizedBox(height: 16),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceAround,
+              children: [
+                _buildSizedIconExample('Small', 16, Icons.star),
+                _buildSizedIconExample('Medium', 24, Icons.star),
+                _buildSizedIconExample('Large', 32, Icons.star),
+                _buildSizedIconExample('X-Large', 48, Icons.star),
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildSizedIconExample(String label, double size, IconData icon) {
+    return Column(
+      children: [
+        Icon(icon, size: size, color: Colors.amber),
+        const SizedBox(height: 8),
+        Text(
+          label,
+          style: Theme.of(context).textTheme.bodySmall,
+        ),
+        Text(
+          '${size.toInt()}px',
+          style: Theme.of(context).textTheme.bodySmall?.copyWith(
+            color: Colors.grey,
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildCustomIconTheme() {
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(16.0),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              'Custom Icon Theme',
+              style: Theme.of(context).textTheme.titleLarge,
+            ),
+            const SizedBox(height: 16),
+            IconTheme(
+              data: IconThemeData(
+                color: _iconColor,
+                size: _iconSize,
+                opacity: _iconOpacity,
+              ),
+              child: const Wrap(
+                spacing: 16,
+                runSpacing: 16,
+                children: [
+                  Icon(Icons.favorite),
+                  Icon(Icons.bookmark),
+                  Icon(Icons.thumb_up),
+                  Icon(Icons.share),
+                  Icon(Icons.comment),
+                  Icon(Icons.visibility),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildIconCustomization() {
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(16.0),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              'Icon Customization',
+              style: Theme.of(context).textTheme.titleLarge,
+            ),
+            const SizedBox(height: 16),
+            Text(
+              'Size: ${_iconSize.toInt()}px',
+              style: Theme.of(context).textTheme.titleSmall,
+            ),
+            Slider(
+              value: _iconSize,
+              min: 16,
+              max: 48,
+              divisions: 16,
+              onChanged: (value) {
+                setState(() {
+                  _iconSize = value;
+                });
+              },
+            ),
+            const SizedBox(height: 16),
+            Text(
+              'Opacity: ${(_iconOpacity * 100).toInt()}%',
+              style: Theme.of(context).textTheme.titleSmall,
+            ),
+            Slider(
+              value: _iconOpacity,
+              min: 0.1,
+              max: 1.0,
+              divisions: 9,
+              onChanged: (value) {
+                setState(() {
+                  _iconOpacity = value;
+                });
+              },
+            ),
+            const SizedBox(height: 16),
+            Text(
+              'Color',
+              style: Theme.of(context).textTheme.titleSmall,
+            ),
+            const SizedBox(height: 8),
+            Wrap(
+              spacing: 8,
+              children: [
+                _buildColorOption(const Color(0xFF424242)),
+                _buildColorOption(Colors.blue),
+                _buildColorOption(Colors.red),
+                _buildColorOption(Colors.green),
+                _buildColorOption(Colors.orange),
+                _buildColorOption(Colors.purple),
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildColorOption(Color color) {
+    final isSelected = _iconColor == color;
+    return GestureDetector(
+      onTap: () {
+        setState(() {
+          _iconColor = color;
+        });
+      },
+      child: Container(
+        width: 40,
+        height: 40,
+        decoration: BoxDecoration(
+          color: color,
+          shape: BoxShape.circle,
+          border: Border.all(
+            color: isSelected ? Colors.white : Colors.transparent,
+            width: 3,
+          ),
+          boxShadow: isSelected
+              ? [
+                  BoxShadow(
+                    color: color.withOpacity(0.5),
+                    blurRadius: 8,
+                    spreadRadius: 2,
+                  ),
+                ]
+              : null,
+        ),
+        child: isSelected
+            ? const Icon(Icons.check, color: Colors.white, size: 20)
+            : null,
+      ),
+    );
+  }
+}
+```
+
+Icon themes provide consistent styling for icons throughout your app.  
+The global iconTheme affects most icons, while primaryIconTheme applies  
+to icons in primary-colored contexts like AppBars. Local IconTheme  
+widgets can override global settings for specific sections or components.  
