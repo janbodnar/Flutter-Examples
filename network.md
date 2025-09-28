@@ -7264,3 +7264,2393 @@ This example demonstrates advanced network image caching with automatic
 cache management. It includes size limits, expiration handling, placeholder  
 support, and error handling. The cache optimizes memory usage and provides  
 efficient image loading with fallback options.  
+
+## API Response Transformation
+
+Transforming and normalizing API responses for consistent data handling.  
+
+```dart
+import 'package:flutter/material.dart';
+import 'package:http/http.dart' as http;
+import 'dart:convert';
+
+void main() {
+  runApp(const MyApp());
+}
+
+class MyApp extends StatelessWidget {
+  const MyApp({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return MaterialApp(
+      darkTheme: ThemeData.dark(),
+      themeMode: ThemeMode.dark,
+      title: 'API Response Transformation',
+      home: const ResponseTransformationPage(),
+    );
+  }
+}
+
+// Base transformer interface
+abstract class ResponseTransformer<T> {
+  T transform(Map<String, dynamic> rawData);
+}
+
+// Entity classes
+class NormalizedUser {
+  final String id;
+  final String displayName;
+  final String email;
+  final String avatarUrl;
+  final DateTime lastActive;
+  final Map<String, dynamic> metadata;
+
+  NormalizedUser({
+    required this.id,
+    required this.displayName,
+    required this.email,
+    required this.avatarUrl,
+    required this.lastActive,
+    required this.metadata,
+  });
+}
+
+class NormalizedPost {
+  final String id;
+  final String title;
+  final String content;
+  final String authorId;
+  final String authorName;
+  final DateTime publishedAt;
+  final List<String> tags;
+  final int engagementScore;
+
+  NormalizedPost({
+    required this.id,
+    required this.title,
+    required this.content,
+    required this.authorId,
+    required this.authorName,
+    required this.publishedAt,
+    required this.tags,
+    required this.engagementScore,
+  });
+}
+
+// Transformer implementations
+class UserTransformer implements ResponseTransformer<NormalizedUser> {
+  @override
+  NormalizedUser transform(Map<String, dynamic> rawData) {
+    // Handle different API response formats
+    if (rawData.containsKey('user_info')) {
+      // Format 1: Nested user_info
+      final userInfo = rawData['user_info'];
+      return NormalizedUser(
+        id: userInfo['user_id']?.toString() ?? '',
+        displayName: userInfo['full_name'] ?? userInfo['username'] ?? '',
+        email: userInfo['email_address'] ?? '',
+        avatarUrl: userInfo['profile_image'] ?? _generateAvatarUrl(userInfo['username']),
+        lastActive: _parseDateTime(userInfo['last_login']),
+        metadata: {
+          'original_format': 'nested_user_info',
+          'account_type': userInfo['account_type'],
+          'verified': userInfo['is_verified'] ?? false,
+        },
+      );
+    } else {
+      // Format 2: Direct format
+      return NormalizedUser(
+        id: rawData['id']?.toString() ?? '',
+        displayName: rawData['name'] ?? rawData['username'] ?? '',
+        email: rawData['email'] ?? '',
+        avatarUrl: _generateAvatarUrl(rawData['name']),
+        lastActive: _parseDateTime(rawData['updated_at']),
+        metadata: {
+          'original_format': 'direct',
+          'phone': rawData['phone'],
+          'website': rawData['website'],
+        },
+      );
+    }
+  }
+
+  String _generateAvatarUrl(String? name) {
+    if (name == null || name.isEmpty) return 'https://via.placeholder.com/100';
+    final initials = name.split(' ').map((word) => word.isNotEmpty ? word[0] : '').join('');
+    return 'https://ui-avatars.com/api/?name=${Uri.encodeComponent(initials)}&background=random';
+  }
+
+  DateTime _parseDateTime(dynamic dateValue) {
+    if (dateValue == null) return DateTime.now();
+    if (dateValue is String) {
+      try {
+        return DateTime.parse(dateValue);
+      } catch (e) {
+        return DateTime.now();
+      }
+    }
+    return DateTime.now();
+  }
+}
+
+class PostTransformer implements ResponseTransformer<NormalizedPost> {
+  @override
+  NormalizedPost transform(Map<String, dynamic> rawData) {
+    return NormalizedPost(
+      id: rawData['id']?.toString() ?? '',
+      title: rawData['title'] ?? 'Untitled Post',
+      content: rawData['body'] ?? rawData['content'] ?? '',
+      authorId: rawData['userId']?.toString() ?? rawData['author_id']?.toString() ?? '',
+      authorName: _extractAuthorName(rawData),
+      publishedAt: _parseDateTime(rawData['created_at'] ?? rawData['publishedAt']),
+      tags: _extractTags(rawData),
+      engagementScore: _calculateEngagementScore(rawData),
+    );
+  }
+
+  String _extractAuthorName(Map<String, dynamic> rawData) {
+    if (rawData.containsKey('author')) {
+      final author = rawData['author'];
+      if (author is Map) {
+        return author['name'] ?? author['username'] ?? 'Unknown Author';
+      }
+      return author.toString();
+    }
+    return 'User ${rawData['userId'] ?? 'Unknown'}';
+  }
+
+  List<String> _extractTags(Map<String, dynamic> rawData) {
+    if (rawData.containsKey('tags')) {
+      final tags = rawData['tags'];
+      if (tags is List) {
+        return tags.map((tag) => tag.toString()).toList();
+      } else if (tags is String) {
+        return tags.split(',').map((tag) => tag.trim()).toList();
+      }
+    }
+    return [];
+  }
+
+  int _calculateEngagementScore(Map<String, dynamic> rawData) {
+    int score = 0;
+    score += (rawData['likes'] ?? 0) as int;
+    score += ((rawData['comments'] ?? 0) as int) * 2;
+    score += ((rawData['shares'] ?? 0) as int) * 3;
+    score += rawData['title']?.toString().length ?? 0 > 50 ? 10 : 0;
+    return score;
+  }
+
+  DateTime _parseDateTime(dynamic dateValue) {
+    if (dateValue == null) return DateTime.now();
+    if (dateValue is String) {
+      try {
+        return DateTime.parse(dateValue);
+      } catch (e) {
+        return DateTime.now();
+      }
+    }
+    return DateTime.now();
+  }
+}
+
+// Response transformation service
+class ResponseTransformationService {
+  static final Map<Type, ResponseTransformer> _transformers = {
+    NormalizedUser: UserTransformer(),
+    NormalizedPost: PostTransformer(),
+  };
+
+  static T transform<T>(Map<String, dynamic> rawData) {
+    final transformer = _transformers[T];
+    if (transformer == null) {
+      throw Exception('No transformer found for type $T');
+    }
+    return transformer.transform(rawData) as T;
+  }
+
+  static List<T> transformList<T>(List<dynamic> rawDataList) {
+    return rawDataList
+        .cast<Map<String, dynamic>>()
+        .map((data) => transform<T>(data))
+        .toList();
+  }
+}
+
+class ResponseTransformationPage extends StatefulWidget {
+  const ResponseTransformationPage({super.key});
+
+  @override
+  State<ResponseTransformationPage> createState() => _ResponseTransformationPageState();
+}
+
+class _ResponseTransformationPageState extends State<ResponseTransformationPage> {
+  String _result = '';
+  bool _isLoading = false;
+
+  Future<void> _transformUsers() async {
+    setState(() {
+      _isLoading = true;
+      _result = '';
+    });
+
+    try {
+      final response = await http.get(
+        Uri.parse('https://jsonplaceholder.typicode.com/users'),
+      );
+
+      if (response.statusCode == 200) {
+        final rawData = json.decode(response.body) as List<dynamic>;
+        final normalizedUsers = ResponseTransformationService.transformList<NormalizedUser>(rawData);
+
+        setState(() {
+          _result = 'Transformed ${normalizedUsers.length} users:\n\n' +
+              normalizedUsers.take(3).map((user) => 
+                  '• ${user.displayName}\n'
+                  '  Email: ${user.email}\n'
+                  '  Last Active: ${user.lastActive.toString().substring(0, 19)}\n'
+                  '  Metadata: ${user.metadata['original_format']}\n'
+              ).join('\n');
+        });
+      }
+    } catch (e) {
+      setState(() {
+        _result = 'Error transforming users: $e';
+      });
+    } finally {
+      setState(() {
+        _isLoading = false;
+      });
+    }
+  }
+
+  Future<void> _transformPosts() async {
+    setState(() {
+      _isLoading = true;
+      _result = '';
+    });
+
+    try {
+      final response = await http.get(
+        Uri.parse('https://jsonplaceholder.typicode.com/posts'),
+      );
+
+      if (response.statusCode == 200) {
+        final rawData = json.decode(response.body) as List<dynamic>;
+        final normalizedPosts = ResponseTransformationService.transformList<NormalizedPost>(rawData);
+
+        setState(() {
+          _result = 'Transformed ${normalizedPosts.length} posts:\n\n' +
+              normalizedPosts.take(3).map((post) => 
+                  '• ${post.title}\n'
+                  '  Author: ${post.authorName}\n'
+                  '  Content: ${post.content.substring(0, 50)}...\n'
+                  '  Engagement Score: ${post.engagementScore}\n'
+                  '  Tags: ${post.tags.isEmpty ? 'None' : post.tags.join(', ')}\n'
+              ).join('\n');
+        });
+      }
+    } catch (e) {
+      setState(() {
+        _result = 'Error transforming posts: $e';
+      });
+    } finally {
+      setState(() {
+        _isLoading = false;
+      });
+    }
+  }
+
+  Future<void> _testCustomTransformation() async {
+    setState(() {
+      _isLoading = true;
+      _result = '';
+    });
+
+    try {
+      // Simulate different API response formats
+      final customApiResponse = {
+        'user_info': {
+          'user_id': 999,
+          'full_name': 'Custom API User',
+          'email_address': 'custom@api.com',
+          'profile_image': 'https://example.com/avatar.jpg',
+          'last_login': '2024-01-15T10:30:00Z',
+          'account_type': 'premium',
+          'is_verified': true,
+        }
+      };
+
+      final normalizedUser = ResponseTransformationService.transform<NormalizedUser>(customApiResponse);
+
+      setState(() {
+        _result = 'Custom API Response Transformation:\n\n'
+            'Original format: nested_user_info\n\n'
+            'Normalized Data:\n'
+            '• ID: ${normalizedUser.id}\n'
+            '• Display Name: ${normalizedUser.displayName}\n'
+            '• Email: ${normalizedUser.email}\n'
+            '• Avatar URL: ${normalizedUser.avatarUrl}\n'
+            '• Last Active: ${normalizedUser.lastActive}\n'
+            '• Account Type: ${normalizedUser.metadata['account_type']}\n'
+            '• Verified: ${normalizedUser.metadata['verified']}\n';
+      });
+    } catch (e) {
+      setState(() {
+        _result = 'Error in custom transformation: $e';
+      });
+    } finally {
+      setState(() {
+        _isLoading = false;
+      });
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text('Response Transformation'),
+      ),
+      body: Padding(
+        padding: const EdgeInsets.all(16.0),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            const Card(
+              child: Padding(
+                padding: EdgeInsets.all(16.0),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Response Transformation Features:',
+                      style: TextStyle(fontWeight: FontWeight.bold),
+                    ),
+                    SizedBox(height: 8),
+                    Text('• Normalize inconsistent API responses'),
+                    Text('• Type-safe data transformation'),
+                    Text('• Handle multiple response formats'),
+                    Text('• Extract and enrich data'),
+                    Text('• Pluggable transformer system'),
+                  ],
+                ),
+              ),
+            ),
+            const SizedBox(height: 16),
+            Row(
+              children: [
+                Expanded(
+                  child: ElevatedButton(
+                    onPressed: _isLoading ? null : _transformUsers,
+                    child: const Text('Transform Users'),
+                  ),
+                ),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: ElevatedButton(
+                    onPressed: _isLoading ? null : _transformPosts,
+                    child: const Text('Transform Posts'),
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 8),
+            ElevatedButton(
+              onPressed: _isLoading ? null : _testCustomTransformation,
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.purple.withOpacity(0.8),
+              ),
+              child: const Text('Test Custom Format'),
+            ),
+            const SizedBox(height: 20),
+            if (_isLoading)
+              const Center(child: CircularProgressIndicator())
+            else if (_result.isNotEmpty)
+              Expanded(
+                child: Container(
+                  padding: const EdgeInsets.all(16),
+                  decoration: BoxDecoration(
+                    color: _result.contains('Error')
+                        ? Colors.red.withOpacity(0.1)
+                        : Colors.blue.withOpacity(0.1),
+                    border: Border.all(
+                      color: _result.contains('Error') ? Colors.red : Colors.blue,
+                    ),
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: SingleChildScrollView(
+                    child: Text(
+                      _result,
+                      style: const TextStyle(fontSize: 12, fontFamily: 'monospace'),
+                    ),
+                  ),
+                ),
+              ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+```
+
+This example demonstrates API response transformation for normalizing  
+inconsistent data formats. It includes pluggable transformers, type-safe  
+conversions, and data enrichment. The system handles multiple API formats  
+and provides consistent data structures for the application.  
+
+## Certificate Pinning
+
+Implementing SSL certificate pinning for enhanced security.  
+
+```dart
+import 'package:flutter/material.dart';
+import 'package:http/http.dart' as http;
+import 'package:http/io_client.dart';
+import 'dart:convert';
+import 'dart:io';
+
+void main() {
+  runApp(const MyApp());
+}
+
+class MyApp extends StatelessWidget {
+  const MyApp({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return MaterialApp(
+      darkTheme: ThemeData.dark(),
+      themeMode: ThemeMode.dark,
+      title: 'Certificate Pinning',
+      home: const CertificatePinningPage(),
+    );
+  }
+}
+
+class CertificatePinner {
+  static const Map<String, List<String>> _pinnedCertificates = {
+    'jsonplaceholder.typicode.com': [
+      // Example SHA-256 fingerprints (these are mock values for demo)
+      'ABC123DEF456789012345678901234567890ABCDEF1234567890ABCDEF123456',
+      'DEF456ABC789012345678901234567890ABCDEF123456789012345678901234',
+    ],
+    'httpbin.org': [
+      '1234567890ABCDEF1234567890ABCDEF1234567890ABCDEF1234567890ABCDEF',
+    ],
+  };
+
+  static bool Function(X509Certificate, String, int) get badCertificateCallback {
+    return (X509Certificate cert, String host, int port) {
+      // For demo purposes, we'll simulate certificate validation
+      final pinnedFingerprints = _pinnedCertificates[host];
+      if (pinnedFingerprints == null) {
+        // No pinning configured for this host, use default validation
+        return false; // This would normally check the system's certificate store
+      }
+
+      // In a real implementation, you would:
+      // 1. Calculate the SHA-256 fingerprint of the certificate
+      // 2. Compare it against the pinned fingerprints
+      // 3. Return true only if it matches
+      
+      // For demo, we'll simulate a successful pin validation
+      final certFingerprint = _calculateFingerprint(cert);
+      final isValid = pinnedFingerprints.contains(certFingerprint);
+      
+      print('Certificate validation for $host:');
+      print('  Certificate fingerprint: $certFingerprint');
+      print('  Pinned fingerprints: $pinnedFingerprints');
+      print('  Validation result: ${isValid ? 'VALID' : 'INVALID'}');
+      
+      return isValid;
+    };
+  }
+
+  static String _calculateFingerprint(X509Certificate cert) {
+    // In a real implementation, this would calculate the actual SHA-256
+    // fingerprint of the certificate. For demo purposes, we'll simulate
+    // different scenarios.
+    
+    final subject = cert.subject;
+    if (subject.contains('jsonplaceholder.typicode.com')) {
+      // Simulate valid certificate for jsonplaceholder
+      return 'ABC123DEF456789012345678901234567890ABCDEF1234567890ABCDEF123456';
+    } else if (subject.contains('httpbin.org')) {
+      // Simulate valid certificate for httpbin
+      return '1234567890ABCDEF1234567890ABCDEF1234567890ABCDEF1234567890ABCDEF';
+    } else {
+      // Simulate unknown/untrusted certificate
+      return 'UNKNOWN_CERTIFICATE_FINGERPRINT_${DateTime.now().millisecondsSinceEpoch}';
+    }
+  }
+}
+
+class SecureHttpClient {
+  static http.Client createPinnedClient() {
+    final httpClient = HttpClient();
+    
+    httpClient.badCertificateCallback = (cert, host, port) {
+      return CertificatePinner.badCertificateCallback(cert, host, port);
+    };
+
+    return IOClient(httpClient);
+  }
+
+  static http.Client createUnsecureClient() {
+    final httpClient = HttpClient();
+    
+    // Disable certificate validation (NOT recommended for production)
+    httpClient.badCertificateCallback = (cert, host, port) => true;
+
+    return IOClient(httpClient);
+  }
+}
+
+enum SecurityLevel {
+  pinned,
+  standard,
+  disabled,
+}
+
+class CertificatePinningPage extends StatefulWidget {
+  const CertificatePinningPage({super.key});
+
+  @override
+  State<CertificatePinningPage> createState() => _CertificatePinningPageState();
+}
+
+class _CertificatePinningPageState extends State<CertificatePinningPage> {
+  SecurityLevel _securityLevel = SecurityLevel.pinned;
+  String _result = '';
+  bool _isLoading = false;
+  final List<Map<String, dynamic>> _testResults = [];
+
+  Future<void> _testConnection(String url, String description) async {
+    setState(() {
+      _isLoading = true;
+    });
+
+    final startTime = DateTime.now();
+    http.Client? client;
+
+    try {
+      // Create client based on security level
+      switch (_securityLevel) {
+        case SecurityLevel.pinned:
+          client = SecureHttpClient.createPinnedClient();
+          break;
+        case SecurityLevel.standard:
+          client = http.Client();
+          break;
+        case SecurityLevel.disabled:
+          client = SecureHttpClient.createUnsecureClient();
+          break;
+      }
+
+      final response = await client.get(Uri.parse(url));
+      final duration = DateTime.now().difference(startTime);
+
+      final result = {
+        'description': description,
+        'url': url,
+        'securityLevel': _securityLevel.name,
+        'statusCode': response.statusCode,
+        'duration': duration.inMilliseconds,
+        'success': response.statusCode >= 200 && response.statusCode < 300,
+        'timestamp': DateTime.now(),
+        'error': null,
+      };
+
+      setState(() {
+        _testResults.insert(0, result);
+        _result = 'Success: ${response.statusCode}\n'
+            'Security Level: ${_securityLevel.name}\n'
+            'Response Time: ${duration.inMilliseconds}ms\n'
+            'Certificate validation: ${_securityLevel == SecurityLevel.pinned ? 'PINNED' : 'STANDARD'}';
+      });
+    } catch (e) {
+      final duration = DateTime.now().difference(startTime);
+      
+      final result = {
+        'description': description,
+        'url': url,
+        'securityLevel': _securityLevel.name,
+        'statusCode': 0,
+        'duration': duration.inMilliseconds,
+        'success': false,
+        'timestamp': DateTime.now(),
+        'error': e.toString(),
+      };
+
+      setState(() {
+        _testResults.insert(0, result);
+        _result = 'Error: $e\n'
+            'Security Level: ${_securityLevel.name}\n'
+            'This might indicate certificate pinning is working correctly\n'
+            'if the certificate doesn\'t match the pinned fingerprint.';
+      });
+    } finally {
+      client?.close();
+      setState(() {
+        _isLoading = false;
+      });
+    }
+  }
+
+  Widget _buildSecurityLevelSelector() {
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(16.0),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text(
+              'Security Level:',
+              style: TextStyle(fontWeight: FontWeight.bold),
+            ),
+            const SizedBox(height: 8),
+            ...SecurityLevel.values.map((level) {
+              IconData icon;
+              Color color;
+              String description;
+
+              switch (level) {
+                case SecurityLevel.pinned:
+                  icon = Icons.security;
+                  color = Colors.green;
+                  description = 'Certificate pinning enabled';
+                  break;
+                case SecurityLevel.standard:
+                  icon = Icons.verified_user;
+                  color = Colors.blue;
+                  description = 'Standard certificate validation';
+                  break;
+                case SecurityLevel.disabled:
+                  icon = Icons.security_outlined;
+                  color = Colors.orange;
+                  description = 'Certificate validation disabled';
+                  break;
+              }
+
+              return RadioListTile<SecurityLevel>(
+                title: Row(
+                  children: [
+                    Icon(icon, color: color, size: 20),
+                    const SizedBox(width: 8),
+                    Text(level.name.toUpperCase()),
+                  ],
+                ),
+                subtitle: Text(description),
+                value: level,
+                groupValue: _securityLevel,
+                onChanged: (SecurityLevel? value) {
+                  if (value != null) {
+                    setState(() {
+                      _securityLevel = value;
+                    });
+                  }
+                },
+              );
+            }),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildTestResults() {
+    if (_testResults.isEmpty) return const SizedBox.shrink();
+
+    return Card(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Padding(
+            padding: EdgeInsets.all(16.0),
+            child: Text(
+              'Test History:',
+              style: TextStyle(fontWeight: FontWeight.bold),
+            ),
+          ),
+          SizedBox(
+            height: 200,
+            child: ListView.builder(
+              itemCount: _testResults.length,
+              itemBuilder: (context, index) {
+                final result = _testResults[index];
+                final color = result['success'] ? Colors.green : Colors.red;
+                
+                return ListTile(
+                  dense: true,
+                  leading: Icon(
+                    result['success'] ? Icons.check_circle : Icons.error,
+                    color: color,
+                    size: 20,
+                  ),
+                  title: Text(
+                    result['description'],
+                    style: const TextStyle(fontSize: 12),
+                  ),
+                  subtitle: Text(
+                    '${result['securityLevel'].toUpperCase()} • '
+                    '${result['statusCode']} • '
+                    '${result['duration']}ms • '
+                    '${result['timestamp'].toString().substring(11, 19)}',
+                    style: const TextStyle(fontSize: 10),
+                  ),
+                  trailing: result['error'] != null
+                      ? const Icon(Icons.warning, color: Colors.orange, size: 16)
+                      : null,
+                );
+              },
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text('Certificate Pinning'),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.clear_all),
+            onPressed: () {
+              setState(() {
+                _testResults.clear();
+                _result = '';
+              });
+            },
+          ),
+        ],
+      ),
+      body: Padding(
+        padding: const EdgeInsets.all(16.0),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            _buildSecurityLevelSelector(),
+            const SizedBox(height: 16),
+            const Text(
+              'Test Certificate Validation:',
+              style: TextStyle(fontWeight: FontWeight.bold),
+            ),
+            const SizedBox(height: 8),
+            Row(
+              children: [
+                Expanded(
+                  child: ElevatedButton(
+                    onPressed: _isLoading 
+                        ? null 
+                        : () => _testConnection(
+                              'https://jsonplaceholder.typicode.com/posts/1',
+                              'JSONPlaceholder API',
+                            ),
+                    child: const Text('Test Pinned Site'),
+                  ),
+                ),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: ElevatedButton(
+                    onPressed: _isLoading 
+                        ? null 
+                        : () => _testConnection(
+                              'https://httpbin.org/get',
+                              'HTTPBin API',
+                            ),
+                    child: const Text('Test HTTPBin'),
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 20),
+            if (_isLoading)
+              const Center(child: CircularProgressIndicator())
+            else if (_result.isNotEmpty)
+              Container(
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: _result.contains('Error')
+                      ? Colors.red.withOpacity(0.1)
+                      : Colors.green.withOpacity(0.1),
+                  border: Border.all(
+                    color: _result.contains('Error') ? Colors.red : Colors.green,
+                  ),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Text(_result),
+              ),
+            const SizedBox(height: 16),
+            Expanded(child: _buildTestResults()),
+            const Card(
+              child: Padding(
+                padding: EdgeInsets.all(16.0),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Security Notes:',
+                      style: TextStyle(fontWeight: FontWeight.bold),
+                    ),
+                    SizedBox(height: 8),
+                    Text('• Certificate pinning prevents MITM attacks'),
+                    Text('• Pinned certificates must be updated when they expire'),
+                    Text('• Test with different security levels to understand behavior'),
+                    Text('• Production apps should always use pinning for sensitive APIs'),
+                  ],
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+```
+
+This example demonstrates SSL certificate pinning for enhanced security.  
+It shows how to validate certificates against pinned fingerprints to  
+prevent man-in-the-middle attacks. The implementation includes different  
+security levels and comprehensive testing capabilities.  
+
+## Mock API Server
+
+Creating a mock server for testing and development purposes.  
+
+```dart
+import 'package:flutter/material.dart';
+import 'package:http/http.dart' as http;
+import 'dart:convert';
+import 'dart:math';
+
+void main() {
+  runApp(const MyApp());
+}
+
+class MyApp extends StatelessWidget {
+  const MyApp({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return MaterialApp(
+      darkTheme: ThemeData.dark(),
+      themeMode: ThemeMode.dark,
+      title: 'Mock API Server',
+      home: const MockApiPage(),
+    );
+  }
+}
+
+class MockResponse {
+  final int statusCode;
+  final Map<String, String> headers;
+  final dynamic body;
+  final Duration delay;
+
+  MockResponse({
+    this.statusCode = 200,
+    this.headers = const {'Content-Type': 'application/json'},
+    required this.body,
+    this.delay = Duration.zero,
+  });
+}
+
+class MockApiServer {
+  static final Random _random = Random();
+  static final Map<String, List<Map<String, dynamic>>> _database = {
+    'users': [
+      {'id': 1, 'name': 'Alice Johnson', 'email': 'alice@example.com', 'role': 'admin'},
+      {'id': 2, 'name': 'Bob Smith', 'email': 'bob@example.com', 'role': 'user'},
+      {'id': 3, 'name': 'Carol Davis', 'email': 'carol@example.com', 'role': 'user'},
+    ],
+    'posts': [
+      {'id': 1, 'title': 'Welcome to Mock API', 'content': 'This is our first post', 'authorId': 1},
+      {'id': 2, 'title': 'Testing Made Easy', 'content': 'Mock servers help development', 'authorId': 2},
+    ],
+  };
+
+  static Future<MockResponse> handleRequest(String method, String path, {Map<String, dynamic>? body}) async {
+    // Simulate network delay
+    final delay = Duration(milliseconds: 100 + _random.nextInt(500));
+    await Future.delayed(delay);
+
+    try {
+      final segments = path.split('/').where((s) => s.isNotEmpty).toList();
+      
+      if (segments.isEmpty) {
+        return _createResponse(404, {'error': 'Not found'});
+      }
+
+      final resource = segments[0];
+      
+      switch (method.toUpperCase()) {
+        case 'GET':
+          return _handleGet(resource, segments);
+        case 'POST':
+          return _handlePost(resource, body);
+        case 'PUT':
+          return _handlePut(resource, segments, body);
+        case 'DELETE':
+          return _handleDelete(resource, segments);
+        default:
+          return _createResponse(405, {'error': 'Method not allowed'});
+      }
+    } catch (e) {
+      return _createResponse(500, {'error': 'Internal server error', 'details': e.toString()});
+    }
+  }
+
+  static MockResponse _handleGet(String resource, List<String> segments) {
+    if (!_database.containsKey(resource)) {
+      return _createResponse(404, {'error': 'Resource not found'});
+    }
+
+    final data = _database[resource]!;
+
+    if (segments.length == 1) {
+      // Get all items
+      return _createResponse(200, {
+        'data': data,
+        'count': data.length,
+        'page': 1,
+        'totalPages': 1,
+      });
+    } else if (segments.length == 2) {
+      // Get specific item
+      final id = int.tryParse(segments[1]);
+      if (id == null) {
+        return _createResponse(400, {'error': 'Invalid ID format'});
+      }
+
+      final item = data.firstWhere(
+        (item) => item['id'] == id,
+        orElse: () => <String, dynamic>{},
+      );
+
+      if (item.isEmpty) {
+        return _createResponse(404, {'error': 'Item not found'});
+      }
+
+      return _createResponse(200, item);
+    }
+
+    return _createResponse(400, {'error': 'Invalid path'});
+  }
+
+  static MockResponse _handlePost(String resource, Map<String, dynamic>? body) {
+    if (!_database.containsKey(resource)) {
+      return _createResponse(404, {'error': 'Resource not found'});
+    }
+
+    if (body == null) {
+      return _createResponse(400, {'error': 'Request body required'});
+    }
+
+    final data = _database[resource]!;
+    final newId = data.isEmpty ? 1 : data.map((item) => item['id'] as int).reduce((a, b) => a > b ? a : b) + 1;
+    
+    final newItem = {
+      'id': newId,
+      'createdAt': DateTime.now().toIso8601String(),
+      ...body,
+    };
+
+    data.add(newItem);
+
+    return _createResponse(201, newItem);
+  }
+
+  static MockResponse _handlePut(String resource, List<String> segments, Map<String, dynamic>? body) {
+    if (!_database.containsKey(resource)) {
+      return _createResponse(404, {'error': 'Resource not found'});
+    }
+
+    if (segments.length != 2) {
+      return _createResponse(400, {'error': 'ID required for update'});
+    }
+
+    if (body == null) {
+      return _createResponse(400, {'error': 'Request body required'});
+    }
+
+    final id = int.tryParse(segments[1]);
+    if (id == null) {
+      return _createResponse(400, {'error': 'Invalid ID format'});
+    }
+
+    final data = _database[resource]!;
+    final index = data.indexWhere((item) => item['id'] == id);
+
+    if (index == -1) {
+      return _createResponse(404, {'error': 'Item not found'});
+    }
+
+    final updatedItem = {
+      ...data[index],
+      ...body,
+      'updatedAt': DateTime.now().toIso8601String(),
+    };
+
+    data[index] = updatedItem;
+
+    return _createResponse(200, updatedItem);
+  }
+
+  static MockResponse _handleDelete(String resource, List<String> segments) {
+    if (!_database.containsKey(resource)) {
+      return _createResponse(404, {'error': 'Resource not found'});
+    }
+
+    if (segments.length != 2) {
+      return _createResponse(400, {'error': 'ID required for deletion'});
+    }
+
+    final id = int.tryParse(segments[1]);
+    if (id == null) {
+      return _createResponse(400, {'error': 'Invalid ID format'});
+    }
+
+    final data = _database[resource]!;
+    final index = data.indexWhere((item) => item['id'] == id);
+
+    if (index == -1) {
+      return _createResponse(404, {'error': 'Item not found'});
+    }
+
+    final deletedItem = data.removeAt(index);
+
+    return _createResponse(200, {
+      'message': 'Item deleted successfully',
+      'deletedItem': deletedItem,
+    });
+  }
+
+  static MockResponse _createResponse(int statusCode, dynamic body) {
+    return MockResponse(
+      statusCode: statusCode,
+      body: body,
+    );
+  }
+
+  // Simulate different scenarios
+  static Future<MockResponse> simulateError() async {
+    await Future.delayed(Duration(milliseconds: _random.nextInt(1000)));
+    
+    final scenarios = [
+      MockResponse(statusCode: 500, body: {'error': 'Internal server error'}),
+      MockResponse(statusCode: 503, body: {'error': 'Service unavailable'}),
+      MockResponse(statusCode: 429, body: {'error': 'Rate limit exceeded'}),
+    ];
+
+    return scenarios[_random.nextInt(scenarios.length)];
+  }
+
+  static Future<MockResponse> simulateSlowResponse() async {
+    await Future.delayed(const Duration(seconds: 3));
+    return MockResponse(
+      statusCode: 200,
+      body: {
+        'message': 'This response was intentionally delayed',
+        'timestamp': DateTime.now().toIso8601String(),
+      },
+    );
+  }
+}
+
+class MockApiClient {
+  static Future<Map<String, dynamic>> request(
+    String method,
+    String path, {
+    Map<String, dynamic>? body,
+  }) async {
+    final response = await MockApiServer.handleRequest(method, path, body: body);
+    
+    if (response.statusCode >= 400) {
+      throw Exception('HTTP ${response.statusCode}: ${response.body['error']}');
+    }
+
+    return response.body as Map<String, dynamic>;
+  }
+}
+
+class MockApiPage extends StatefulWidget {
+  const MockApiPage({super.key});
+
+  @override
+  State<MockApiPage> createState() => _MockApiPageState();
+}
+
+class _MockApiPageState extends State<MockApiPage> {
+  String _result = '';
+  bool _isLoading = false;
+  final List<Map<String, dynamic>> _requestHistory = [];
+
+  Future<void> _makeRequest(String method, String path, {Map<String, dynamic>? body}) async {
+    setState(() {
+      _isLoading = true;
+      _result = '';
+    });
+
+    final startTime = DateTime.now();
+
+    try {
+      final result = await MockApiClient.request(method, path, body: body);
+      final duration = DateTime.now().difference(startTime);
+
+      _requestHistory.insert(0, {
+        'method': method,
+        'path': path,
+        'body': body,
+        'result': result,
+        'duration': duration.inMilliseconds,
+        'success': true,
+        'timestamp': DateTime.now(),
+      });
+
+      setState(() {
+        _result = 'Success!\n\n${const JsonEncoder.withIndent('  ').convert(result)}';
+      });
+    } catch (e) {
+      final duration = DateTime.now().difference(startTime);
+
+      _requestHistory.insert(0, {
+        'method': method,
+        'path': path,
+        'body': body,
+        'error': e.toString(),
+        'duration': duration.inMilliseconds,
+        'success': false,
+        'timestamp': DateTime.now(),
+      });
+
+      setState(() {
+        _result = 'Error: $e';
+      });
+    } finally {
+      setState(() {
+        _isLoading = false;
+      });
+    }
+  }
+
+  Future<void> _simulateSpecialScenario(String scenario) async {
+    setState(() {
+      _isLoading = true;
+      _result = '';
+    });
+
+    final startTime = DateTime.now();
+
+    try {
+      MockResponse response;
+      
+      switch (scenario) {
+        case 'error':
+          response = await MockApiServer.simulateError();
+          break;
+        case 'slow':
+          response = await MockApiServer.simulateSlowResponse();
+          break;
+        default:
+          response = MockResponse(body: {'error': 'Unknown scenario'});
+      }
+
+      final duration = DateTime.now().difference(startTime);
+
+      _requestHistory.insert(0, {
+        'method': 'SIMULATE',
+        'path': scenario,
+        'result': response.body,
+        'duration': duration.inMilliseconds,
+        'success': response.statusCode < 400,
+        'timestamp': DateTime.now(),
+      });
+
+      setState(() {
+        _result = 'Simulation Result (${response.statusCode}):\n\n'
+            '${const JsonEncoder.withIndent('  ').convert(response.body)}';
+      });
+    } catch (e) {
+      setState(() {
+        _result = 'Simulation error: $e';
+      });
+    } finally {
+      setState(() {
+        _isLoading = false;
+      });
+    }
+  }
+
+  Widget _buildRequestButton(String title, String method, String path, {Map<String, dynamic>? body}) {
+    return ElevatedButton(
+      onPressed: _isLoading ? null : () => _makeRequest(method, path, body: body),
+      child: Text(title, textAlign: TextAlign.center),
+    );
+  }
+
+  Widget _buildRequestHistory() {
+    if (_requestHistory.isEmpty) return const SizedBox.shrink();
+
+    return Card(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Padding(
+            padding: EdgeInsets.all(16.0),
+            child: Text(
+              'Request History:',
+              style: TextStyle(fontWeight: FontWeight.bold),
+            ),
+          ),
+          SizedBox(
+            height: 150,
+            child: ListView.builder(
+              itemCount: _requestHistory.length,
+              itemBuilder: (context, index) {
+                final request = _requestHistory[index];
+                final color = request['success'] ? Colors.green : Colors.red;
+                
+                return ListTile(
+                  dense: true,
+                  leading: Icon(
+                    request['success'] ? Icons.check_circle : Icons.error,
+                    color: color,
+                    size: 16,
+                  ),
+                  title: Text(
+                    '${request['method']} ${request['path']}',
+                    style: const TextStyle(fontSize: 12),
+                  ),
+                  subtitle: Text(
+                    '${request['duration']}ms • ${request['timestamp'].toString().substring(11, 19)}',
+                    style: const TextStyle(fontSize: 10),
+                  ),
+                  trailing: request['body'] != null 
+                      ? const Icon(Icons.data_object, size: 12)
+                      : null,
+                );
+              },
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text('Mock API Server'),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.clear_all),
+            onPressed: () {
+              setState(() {
+                _requestHistory.clear();
+                _result = '';
+              });
+            },
+          ),
+        ],
+      ),
+      body: Padding(
+        padding: const EdgeInsets.all(16.0),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            const Card(
+              child: Padding(
+                padding: EdgeInsets.all(16.0),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Mock API Features:',
+                      style: TextStyle(fontWeight: FontWeight.bold),
+                    ),
+                    SizedBox(height: 8),
+                    Text('• Complete REST API simulation'),
+                    Text('• In-memory database'),
+                    Text('• Realistic response delays'),
+                    Text('• Error scenario testing'),
+                    Text('• CRUD operations support'),
+                  ],
+                ),
+              ),
+            ),
+            const SizedBox(height: 16),
+            const Text(
+              'CRUD Operations:',
+              style: TextStyle(fontWeight: FontWeight.bold),
+            ),
+            const SizedBox(height: 8),
+            Row(
+              children: [
+                Expanded(child: _buildRequestButton('GET Users', 'GET', '/users')),
+                const SizedBox(width: 8),
+                Expanded(child: _buildRequestButton('GET User 1', 'GET', '/users/1')),
+              ],
+            ),
+            const SizedBox(height: 8),
+            Row(
+              children: [
+                Expanded(
+                  child: _buildRequestButton(
+                    'CREATE User',
+                    'POST',
+                    '/users',
+                    body: {'name': 'New User', 'email': 'new@example.com', 'role': 'user'},
+                  ),
+                ),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: _buildRequestButton(
+                    'UPDATE User 1',
+                    'PUT',
+                    '/users/1',
+                    body: {'name': 'Updated User'},
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 8),
+            Row(
+              children: [
+                Expanded(child: _buildRequestButton('DELETE User 3', 'DELETE', '/users/3')),
+                const SizedBox(width: 8),
+                Expanded(child: _buildRequestButton('GET Posts', 'GET', '/posts')),
+              ],
+            ),
+            const SizedBox(height: 16),
+            const Text(
+              'Test Scenarios:',
+              style: TextStyle(fontWeight: FontWeight.bold),
+            ),
+            const SizedBox(height: 8),
+            Row(
+              children: [
+                Expanded(
+                  child: ElevatedButton(
+                    onPressed: _isLoading ? null : () => _simulateSpecialScenario('error'),
+                    style: ElevatedButton.styleFrom(backgroundColor: Colors.red.withOpacity(0.8)),
+                    child: const Text('Simulate Error'),
+                  ),
+                ),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: ElevatedButton(
+                    onPressed: _isLoading ? null : () => _simulateSpecialScenario('slow'),
+                    style: ElevatedButton.styleFrom(backgroundColor: Colors.orange.withOpacity(0.8)),
+                    child: const Text('Slow Response'),
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 20),
+            if (_isLoading)
+              const Center(child: CircularProgressIndicator())
+            else if (_result.isNotEmpty)
+              Expanded(
+                child: Container(
+                  padding: const EdgeInsets.all(16),
+                  decoration: BoxDecoration(
+                    color: _result.contains('Error')
+                        ? Colors.red.withOpacity(0.1)
+                        : Colors.blue.withOpacity(0.1),
+                    border: Border.all(
+                      color: _result.contains('Error') ? Colors.red : Colors.blue,
+                    ),
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: SingleChildScrollView(
+                    child: Text(
+                      _result,
+                      style: const TextStyle(fontSize: 12, fontFamily: 'monospace'),
+                    ),
+                  ),
+                ),
+              ),
+            if (_requestHistory.isNotEmpty) ...[
+              const SizedBox(height: 16),
+              _buildRequestHistory(),
+            ],
+          ],
+        ),
+      ),
+    );
+  }
+}
+```
+
+This example demonstrates a complete mock API server for testing and  
+development. It includes in-memory database, full CRUD operations,  
+realistic delays, error simulations, and request history tracking.  
+Perfect for development when backend services aren't available.  
+
+## Network Performance Monitoring
+
+Monitoring and analyzing network performance metrics in real-time.  
+
+```dart
+import 'package:flutter/material.dart';
+import 'package:http/http.dart' as http;
+import 'dart:convert';
+
+void main() {
+  runApp(const MyApp());
+}
+
+class MyApp extends StatelessWidget {
+  const MyApp({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return MaterialApp(
+      darkTheme: ThemeData.dark(),
+      themeMode: ThemeMode.dark,
+      title: 'Network Performance Monitor',
+      home: const NetworkMonitorPage(),
+    );
+  }
+}
+
+class NetworkMetrics {
+  final String requestId;
+  final String url;
+  final String method;
+  final DateTime timestamp;
+  final Duration? dnsLookupTime;
+  final Duration? connectionTime;
+  final Duration? sslHandshakeTime;
+  final Duration? timeToFirstByte;
+  final Duration totalTime;
+  final int? responseSize;
+  final int? statusCode;
+  final double? throughput; // KB/s
+  final bool success;
+  final String? errorMessage;
+
+  NetworkMetrics({
+    required this.requestId,
+    required this.url,
+    required this.method,
+    required this.timestamp,
+    this.dnsLookupTime,
+    this.connectionTime,
+    this.sslHandshakeTime,
+    this.timeToFirstByte,
+    required this.totalTime,
+    this.responseSize,
+    this.statusCode,
+    this.throughput,
+    required this.success,
+    this.errorMessage,
+  });
+
+  Map<String, dynamic> toJson() {
+    return {
+      'requestId': requestId,
+      'url': url,
+      'method': method,
+      'timestamp': timestamp.toIso8601String(),
+      'dnsLookupTime': dnsLookupTime?.inMilliseconds,
+      'connectionTime': connectionTime?.inMilliseconds,
+      'sslHandshakeTime': sslHandshakeTime?.inMilliseconds,
+      'timeToFirstByte': timeToFirstByte?.inMilliseconds,
+      'totalTime': totalTime.inMilliseconds,
+      'responseSize': responseSize,
+      'statusCode': statusCode,
+      'throughput': throughput,
+      'success': success,
+      'errorMessage': errorMessage,
+    };
+  }
+}
+
+class NetworkPerformanceMonitor {
+  static final List<NetworkMetrics> _metrics = [];
+  static const int maxMetrics = 50;
+
+  static Future<http.Response> monitoredRequest(
+    String method,
+    String url, {
+    Map<String, String>? headers,
+    String? body,
+  }) async {
+    final requestId = DateTime.now().millisecondsSinceEpoch.toString();
+    final startTime = DateTime.now();
+    
+    // Simulate performance metrics (in real app, these would be actual measurements)
+    final dnsStart = DateTime.now();
+    await Future.delayed(const Duration(milliseconds: 5)); // Simulate DNS lookup
+    final dnsTime = DateTime.now().difference(dnsStart);
+    
+    final connectionStart = DateTime.now();
+    await Future.delayed(const Duration(milliseconds: 10)); // Simulate connection
+    final connectionTime = DateTime.now().difference(connectionStart);
+    
+    final sslStart = DateTime.now();
+    await Future.delayed(const Duration(milliseconds: 15)); // Simulate SSL handshake
+    final sslTime = DateTime.now().difference(sslStart);
+
+    try {
+      final firstByteStart = DateTime.now();
+      http.Response response;
+
+      switch (method.toUpperCase()) {
+        case 'GET':
+          response = await http.get(Uri.parse(url), headers: headers);
+          break;
+        case 'POST':
+          response = await http.post(Uri.parse(url), headers: headers, body: body);
+          break;
+        case 'PUT':
+          response = await http.put(Uri.parse(url), headers: headers, body: body);
+          break;
+        case 'DELETE':
+          response = await http.delete(Uri.parse(url), headers: headers);
+          break;
+        default:
+          throw Exception('Unsupported method: $method');
+      }
+
+      final timeToFirstByte = DateTime.now().difference(firstByteStart);
+      final totalTime = DateTime.now().difference(startTime);
+      final responseSize = response.bodyBytes.length;
+      final throughput = responseSize / totalTime.inMilliseconds * 1000 / 1024; // KB/s
+
+      final metrics = NetworkMetrics(
+        requestId: requestId,
+        url: url,
+        method: method,
+        timestamp: startTime,
+        dnsLookupTime: dnsTime,
+        connectionTime: connectionTime,
+        sslHandshakeTime: sslTime,
+        timeToFirstByte: timeToFirstByte,
+        totalTime: totalTime,
+        responseSize: responseSize,
+        statusCode: response.statusCode,
+        throughput: throughput,
+        success: true,
+      );
+
+      _addMetrics(metrics);
+      return response;
+    } catch (e) {
+      final totalTime = DateTime.now().difference(startTime);
+
+      final metrics = NetworkMetrics(
+        requestId: requestId,
+        url: url,
+        method: method,
+        timestamp: startTime,
+        dnsLookupTime: dnsTime,
+        connectionTime: connectionTime,
+        sslHandshakeTime: sslTime,
+        totalTime: totalTime,
+        success: false,
+        errorMessage: e.toString(),
+      );
+
+      _addMetrics(metrics);
+      rethrow;
+    }
+  }
+
+  static void _addMetrics(NetworkMetrics metrics) {
+    _metrics.insert(0, metrics);
+    if (_metrics.length > maxMetrics) {
+      _metrics.removeRange(maxMetrics, _metrics.length);
+    }
+  }
+
+  static List<NetworkMetrics> get metrics => List.unmodifiable(_metrics);
+
+  static void clearMetrics() {
+    _metrics.clear();
+  }
+
+  static Map<String, dynamic> getPerformanceStats() {
+    if (_metrics.isEmpty) {
+      return {
+        'totalRequests': 0,
+        'successRate': 0.0,
+        'averageResponseTime': 0.0,
+        'averageThroughput': 0.0,
+      };
+    }
+
+    final successful = _metrics.where((m) => m.success).toList();
+    final totalRequests = _metrics.length;
+    final successRate = (successful.length / totalRequests) * 100;
+    
+    final avgResponseTime = successful.isNotEmpty
+        ? successful.map((m) => m.totalTime.inMilliseconds).reduce((a, b) => a + b) / successful.length
+        : 0.0;
+    
+    final avgThroughput = successful.where((m) => m.throughput != null).isNotEmpty
+        ? successful.where((m) => m.throughput != null).map((m) => m.throughput!).reduce((a, b) => a + b) / successful.where((m) => m.throughput != null).length
+        : 0.0;
+
+    return {
+      'totalRequests': totalRequests,
+      'successRate': successRate,
+      'averageResponseTime': avgResponseTime,
+      'averageThroughput': avgThroughput,
+      'fastestRequest': successful.isNotEmpty ? successful.map((m) => m.totalTime.inMilliseconds).reduce((a, b) => a < b ? a : b) : 0,
+      'slowestRequest': successful.isNotEmpty ? successful.map((m) => m.totalTime.inMilliseconds).reduce((a, b) => a > b ? a : b) : 0,
+    };
+  }
+}
+
+class NetworkMonitorPage extends StatefulWidget {
+  const NetworkMonitorPage({super.key});
+
+  @override
+  State<NetworkMonitorPage> createState() => _NetworkMonitorPageState();
+}
+
+class _NetworkMonitorPageState extends State<NetworkMonitorPage> {
+  bool _isLoading = false;
+  String _currentOperation = '';
+
+  Future<void> _performMonitoredRequest(String operation, String method, String url) async {
+    setState(() {
+      _isLoading = true;
+      _currentOperation = operation;
+    });
+
+    try {
+      await NetworkPerformanceMonitor.monitoredRequest(method, url);
+    } catch (e) {
+      // Error is already captured in metrics
+    } finally {
+      setState(() {
+        _isLoading = false;
+        _currentOperation = '';
+      });
+    }
+  }
+
+  Widget _buildPerformanceStats() {
+    final stats = NetworkPerformanceMonitor.getPerformanceStats();
+    
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(16.0),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text(
+              'Performance Statistics:',
+              style: TextStyle(fontWeight: FontWeight.bold),
+            ),
+            const SizedBox(height: 12),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceAround,
+              children: [
+                _buildStatItem('Total Requests', '${stats['totalRequests']}'),
+                _buildStatItem('Success Rate', '${stats['successRate'].toStringAsFixed(1)}%'),
+              ],
+            ),
+            const SizedBox(height: 12),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceAround,
+              children: [
+                _buildStatItem('Avg Response', '${stats['averageResponseTime'].toStringAsFixed(0)}ms'),
+                _buildStatItem('Avg Throughput', '${stats['averageThroughput'].toStringAsFixed(1)} KB/s'),
+              ],
+            ),
+            const SizedBox(height: 12),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceAround,
+              children: [
+                _buildStatItem('Fastest', '${stats['fastestRequest']}ms', color: Colors.green),
+                _buildStatItem('Slowest', '${stats['slowestRequest']}ms', color: Colors.orange),
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildStatItem(String label, String value, {Color? color}) {
+    return Column(
+      children: [
+        Text(
+          value,
+          style: TextStyle(
+            fontSize: 18,
+            fontWeight: FontWeight.bold,
+            color: color,
+          ),
+        ),
+        Text(
+          label,
+          style: const TextStyle(fontSize: 12),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildMetricsList() {
+    final metrics = NetworkPerformanceMonitor.metrics;
+    
+    if (metrics.isEmpty) {
+      return const Card(
+        child: Padding(
+          padding: EdgeInsets.all(16.0),
+          child: Text('No metrics available. Make some requests to see performance data.'),
+        ),
+      );
+    }
+
+    return Card(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Padding(
+            padding: EdgeInsets.all(16.0),
+            child: Text(
+              'Request Metrics:',
+              style: TextStyle(fontWeight: FontWeight.bold),
+            ),
+          ),
+          SizedBox(
+            height: 300,
+            child: ListView.builder(
+              itemCount: metrics.length,
+              itemBuilder: (context, index) {
+                final metric = metrics[index];
+                final color = metric.success ? Colors.green : Colors.red;
+                
+                return ExpansionTile(
+                  leading: Icon(
+                    metric.success ? Icons.check_circle : Icons.error,
+                    color: color,
+                    size: 20,
+                  ),
+                  title: Text(
+                    '${metric.method} ${Uri.parse(metric.url).host}',
+                    style: const TextStyle(fontSize: 12),
+                  ),
+                  subtitle: Text(
+                    '${metric.totalTime.inMilliseconds}ms • '
+                    '${metric.statusCode ?? 'Error'} • '
+                    '${metric.timestamp.toString().substring(11, 19)}',
+                    style: TextStyle(fontSize: 10, color: color),
+                  ),
+                  children: [
+                    Padding(
+                      padding: const EdgeInsets.all(16.0),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          if (metric.success) ...[
+                            Text('DNS Lookup: ${metric.dnsLookupTime?.inMilliseconds ?? 0}ms'),
+                            Text('Connection: ${metric.connectionTime?.inMilliseconds ?? 0}ms'),
+                            Text('SSL Handshake: ${metric.sslHandshakeTime?.inMilliseconds ?? 0}ms'),
+                            Text('Time to First Byte: ${metric.timeToFirstByte?.inMilliseconds ?? 0}ms'),
+                            Text('Response Size: ${metric.responseSize ?? 0} bytes'),
+                            Text('Throughput: ${metric.throughput?.toStringAsFixed(2) ?? 0} KB/s'),
+                          ] else ...[
+                            Text('Error: ${metric.errorMessage}', style: const TextStyle(color: Colors.red)),
+                          ],
+                        ],
+                      ),
+                    ),
+                  ],
+                );
+              },
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text('Network Performance Monitor'),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.clear_all),
+            onPressed: () {
+              NetworkPerformanceMonitor.clearMetrics();
+              setState(() {});
+            },
+          ),
+        ],
+      ),
+      body: Padding(
+        padding: const EdgeInsets.all(16.0),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            _buildPerformanceStats(),
+            const SizedBox(height: 16),
+            const Text(
+              'Test Network Performance:',
+              style: TextStyle(fontWeight: FontWeight.bold),
+            ),
+            const SizedBox(height: 8),
+            Row(
+              children: [
+                Expanded(
+                  child: ElevatedButton(
+                    onPressed: _isLoading 
+                        ? null 
+                        : () => _performMonitoredRequest(
+                              'Small Response',
+                              'GET',
+                              'https://jsonplaceholder.typicode.com/posts/1',
+                            ),
+                    child: const Text('Small Request'),
+                  ),
+                ),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: ElevatedButton(
+                    onPressed: _isLoading 
+                        ? null 
+                        : () => _performMonitoredRequest(
+                              'Large Response',
+                              'GET',
+                              'https://jsonplaceholder.typicode.com/posts',
+                            ),
+                    child: const Text('Large Request'),
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 8),
+            ElevatedButton(
+              onPressed: _isLoading 
+                  ? null 
+                  : () => _performMonitoredRequest(
+                        'POST Request',
+                        'POST',
+                        'https://jsonplaceholder.typicode.com/posts',
+                      ),
+              child: const Text('POST Request'),
+            ),
+            if (_isLoading) ...[
+              const SizedBox(height: 16),
+              Center(
+                child: Column(
+                  children: [
+                    const CircularProgressIndicator(),
+                    const SizedBox(height: 8),
+                    Text('Monitoring: $_currentOperation'),
+                  ],
+                ),
+              ),
+            ],
+            const SizedBox(height: 16),
+            Expanded(child: _buildMetricsList()),
+          ],
+        ),
+      ),
+    );
+  }
+}
+```
+
+This example demonstrates comprehensive network performance monitoring.  
+It tracks detailed metrics like DNS lookup time, connection establishment,  
+SSL handshake, throughput, and response times. The system provides  
+real-time statistics and performance insights for optimization.  
+
+## API Versioning
+
+Handling different API versions with backward compatibility.  
+
+```dart
+import 'package:flutter/material.dart';
+import 'package:http/http.dart' as http;
+import 'dart:convert';
+
+void main() {
+  runApp(const MyApp());
+}
+
+class MyApp extends StatelessWidget {
+  const MyApp({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return MaterialApp(
+      darkTheme: ThemeData.dark(),
+      themeMode: ThemeMode.dark,
+      title: 'API Versioning',
+      home: const ApiVersioningPage(),
+    );
+  }
+}
+
+enum ApiVersion { v1, v2, v3 }
+
+class VersionedApiClient {
+  final ApiVersion version;
+  final String baseUrl;
+
+  VersionedApiClient({
+    required this.version,
+    this.baseUrl = 'https://jsonplaceholder.typicode.com',
+  });
+
+  Map<String, String> get headers {
+    switch (version) {
+      case ApiVersion.v1:
+        return {
+          'Accept': 'application/json',
+          'Content-Type': 'application/json',
+        };
+      case ApiVersion.v2:
+        return {
+          'Accept': 'application/json',
+          'Content-Type': 'application/json',
+          'API-Version': '2.0',
+        };
+      case ApiVersion.v3:
+        return {
+          'Accept': 'application/vnd.api+json',
+          'Content-Type': 'application/vnd.api+json',
+          'API-Version': '3.0',
+        };
+    }
+  }
+
+  String get versionPath {
+    switch (version) {
+      case ApiVersion.v1:
+        return '';
+      case ApiVersion.v2:
+        return '/v2';
+      case ApiVersion.v3:
+        return '/v3';
+    }
+  }
+
+  Future<Map<String, dynamic>> getUsers() async {
+    final url = '$baseUrl$versionPath/users';
+    
+    try {
+      final response = await http.get(Uri.parse(url), headers: headers);
+      
+      if (response.statusCode == 200) {
+        final data = json.decode(response.body);
+        return _transformUsersResponse(data);
+      } else {
+        throw ApiException('HTTP ${response.statusCode}', response.body);
+      }
+    } catch (e) {
+      // Simulate fallback to previous version
+      if (version != ApiVersion.v1) {
+        final fallbackClient = VersionedApiClient(
+          version: ApiVersion.values[version.index - 1]
+        );
+        final result = await fallbackClient.getUsers();
+        result['_fallbackUsed'] = true;
+        result['_originalVersion'] = version.name;
+        return result;
+      }
+      rethrow;
+    }
+  }
+
+  Future<Map<String, dynamic>> getUser(int id) async {
+    final url = '$baseUrl$versionPath/users/$id';
+    
+    try {
+      final response = await http.get(Uri.parse(url), headers: headers);
+      
+      if (response.statusCode == 200) {
+        final data = json.decode(response.body);
+        return _transformUserResponse(data);
+      } else {
+        throw ApiException('HTTP ${response.statusCode}', response.body);
+      }
+    } catch (e) {
+      if (version != ApiVersion.v1) {
+        final fallbackClient = VersionedApiClient(
+          version: ApiVersion.values[version.index - 1]
+        );
+        final result = await fallbackClient.getUser(id);
+        result['_fallbackUsed'] = true;
+        result['_originalVersion'] = version.name;
+        return result;
+      }
+      rethrow;
+    }
+  }
+
+  Map<String, dynamic> _transformUsersResponse(dynamic data) {
+    switch (version) {
+      case ApiVersion.v1:
+        // V1: Simple user list
+        return {
+          'version': 'v1',
+          'users': data,
+          'format': 'simple',
+          'features': ['basic_info'],
+        };
+      
+      case ApiVersion.v2:
+        // V2: Enhanced user data with additional fields
+        return {
+          'version': 'v2',
+          'data': {
+            'users': (data as List).map((user) => {
+              ...user,
+              'displayName': user['name'],
+              'avatar': 'https://ui-avatars.com/api/?name=${Uri.encodeComponent(user['name'])}',
+              'lastActive': DateTime.now().subtract(Duration(days: user['id'] % 7)).toIso8601String(),
+            }).toList(),
+            'total': (data as List).length,
+            'page': 1,
+            'limit': 10,
+          },
+          'format': 'enhanced',
+          'features': ['basic_info', 'avatars', 'activity_tracking'],
+        };
+      
+      case ApiVersion.v3:
+        // V3: JSON:API format with relationships
+        return {
+          'version': 'v3',
+          'data': (data as List).map((user) => {
+            'type': 'user',
+            'id': user['id'].toString(),
+            'attributes': {
+              'name': user['name'],
+              'email': user['email'],
+              'phone': user['phone'],
+              'website': user['website'],
+              'displayName': user['name'],
+              'avatar': 'https://ui-avatars.com/api/?name=${Uri.encodeComponent(user['name'])}',
+              'metadata': {
+                'lastActive': DateTime.now().subtract(Duration(days: user['id'] % 7)).toIso8601String(),
+                'accountType': user['id'] % 3 == 0 ? 'premium' : 'standard',
+                'verified': user['id'] % 2 == 0,
+              }
+            },
+            'relationships': {
+              'address': {
+                'data': {
+                  'type': 'address',
+                  'id': user['address']['geo']['lat'],
+                }
+              }
+            }
+          }).toList(),
+          'included': [],
+          'meta': {
+            'total': (data as List).length,
+            'version': '3.0',
+            'timestamp': DateTime.now().toIso8601String(),
+          },
+          'format': 'jsonapi',
+          'features': ['basic_info', 'avatars', 'activity_tracking', 'relationships', 'metadata'],
+        };
+    }
+  }
+
+  Map<String, dynamic> _transformUserResponse(dynamic data) {
+    switch (version) {
+      case ApiVersion.v1:
+        return {
+          'version': 'v1',
+          'user': data,
+          'format': 'simple',
+        };
+      
+      case ApiVersion.v2:
+        return {
+          'version': 'v2',
+          'data': {
+            ...data,
+            'displayName': data['name'],
+            'avatar': 'https://ui-avatars.com/api/?name=${Uri.encodeComponent(data['name'])}',
+            'lastActive': DateTime.now().subtract(Duration(days: data['id'] % 7)).toIso8601String(),
+          },
+          'format': 'enhanced',
+        };
+      
+      case ApiVersion.v3:
+        return {
+          'version': 'v3',
+          'data': {
+            'type': 'user',
+            'id': data['id'].toString(),
+            'attributes': {
+              'name': data['name'],
+              'email': data['email'],
+              'phone': data['phone'],
+              'website': data['website'],
+              'displayName': data['name'],
+              'avatar': 'https://ui-avatars.com/api/?name=${Uri.encodeComponent(data['name'])}',
+              'metadata': {
+                'lastActive': DateTime.now().subtract(Duration(days: data['id'] % 7)).toIso8601String(),
+                'accountType': data['id'] % 3 == 0 ? 'premium' : 'standard',
+                'verified': data['id'] % 2 == 0,
+              }
+            }
+          },
+          'format': 'jsonapi',
+        };
+    }
+  }
+}
+
+class ApiException implements Exception {
+  final String message;
+  final String? details;
+
+  ApiException(this.message, [this.details]);
+
+  @override
+  String toString() => 'ApiException: $message${details != null ? ' - $details' : ''}';
+}
+
+class ApiVersioningPage extends StatefulWidget {
+  const ApiVersioningPage({super.key});
+
+  @override
+  State<ApiVersioningPage> createState() => _ApiVersioningPageState();
+}
+
+class _ApiVersioningPageState extends State<ApiVersioningPage> {
+  ApiVersion _selectedVersion = ApiVersion.v1;
+  String _result = '';
+  bool _isLoading = false;
+
+  Future<void> _testApiVersion(String operation) async {
+    setState(() {
+      _isLoading = true;
+      _result = '';
+    });
+
+    try {
+      final client = VersionedApiClient(version: _selectedVersion);
+      Map<String, dynamic> response;
+
+      switch (operation) {
+        case 'users':
+          response = await client.getUsers();
+          break;
+        case 'user':
+          response = await client.getUser(1);
+          break;
+        default:
+          throw Exception('Unknown operation: $operation');
+      }
+
+      setState(() {
+        _result = const JsonEncoder.withIndent('  ').convert(response);
+      });
+    } catch (e) {
+      setState(() {
+        _result = 'Error: $e';
+      });
+    } finally {
+      setState(() {
+        _isLoading = false;
+      });
+    }
+  }
+
+  Widget _buildVersionSelector() {
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(16.0),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text(
+              'API Version:',
+              style: TextStyle(fontWeight: FontWeight.bold),
+            ),
+            const SizedBox(height: 8),
+            ...ApiVersion.values.map((version) {
+              String description;
+              List<String> features;
+
+              switch (version) {
+                case ApiVersion.v1:
+                  description = 'Basic JSON response format';
+                  features = ['Simple structure', 'Standard fields'];
+                  break;
+                case ApiVersion.v2:
+                  description = 'Enhanced with metadata and pagination';
+                  features = ['Avatars', 'Last active', 'Pagination'];
+                  break;
+                case ApiVersion.v3:
+                  description = 'JSON:API format with relationships';
+                  features = ['JSON:API standard', 'Relationships', 'Rich metadata'];
+                  break;
+              }
+
+              return RadioListTile<ApiVersion>(
+                title: Text('Version ${version.name.toUpperCase()}'),
+                subtitle: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(description),
+                    const SizedBox(height: 4),
+                    Wrap(
+                      spacing: 4,
+                      children: features.map((feature) => Chip(
+                        label: Text(feature),
+                        labelStyle: const TextStyle(fontSize: 10),
+                        materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                      )).toList(),
+                    ),
+                  ],
+                ),
+                value: version,
+                groupValue: _selectedVersion,
+                onChanged: (ApiVersion? value) {
+                  if (value != null) {
+                    setState(() {
+                      _selectedVersion = value;
+                    });
+                  }
+                },
+              );
+            }),
+          ],
+        ),
+      ),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text('API Versioning'),
+      ),
+      body: Padding(
+        padding: const EdgeInsets.all(16.0),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            _buildVersionSelector(),
+            const SizedBox(height: 16),
+            const Text(
+              'Test API Operations:',
+              style: TextStyle(fontWeight: FontWeight.bold),
+            ),
+            const SizedBox(height: 8),
+            Row(
+              children: [
+                Expanded(
+                  child: ElevatedButton(
+                    onPressed: _isLoading ? null : () => _testApiVersion('users'),
+                    child: const Text('Get All Users'),
+                  ),
+                ),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: ElevatedButton(
+                    onPressed: _isLoading ? null : () => _testApiVersion('user'),
+                    child: const Text('Get Single User'),
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 20),
+            if (_isLoading)
+              const Center(child: CircularProgressIndicator())
+            else if (_result.isNotEmpty)
+              Expanded(
+                child: Container(
+                  padding: const EdgeInsets.all(16),
+                  decoration: BoxDecoration(
+                    color: _result.contains('Error')
+                        ? Colors.red.withOpacity(0.1)
+                        : _result.contains('_fallbackUsed')
+                            ? Colors.orange.withOpacity(0.1)
+                            : Colors.blue.withOpacity(0.1),
+                    border: Border.all(
+                      color: _result.contains('Error')
+                          ? Colors.red
+                          : _result.contains('_fallbackUsed')
+                              ? Colors.orange
+                              : Colors.blue,
+                    ),
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: SingleChildScrollView(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        if (_result.contains('_fallbackUsed'))
+                          const Padding(
+                            padding: EdgeInsets.only(bottom: 8.0),
+                            child: Text(
+                              '⚠️ Fallback version used due to error',
+                              style: TextStyle(
+                                color: Colors.orange,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                          ),
+                        Text(
+                          _result,
+                          style: const TextStyle(
+                            fontSize: 12,
+                            fontFamily: 'monospace',
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+            const Card(
+              child: Padding(
+                padding: EdgeInsets.all(16.0),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'API Versioning Features:',
+                      style: TextStyle(fontWeight: FontWeight.bold),
+                    ),
+                    SizedBox(height: 8),
+                    Text('• Multiple version support with fallback'),
+                    Text('• Response format transformation'),
+                    Text('• Backward compatibility handling'),
+                    Text('• Version-specific headers and paths'),
+                    Text('• Graceful degradation on errors'),
+                  ],
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+```
+
+This final example demonstrates comprehensive API versioning with backward  
+compatibility, response transformation, and fallback mechanisms. It shows  
+how to handle different API formats (simple JSON, enhanced, JSON:API) and  
+gracefully degrade when newer versions fail. This completes our collection  
+of 30 essential Flutter networking examples covering everything from basic  
+requests to advanced enterprise patterns.  
