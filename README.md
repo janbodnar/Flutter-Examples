@@ -67,6 +67,63 @@ class MyHomePage extends StatelessWidget {
 }
 ```
 
+### Notification positioned at the top
+
+```flutter
+import 'package:flutter/material.dart';
+
+void main() {
+  runApp(const MyApp());
+}
+
+class MyApp extends StatelessWidget {
+  const MyApp({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return MaterialApp(
+      title: 'Notification Button Demo',
+      theme: ThemeData.dark(),
+
+      home: const MyHomePage(),
+    );
+  }
+}
+
+class MyHomePage extends StatelessWidget {
+  const MyHomePage({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(title: const Text('Notification Button')),
+      body: Center(
+        child: ElevatedButton(
+          onPressed: () {
+            // Show SnackBar at the top when button is pressed
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: const Text('Button Clicked!'),
+                duration: const Duration(seconds: 3),
+                behavior: SnackBarBehavior.floating,
+                margin: EdgeInsets.only(
+                  top: MediaQuery.of(context).padding.top + 10.0,
+                  left: 10.0,
+                  right: 10.0,
+                  bottom: MediaQuery.of(context).size.height - 
+                         MediaQuery.of(context).padding.top - 70.0,
+                ),
+              ),
+            );
+          },
+          child: const Text('Show Notification'),
+        ),
+      ),
+    );
+  }
+}
+```
+
 ### Exit button
 
 Button inside application bar
