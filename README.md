@@ -1,9 +1,23 @@
 # Flutter-Examples
-Flutter code examples
 
+Flutter code examples demonstrating various concepts and features  
+for building mobile, web, and desktop applications.  
 
+## Getting Started
 
-## Exit button
+If you're new to Flutter, start with the [Introduction](introduction.md)  
+to learn about Flutter's history, installation, and basic concepts.  
+
+## Documentation
+
+- [Introduction](introduction.md) - Flutter overview, history, and installation  
+- [Basics](basics.md) - 30 essential Flutter examples for beginners  
+- [Layout](layout.md) - Comprehensive layout widgets and techniques  
+- [Animation](anim.md) - Animation examples and techniques  
+
+## Examples
+
+### Exit button
 
 Button inside application bar
 
