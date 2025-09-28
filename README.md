@@ -19,6 +19,8 @@ to learn about Flutter's history, installation, and basic concepts.
 
 ### Notification 
 
+Display a simple SnackBar notification when a button is pressed.  
+
 ```dart
 import 'package:flutter/material.dart';
 
@@ -67,9 +69,14 @@ class MyHomePage extends StatelessWidget {
 }
 ```
 
-
+This example demonstrates how to show a simple SnackBar notification  
+using ScaffoldMessenger. The SnackBar appears at the bottom of the screen  
+when the button is pressed and disappears after 3 seconds. SnackBar is  
+useful for showing brief messages to users.  
 
 ### Notification positioned at the top
+
+Display a floating SnackBar at the top of the screen using custom margins.  
 
 ```flutter
 import 'package:flutter/material.dart';
@@ -126,7 +133,15 @@ class MyHomePage extends StatelessWidget {
 }
 ```
 
+This example shows how to position a SnackBar at the top of the screen  
+using SnackBarBehavior.floating and custom EdgeInsets margins. The margin  
+calculations ensure the notification appears at the top while accounting  
+for the device's safe area and status bar.  
+
 ### Other notifications
+
+Demonstrate multiple notification types including SnackBar, AlertDialog,  
+and BottomSheet with different user interaction patterns.  
 
 ```dart
 import 'package:flutter/material.dart';
@@ -233,8 +248,15 @@ class MyHomePage extends StatelessWidget {
 }
 ```
 
+This example showcases three different notification types: SnackBar for  
+brief messages, AlertDialog for important user decisions, and BottomSheet  
+for additional content or actions. Each method demonstrates proper context  
+usage and user interaction handling with Navigator.pop().  
+
 
 ### Exit button
+
+Demonstrate app exit functionality using SystemNavigator.pop().  
 
 Button inside application bar
 
@@ -282,6 +304,11 @@ class MyHomePage extends StatelessWidget {
   }
 }
 ```
+
+This example shows how to add an exit button to the app bar using IconButton  
+in the leading position. SystemNavigator.pop() closes the entire application  
+on Android and iOS. The exit_to_app icon provides clear visual indication  
+of the exit functionality.  
 
 Exit button positioned absolutely
 
@@ -334,7 +361,14 @@ class MyHomePage extends StatelessWidget {
 }
 ```
 
+This example demonstrates positioning an exit button using Stack and  
+Positioned widgets. The button is placed at absolute coordinates (10, 10)  
+from the top-left corner, providing flexible placement options for custom  
+UI layouts.  
+
 ## Drawer wiget
+
+Create a navigation drawer with menu items and selection tracking.  
 
 ```dart
 import 'package:flutter/material.dart';
@@ -433,3 +467,8 @@ class _MyHomePageState extends State<MyHomePage> {
   }
 }
 ```
+
+This example implements a navigation drawer with multiple menu items and  
+selection state tracking. The Drawer widget contains a ListView with  
+DrawerHeader and ListTile widgets. Each ListTile shows selection state  
+and handles tap events to update the current page and close the drawer.  
