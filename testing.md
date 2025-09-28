@@ -5270,3 +5270,4286 @@ void main() {
 This example demonstrates testing custom widgets including custom painters,  
 interactive widgets with gestures, animated widgets, property validation,  
 and integration testing of multiple custom widgets together.
+
+## Testing Animations
+
+Testing animated widgets, animation controllers, and complex animation  
+sequences with proper timing verification.  
+
+```dart
+import 'package:flutter/material.dart';
+import 'package:flutter_test/flutter_test.dart';
+
+// Animated bounce button widget
+class BounceButton extends StatefulWidget {
+  final String text;
+  final VoidCallback? onPressed;
+  final Duration animationDuration;
+
+  const BounceButton({
+    super.key,
+    required this.text,
+    this.onPressed,
+    this.animationDuration = const Duration(milliseconds: 150),
+  });
+
+  @override
+  State<BounceButton> createState() => _BounceButtonState();
+}
+
+class _BounceButtonState extends State<BounceButton>
+    with SingleTickerProviderStateMixin {
+  late AnimationController _controller;
+  late Animation<double> _scaleAnimation;
+  bool _isPressed = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = AnimationController(
+      duration: widget.animationDuration,
+      vsync: this,
+    );
+    _scaleAnimation = Tween<double>(
+      begin: 1.0,
+      end: 0.9,
+    ).animate(CurvedAnimation(
+      parent: _controller,
+      curve: Curves.easeInOut,
+    ));
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  void _handleTapDown(TapDownDetails details) {
+    setState(() {
+      _isPressed = true;
+    });
+    _controller.forward();
+  }
+
+  void _handleTapUp(TapUpDetails details) {
+    _handleTapEnd();
+  }
+
+  void _handleTapCancel() {
+    _handleTapEnd();
+  }
+
+  void _handleTapEnd() {
+    setState(() {
+      _isPressed = false;
+    });
+    _controller.reverse();
+    widget.onPressed?.call();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTapDown: _handleTapDown,
+      onTapUp: _handleTapUp,
+      onTapCancel: _handleTapCancel,
+      child: AnimatedBuilder(
+        animation: _scaleAnimation,
+        builder: (context, child) {
+          return Transform.scale(
+            scale: _scaleAnimation.value,
+            child: Container(
+              key: const Key('bounce-container'),
+              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+              decoration: BoxDecoration(
+                color: _isPressed ? Colors.blue[700] : Colors.blue,
+                borderRadius: BorderRadius.circular(8),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withOpacity(0.2),
+                    offset: Offset(0, _isPressed ? 2 : 4),
+                    blurRadius: _isPressed ? 4 : 8,
+                  ),
+                ],
+              ),
+              child: Text(
+                widget.text,
+                style: const TextStyle(
+                  color: Colors.white,
+                  fontSize: 16,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ),
+          );
+        },
+      ),
+    );
+  }
+}
+
+// Fade transition widget
+class FadeTransitionWidget extends StatefulWidget {
+  final Widget child;
+  final bool visible;
+  final Duration duration;
+
+  const FadeTransitionWidget({
+    super.key,
+    required this.child,
+    required this.visible,
+    this.duration = const Duration(milliseconds: 300),
+  });
+
+  @override
+  State<FadeTransitionWidget> createState() => _FadeTransitionWidgetState();
+}
+
+class _FadeTransitionWidgetState extends State<FadeTransitionWidget>
+    with SingleTickerProviderStateMixin {
+  late AnimationController _controller;
+  late Animation<double> _fadeAnimation;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = AnimationController(
+      duration: widget.duration,
+      vsync: this,
+    );
+    _fadeAnimation = Tween<double>(
+      begin: 0.0,
+      end: 1.0,
+    ).animate(CurvedAnimation(
+      parent: _controller,
+      curve: Curves.easeInOut,
+    ));
+
+    if (widget.visible) {
+      _controller.forward();
+    }
+  }
+
+  @override
+  void didUpdateWidget(FadeTransitionWidget oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.visible != widget.visible) {
+      if (widget.visible) {
+        _controller.forward();
+      } else {
+        _controller.reverse();
+      }
+    }
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return FadeTransition(
+      opacity: _fadeAnimation,
+      child: widget.child,
+    );
+  }
+}
+
+// Loading animation widget
+class LoadingSpinner extends StatefulWidget {
+  final double size;
+  final Color color;
+  final Duration duration;
+
+  const LoadingSpinner({
+    super.key,
+    this.size = 40.0,
+    this.color = Colors.blue,
+    this.duration = const Duration(seconds: 1),
+  });
+
+  @override
+  State<LoadingSpinner> createState() => _LoadingSpinnerState();
+}
+
+class _LoadingSpinnerState extends State<LoadingSpinner>
+    with SingleTickerProviderStateMixin {
+  late AnimationController _controller;
+  late Animation<double> _rotationAnimation;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = AnimationController(
+      duration: widget.duration,
+      vsync: this,
+    );
+    _rotationAnimation = Tween<double>(
+      begin: 0.0,
+      end: 1.0,
+    ).animate(_controller);
+
+    _controller.repeat();
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AnimatedBuilder(
+      animation: _rotationAnimation,
+      builder: (context, child) {
+        return Transform.rotate(
+          angle: _rotationAnimation.value * 2 * 3.14159,
+          child: Container(
+            width: widget.size,
+            height: widget.size,
+            decoration: BoxDecoration(
+              border: Border.all(
+                color: widget.color.withOpacity(0.3),
+                width: 3,
+              ),
+              borderRadius: BorderRadius.circular(widget.size / 2),
+            ),
+            child: CustomPaint(
+              painter: _LoadingPainter(color: widget.color),
+            ),
+          ),
+        );
+      },
+    );
+  }
+}
+
+class _LoadingPainter extends CustomPainter {
+  final Color color;
+
+  _LoadingPainter({required this.color});
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final paint = Paint()
+      ..color = color
+      ..strokeWidth = 3
+      ..style = PaintingStyle.stroke
+      ..strokeCap = StrokeCap.round;
+
+    final center = Offset(size.width / 2, size.height / 2);
+    final radius = size.width / 2 - 1.5;
+
+    canvas.drawArc(
+      Rect.fromCircle(center: center, radius: radius),
+      0,
+      3.14159, // Half circle
+      false,
+      paint,
+    );
+  }
+
+  @override
+  bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
+}
+
+// Slide animation widget
+class SlideInWidget extends StatefulWidget {
+  final Widget child;
+  final bool visible;
+  final SlideDirection direction;
+  final Duration duration;
+
+  const SlideInWidget({
+    super.key,
+    required this.child,
+    required this.visible,
+    this.direction = SlideDirection.fromBottom,
+    this.duration = const Duration(milliseconds: 300),
+  });
+
+  @override
+  State<SlideInWidget> createState() => _SlideInWidgetState();
+}
+
+enum SlideDirection { fromTop, fromBottom, fromLeft, fromRight }
+
+class _SlideInWidgetState extends State<SlideInWidget>
+    with SingleTickerProviderStateMixin {
+  late AnimationController _controller;
+  late Animation<Offset> _slideAnimation;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = AnimationController(
+      duration: widget.duration,
+      vsync: this,
+    );
+
+    _slideAnimation = Tween<Offset>(
+      begin: _getBeginOffset(),
+      end: Offset.zero,
+    ).animate(CurvedAnimation(
+      parent: _controller,
+      curve: Curves.easeOutCubic,
+    ));
+
+    if (widget.visible) {
+      _controller.forward();
+    }
+  }
+
+  Offset _getBeginOffset() {
+    switch (widget.direction) {
+      case SlideDirection.fromTop:
+        return const Offset(0, -1);
+      case SlideDirection.fromBottom:
+        return const Offset(0, 1);
+      case SlideDirection.fromLeft:
+        return const Offset(-1, 0);
+      case SlideDirection.fromRight:
+        return const Offset(1, 0);
+    }
+  }
+
+  @override
+  void didUpdateWidget(SlideInWidget oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.visible != widget.visible) {
+      if (widget.visible) {
+        _controller.forward();
+      } else {
+        _controller.reverse();
+      }
+    }
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return SlideTransition(
+      position: _slideAnimation,
+      child: widget.child,
+    );
+  }
+}
+
+void main() {
+  group('Animation Tests', () {
+    group('BounceButton Tests', () {
+      testWidgets('should render with correct text', (WidgetTester tester) async {
+        await tester.pumpWidget(
+          MaterialApp(
+            home: Scaffold(
+              body: BounceButton(text: 'Click Me'),
+            ),
+          ),
+        );
+
+        expect(find.text('Click Me'), findsOneWidget);
+        expect(find.byKey(const Key('bounce-container')), findsOneWidget);
+      });
+
+      testWidgets('should animate scale on tap', (WidgetTester tester) async {
+        await tester.pumpWidget(
+          MaterialApp(
+            home: Scaffold(
+              body: BounceButton(
+                text: 'Test Button',
+                animationDuration: Duration(milliseconds: 100),
+              ),
+            ),
+          ),
+        );
+
+        // Get initial transform
+        Transform initialTransform = tester.widget(
+          find.descendant(
+            of: find.byKey(const Key('bounce-container')),
+            matching: find.byType(Transform),
+          ),
+        );
+
+        // Tap down to start animation
+        await tester.startGesture(tester.getCenter(find.text('Test Button')));
+        await tester.pump(const Duration(milliseconds: 50));
+
+        // Get transform during animation
+        Transform animatedTransform = tester.widget(
+          find.descendant(
+            of: find.byKey(const Key('bounce-container')),
+            matching: find.byType(Transform),
+          ),
+        );
+
+        // Transform should have changed (scale should be different)
+        expect(animatedTransform.transform, isNot(equals(initialTransform.transform)));
+      });
+
+      testWidgets('should call onPressed callback', (WidgetTester tester) async {
+        bool pressed = false;
+
+        await tester.pumpWidget(
+          MaterialApp(
+            home: Scaffold(
+              body: BounceButton(
+                text: 'Press Me',
+                onPressed: () => pressed = true,
+              ),
+            ),
+          ),
+        );
+
+        await tester.tap(find.text('Press Me'));
+        await tester.pumpAndSettle();
+
+        expect(pressed, isTrue);
+      });
+
+      testWidgets('should handle tap cancel', (WidgetTester tester) async {
+        bool pressed = false;
+
+        await tester.pumpWidget(
+          MaterialApp(
+            home: Scaffold(
+              body: BounceButton(
+                text: 'Cancel Test',
+                onPressed: () => pressed = true,
+              ),
+            ),
+          ),
+        );
+
+        // Start gesture but don't complete it
+        final gesture = await tester.startGesture(tester.getCenter(find.text('Cancel Test')));
+        await tester.pump(const Duration(milliseconds: 50));
+        
+        // Cancel the gesture
+        await gesture.cancel();
+        await tester.pumpAndSettle();
+
+        expect(pressed, isFalse);
+      });
+
+      testWidgets('should use custom animation duration', (WidgetTester tester) async {
+        await tester.pumpWidget(
+          MaterialApp(
+            home: Scaffold(
+              body: BounceButton(
+                text: 'Custom Duration',
+                animationDuration: Duration(milliseconds: 500),
+              ),
+            ),
+          ),
+        );
+
+        // Start tap
+        await tester.tap(find.text('Custom Duration'));
+        
+        // Animation should still be running after 250ms (half of 500ms)
+        await tester.pump(const Duration(milliseconds: 250));
+        
+        // Should complete after full duration
+        await tester.pump(const Duration(milliseconds: 300));
+        await tester.pumpAndSettle();
+      });
+    });
+
+    group('FadeTransitionWidget Tests', () {
+      testWidgets('should start invisible when visible is false', (WidgetTester tester) async {
+        await tester.pumpWidget(
+          MaterialApp(
+            home: Scaffold(
+              body: FadeTransitionWidget(
+                visible: false,
+                child: const Text('Fade Me'),
+              ),
+            ),
+          ),
+        );
+
+        // Widget should be present but with 0 opacity
+        final FadeTransition fadeTransition = tester.widget(find.byType(FadeTransition));
+        expect(fadeTransition.opacity.value, equals(0.0));
+      });
+
+      testWidgets('should start visible when visible is true', (WidgetTester tester) async {
+        await tester.pumpWidget(
+          MaterialApp(
+            home: Scaffold(
+              body: FadeTransitionWidget(
+                visible: true,
+                child: const Text('Visible'),
+                duration: Duration(milliseconds: 100),
+              ),
+            ),
+          ),
+        );
+
+        await tester.pumpAndSettle();
+
+        final FadeTransition fadeTransition = tester.widget(find.byType(FadeTransition));
+        expect(fadeTransition.opacity.value, equals(1.0));
+      });
+
+      testWidgets('should fade in when visibility changes to true', (WidgetTester tester) async {
+        bool isVisible = false;
+
+        await tester.pumpWidget(
+          MaterialApp(
+            home: StatefulBuilder(
+              builder: (context, setState) {
+                return Scaffold(
+                  body: Column(
+                    children: [
+                      ElevatedButton(
+                        onPressed: () => setState(() => isVisible = !isVisible),
+                        child: const Text('Toggle'),
+                      ),
+                      FadeTransitionWidget(
+                        visible: isVisible,
+                        duration: Duration(milliseconds: 100),
+                        child: const Text('Fade Content'),
+                      ),
+                    ],
+                  ),
+                );
+              },
+            ),
+          ),
+        );
+
+        // Initially invisible
+        FadeTransition fadeTransition = tester.widget(find.byType(FadeTransition));
+        expect(fadeTransition.opacity.value, equals(0.0));
+
+        // Toggle visibility
+        await tester.tap(find.text('Toggle'));
+        await tester.pump();
+
+        // Should start fading in
+        await tester.pump(const Duration(milliseconds: 50));
+        fadeTransition = tester.widget(find.byType(FadeTransition));
+        expect(fadeTransition.opacity.value, greaterThan(0.0));
+        expect(fadeTransition.opacity.value, lessThan(1.0));
+
+        // Should be fully visible after animation
+        await tester.pumpAndSettle();
+        fadeTransition = tester.widget(find.byType(FadeTransition));
+        expect(fadeTransition.opacity.value, equals(1.0));
+      });
+
+      testWidgets('should fade out when visibility changes to false', (WidgetTester tester) async {
+        bool isVisible = true;
+
+        await tester.pumpWidget(
+          MaterialApp(
+            home: StatefulBuilder(
+              builder: (context, setState) {
+                return Scaffold(
+                  body: Column(
+                    children: [
+                      ElevatedButton(
+                        onPressed: () => setState(() => isVisible = !isVisible),
+                        child: const Text('Hide'),
+                      ),
+                      FadeTransitionWidget(
+                        visible: isVisible,
+                        duration: Duration(milliseconds: 100),
+                        child: const Text('Hide Me'),
+                      ),
+                    ],
+                  ),
+                );
+              },
+            ),
+          ),
+        );
+
+        await tester.pumpAndSettle();
+
+        // Initially visible
+        FadeTransition fadeTransition = tester.widget(find.byType(FadeTransition));
+        expect(fadeTransition.opacity.value, equals(1.0));
+
+        // Toggle to hide
+        await tester.tap(find.text('Hide'));
+        await tester.pump(const Duration(milliseconds: 50));
+
+        // Should be fading out
+        fadeTransition = tester.widget(find.byType(FadeTransition));
+        expect(fadeTransition.opacity.value, lessThan(1.0));
+        expect(fadeTransition.opacity.value, greaterThan(0.0));
+      });
+    });
+
+    group('LoadingSpinner Tests', () {
+      testWidgets('should render with correct size and color', (WidgetTester tester) async {
+        await tester.pumpWidget(
+          MaterialApp(
+            home: Scaffold(
+              body: LoadingSpinner(
+                size: 50.0,
+                color: Colors.red,
+              ),
+            ),
+          ),
+        );
+
+        // Check container size
+        final Container container = tester.widget(find.byType(Container));
+        expect(container.constraints?.maxWidth, equals(50.0));
+        expect(container.constraints?.maxHeight, equals(50.0));
+      });
+
+      testWidgets('should continuously rotate', (WidgetTester tester) async {
+        await tester.pumpWidget(
+          MaterialApp(
+            home: Scaffold(
+              body: LoadingSpinner(
+                duration: Duration(milliseconds: 200),
+              ),
+            ),
+          ),
+        );
+
+        // Get initial rotation
+        Transform initialTransform = tester.widget(find.byType(Transform));
+        final initialMatrix = initialTransform.transform;
+
+        // Wait for rotation
+        await tester.pump(const Duration(milliseconds: 100));
+
+        Transform rotatedTransform = tester.widget(find.byType(Transform));
+        final rotatedMatrix = rotatedTransform.transform;
+
+        // Transform should have changed
+        expect(rotatedMatrix, isNot(equals(initialMatrix)));
+
+        // Wait for full rotation cycle
+        await tester.pump(const Duration(milliseconds: 150));
+
+        Transform nextTransform = tester.widget(find.byType(Transform));
+        final nextMatrix = nextTransform.transform;
+
+        // Should continue rotating
+        expect(nextMatrix, isNot(equals(rotatedMatrix)));
+      });
+
+      testWidgets('should use custom duration', (WidgetTester tester) async {
+        await tester.pumpWidget(
+          MaterialApp(
+            home: Scaffold(
+              body: LoadingSpinner(
+                duration: Duration(milliseconds: 1000), // 1 second
+              ),
+            ),
+          ),
+        );
+
+        Transform initialTransform = tester.widget(find.byType(Transform));
+        final initialMatrix = initialTransform.transform;
+
+        // After half duration, should be at different rotation
+        await tester.pump(const Duration(milliseconds: 500));
+
+        Transform halfwayTransform = tester.widget(find.byType(Transform));
+        final halfwayMatrix = halfwayTransform.transform;
+
+        expect(halfwayMatrix, isNot(equals(initialMatrix)));
+      });
+    });
+
+    group('SlideInWidget Tests', () {
+      testWidgets('should slide in from bottom by default', (WidgetTester tester) async {
+        await tester.pumpWidget(
+          MaterialApp(
+            home: Scaffold(
+              body: SlideInWidget(
+                visible: true,
+                duration: Duration(milliseconds: 100),
+                child: const Text('Slide Content'),
+              ),
+            ),
+          ),
+        );
+
+        // Should animate to position
+        await tester.pumpAndSettle();
+
+        final SlideTransition slideTransition = tester.widget(find.byType(SlideTransition));
+        expect(slideTransition.position.value, equals(Offset.zero));
+      });
+
+      testWidgets('should slide from different directions', (WidgetTester tester) async {
+        for (final direction in SlideDirection.values) {
+          await tester.pumpWidget(
+            MaterialApp(
+              home: Scaffold(
+                body: SlideInWidget(
+                  visible: true,
+                  direction: direction,
+                  duration: Duration(milliseconds: 50),
+                  child: Text('Slide ${direction.name}'),
+                ),
+              ),
+            ),
+          );
+
+          await tester.pumpAndSettle();
+
+          final SlideTransition slideTransition = tester.widget(find.byType(SlideTransition));
+          expect(slideTransition.position.value, equals(Offset.zero));
+
+          // Clean up for next iteration
+          await tester.pumpWidget(Container());
+        }
+      });
+
+      testWidgets('should slide in when visibility changes', (WidgetTester tester) async {
+        bool isVisible = false;
+
+        await tester.pumpWidget(
+          MaterialApp(
+            home: StatefulBuilder(
+              builder: (context, setState) {
+                return Scaffold(
+                  body: Column(
+                    children: [
+                      ElevatedButton(
+                        onPressed: () => setState(() => isVisible = true),
+                        child: const Text('Show'),
+                      ),
+                      SlideInWidget(
+                        visible: isVisible,
+                        duration: Duration(milliseconds: 100),
+                        child: const Text('Slide In'),
+                      ),
+                    ],
+                  ),
+                );
+              },
+            ),
+          ),
+        );
+
+        // Trigger slide in
+        await tester.tap(find.text('Show'));
+        await tester.pump();
+
+        // Should be animating
+        await tester.pump(const Duration(milliseconds: 50));
+        
+        // Should complete
+        await tester.pumpAndSettle();
+        
+        final SlideTransition slideTransition = tester.widget(find.byType(SlideTransition));
+        expect(slideTransition.position.value, equals(Offset.zero));
+      });
+    });
+
+    group('Animation Performance Tests', () {
+      testWidgets('should handle multiple simultaneous animations', (WidgetTester tester) async {
+        await tester.pumpWidget(
+          MaterialApp(
+            home: Scaffold(
+              body: Column(
+                children: [
+                  BounceButton(text: 'Bounce 1'),
+                  BounceButton(text: 'Bounce 2'),
+                  FadeTransitionWidget(
+                    visible: true,
+                    child: const Text('Fade'),
+                  ),
+                  LoadingSpinner(),
+                  SlideInWidget(
+                    visible: true,
+                    child: const Text('Slide'),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        );
+
+        // All animations should work together without issues
+        await tester.tap(find.text('Bounce 1'));
+        await tester.tap(find.text('Bounce 2'));
+        
+        await tester.pump(const Duration(milliseconds: 50));
+        await tester.pumpAndSettle();
+
+        // All widgets should still be present
+        expect(find.text('Bounce 1'), findsOneWidget);
+        expect(find.text('Bounce 2'), findsOneWidget);
+        expect(find.text('Fade'), findsOneWidget);
+        expect(find.byType(LoadingSpinner), findsOneWidget);
+        expect(find.text('Slide'), findsOneWidget);
+      });
+
+      testWidgets('should properly dispose animation controllers', (WidgetTester tester) async {
+        await tester.pumpWidget(
+          MaterialApp(
+            home: Scaffold(
+              body: Column(
+                children: [
+                  BounceButton(text: 'Test'),
+                  FadeTransitionWidget(visible: true, child: Text('Test')),
+                  LoadingSpinner(),
+                ],
+              ),
+            ),
+          ),
+        );
+
+        // Remove all animated widgets
+        await tester.pumpWidget(
+          MaterialApp(
+            home: Scaffold(
+              body: const Text('Empty'),
+            ),
+          ),
+        );
+
+        // Should not throw any errors during disposal
+        await tester.pumpAndSettle();
+      });
+    });
+  });
+}
+```
+
+This example demonstrates comprehensive animation testing including scale  
+animations, fade transitions, rotation animations, slide animations,  
+timing verification, and performance testing with multiple simultaneous  
+animations.
+
+## Basic Integration Test Setup
+
+Setting up integration testing environment and writing end-to-end tests  
+that simulate real user interactions across the entire app.  
+
+```dart
+import 'package:flutter/material.dart';
+import 'package:flutter_test/flutter_test.dart';
+import 'package:integration_test/integration_test.dart';
+
+// Main app for integration testing
+class TestApp extends StatelessWidget {
+  const TestApp({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return MaterialApp(
+      title: 'Integration Test App',
+      theme: ThemeData.dark(),
+      initialRoute: '/',
+      routes: {
+        '/': (context) => const HomeScreen(),
+        '/login': (context) => const LoginScreen(),
+        '/profile': (context) => const ProfileScreen(),
+        '/settings': (context) => const SettingsScreen(),
+      },
+    );
+  }
+}
+
+class HomeScreen extends StatelessWidget {
+  const HomeScreen({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text('Home'),
+        actions: [
+          IconButton(
+            key: const Key('settings-icon'),
+            icon: const Icon(Icons.settings),
+            onPressed: () => Navigator.pushNamed(context, '/settings'),
+          ),
+        ],
+      ),
+      body: Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            const Text(
+              'Welcome to the App!',
+              key: Key('welcome-text'),
+              style: TextStyle(fontSize: 24),
+            ),
+            const SizedBox(height: 20),
+            ElevatedButton(
+              key: const Key('login-button'),
+              onPressed: () => Navigator.pushNamed(context, '/login'),
+              child: const Text('Go to Login'),
+            ),
+            const SizedBox(height: 10),
+            ElevatedButton(
+              key: const Key('profile-button'),
+              onPressed: () => Navigator.pushNamed(context, '/profile'),
+              child: const Text('View Profile'),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class LoginScreen extends StatefulWidget {
+  const LoginScreen({super.key});
+
+  @override
+  State<LoginScreen> createState() => _LoginScreenState();
+}
+
+class _LoginScreenState extends State<LoginScreen> {
+  final _usernameController = TextEditingController();
+  final _passwordController = TextEditingController();
+  bool _isLoading = false;
+
+  @override
+  void dispose() {
+    _usernameController.dispose();
+    _passwordController.dispose();
+    super.dispose();
+  }
+
+  Future<void> _login() async {
+    if (_usernameController.text.isEmpty || _passwordController.text.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          key: Key('error-snackbar'),
+          content: Text('Please fill in all fields'),
+        ),
+      );
+      return;
+    }
+
+    setState(() {
+      _isLoading = true;
+    });
+
+    // Simulate API call
+    await Future.delayed(const Duration(seconds: 2));
+
+    if (_usernameController.text == 'admin' && _passwordController.text == 'password') {
+      Navigator.pushReplacementNamed(context, '/profile');
+    } else {
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+        });
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            key: Key('login-error-snackbar'),
+            content: Text('Invalid credentials'),
+          ),
+        );
+      }
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text('Login'),
+      ),
+      body: Padding(
+        padding: const EdgeInsets.all(16.0),
+        child: Column(
+          children: [
+            TextField(
+              key: const Key('username-field'),
+              controller: _usernameController,
+              decoration: const InputDecoration(
+                labelText: 'Username',
+                border: OutlineInputBorder(),
+              ),
+            ),
+            const SizedBox(height: 16),
+            TextField(
+              key: const Key('password-field'),
+              controller: _passwordController,
+              obscureText: true,
+              decoration: const InputDecoration(
+                labelText: 'Password',
+                border: OutlineInputBorder(),
+              ),
+            ),
+            const SizedBox(height: 24),
+            SizedBox(
+              width: double.infinity,
+              child: ElevatedButton(
+                key: const Key('submit-login'),
+                onPressed: _isLoading ? null : _login,
+                child: _isLoading
+                    ? const CircularProgressIndicator()
+                    : const Text('Login'),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class ProfileScreen extends StatelessWidget {
+  const ProfileScreen({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text('Profile'),
+        leading: IconButton(
+          key: const Key('back-to-home'),
+          icon: const Icon(Icons.home),
+          onPressed: () => Navigator.pushNamedAndRemoveUntil(
+            context,
+            '/',
+            (route) => false,
+          ),
+        ),
+      ),
+      body: const Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            CircleAvatar(
+              key: Key('profile-avatar'),
+              radius: 50,
+              child: Icon(Icons.person, size: 50),
+            ),
+            SizedBox(height: 20),
+            Text(
+              'Welcome, Admin!',
+              key: Key('profile-welcome'),
+              style: TextStyle(fontSize: 24),
+            ),
+            SizedBox(height: 10),
+            Text(
+              'This is your profile page.',
+              key: Key('profile-description'),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class SettingsScreen extends StatefulWidget {
+  const SettingsScreen({super.key});
+
+  @override
+  State<SettingsScreen> createState() => _SettingsScreenState();
+}
+
+class _SettingsScreenState extends State<SettingsScreen> {
+  bool _darkMode = true;
+  bool _notifications = false;
+  double _volume = 0.5;
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text('Settings'),
+      ),
+      body: ListView(
+        padding: const EdgeInsets.all(16.0),
+        children: [
+          SwitchListTile(
+            key: const Key('dark-mode-switch'),
+            title: const Text('Dark Mode'),
+            value: _darkMode,
+            onChanged: (value) => setState(() => _darkMode = value),
+          ),
+          SwitchListTile(
+            key: const Key('notifications-switch'),
+            title: const Text('Enable Notifications'),
+            value: _notifications,
+            onChanged: (value) => setState(() => _notifications = value),
+          ),
+          const SizedBox(height: 20),
+          Text('Volume: ${(_volume * 100).round()}%'),
+          Slider(
+            key: const Key('volume-slider'),
+            value: _volume,
+            onChanged: (value) => setState(() => _volume = value),
+          ),
+          const SizedBox(height: 20),
+          ElevatedButton(
+            key: const Key('save-settings'),
+            onPressed: () {
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(
+                  key: Key('settings-saved'),
+                  content: Text('Settings saved!'),
+                ),
+              );
+            },
+            child: const Text('Save Settings'),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+void main() {
+  IntegrationTestWidgetsFlutterBinding.ensureInitialized();
+
+  group('Integration Tests', () {
+    testWidgets('basic app flow test', (WidgetTester tester) async {
+      await tester.pumpWidget(const TestApp());
+      await tester.pumpAndSettle();
+
+      // Verify home screen loads
+      expect(find.byKey(const Key('welcome-text')), findsOneWidget);
+      expect(find.text('Welcome to the App!'), findsOneWidget);
+
+      // Navigate to settings
+      await tester.tap(find.byKey(const Key('settings-icon')));
+      await tester.pumpAndSettle();
+
+      // Verify settings screen
+      expect(find.text('Settings'), findsOneWidget);
+      expect(find.byKey(const Key('dark-mode-switch')), findsOneWidget);
+
+      // Go back to home
+      await tester.pageBack();
+      await tester.pumpAndSettle();
+
+      // Should be back on home screen
+      expect(find.byKey(const Key('welcome-text')), findsOneWidget);
+    });
+
+    testWidgets('login flow test', (WidgetTester tester) async {
+      await tester.pumpWidget(const TestApp());
+      await tester.pumpAndSettle();
+
+      // Navigate to login
+      await tester.tap(find.byKey(const Key('login-button')));
+      await tester.pumpAndSettle();
+
+      // Verify login screen
+      expect(find.text('Login'), findsOneWidget);
+      expect(find.byKey(const Key('username-field')), findsOneWidget);
+      expect(find.byKey(const Key('password-field')), findsOneWidget);
+
+      // Test empty field validation
+      await tester.tap(find.byKey(const Key('submit-login')));
+      await tester.pumpAndSettle();
+
+      expect(find.byKey(const Key('error-snackbar')), findsOneWidget);
+      expect(find.text('Please fill in all fields'), findsOneWidget);
+
+      // Wait for snackbar to disappear
+      await tester.pump(const Duration(seconds: 3));
+
+      // Test invalid credentials
+      await tester.enterText(find.byKey(const Key('username-field')), 'wrong');
+      await tester.enterText(find.byKey(const Key('password-field')), 'wrong');
+      await tester.tap(find.byKey(const Key('submit-login')));
+
+      // Wait for loading state
+      await tester.pump();
+      expect(find.byType(CircularProgressIndicator), findsOneWidget);
+
+      // Wait for response
+      await tester.pump(const Duration(seconds: 2));
+      await tester.pumpAndSettle();
+
+      expect(find.byKey(const Key('login-error-snackbar')), findsOneWidget);
+
+      // Wait for snackbar to disappear
+      await tester.pump(const Duration(seconds: 3));
+
+      // Test valid credentials
+      await tester.enterText(find.byKey(const Key('username-field')), 'admin');
+      await tester.enterText(find.byKey(const Key('password-field')), 'password');
+      await tester.tap(find.byKey(const Key('submit-login')));
+
+      // Wait for loading and navigation
+      await tester.pump();
+      await tester.pump(const Duration(seconds: 2));
+      await tester.pumpAndSettle();
+
+      // Should be on profile screen
+      expect(find.text('Welcome, Admin!'), findsOneWidget);
+      expect(find.byKey(const Key('profile-avatar')), findsOneWidget);
+    });
+
+    testWidgets('settings interaction test', (WidgetTester tester) async {
+      await tester.pumpWidget(const TestApp());
+      await tester.pumpAndSettle();
+
+      // Navigate to settings
+      await tester.tap(find.byKey(const Key('settings-icon')));
+      await tester.pumpAndSettle();
+
+      // Test dark mode switch
+      final darkModeSwitch = find.byKey(const Key('dark-mode-switch'));
+      expect(darkModeSwitch, findsOneWidget);
+      
+      // Switch should be on initially
+      Switch switchWidget = tester.widget(
+        find.descendant(
+          of: darkModeSwitch,
+          matching: find.byType(Switch),
+        ),
+      );
+      expect(switchWidget.value, isTrue);
+
+      // Toggle switch
+      await tester.tap(darkModeSwitch);
+      await tester.pump();
+
+      switchWidget = tester.widget(
+        find.descendant(
+          of: darkModeSwitch,
+          matching: find.byType(Switch),
+        ),
+      );
+      expect(switchWidget.value, isFalse);
+
+      // Test notifications switch
+      await tester.tap(find.byKey(const Key('notifications-switch')));
+      await tester.pump();
+
+      final notificationSwitch = find.byKey(const Key('notifications-switch'));
+      Switch notificationSwitchWidget = tester.widget(
+        find.descendant(
+          of: notificationSwitch,
+          matching: find.byType(Switch),
+        ),
+      );
+      expect(notificationSwitchWidget.value, isTrue);
+
+      // Test volume slider
+      final volumeSlider = find.byKey(const Key('volume-slider'));
+      await tester.drag(volumeSlider, const Offset(100, 0));
+      await tester.pump();
+
+      // Save settings
+      await tester.tap(find.byKey(const Key('save-settings')));
+      await tester.pumpAndSettle();
+
+      expect(find.byKey(const Key('settings-saved')), findsOneWidget);
+    });
+
+    testWidgets('complete user journey test', (WidgetTester tester) async {
+      await tester.pumpWidget(const TestApp());
+      await tester.pumpAndSettle();
+
+      // Start from home
+      expect(find.text('Welcome to the App!'), findsOneWidget);
+
+      // Go to login
+      await tester.tap(find.byKey(const Key('login-button')));
+      await tester.pumpAndSettle();
+
+      // Login successfully
+      await tester.enterText(find.byKey(const Key('username-field')), 'admin');
+      await tester.enterText(find.byKey(const Key('password-field')), 'password');
+      await tester.tap(find.byKey(const Key('submit-login')));
+      await tester.pump(const Duration(seconds: 2));
+      await tester.pumpAndSettle();
+
+      // Should be on profile
+      expect(find.text('Welcome, Admin!'), findsOneWidget);
+
+      // Go back to home
+      await tester.tap(find.byKey(const Key('back-to-home')));
+      await tester.pumpAndSettle();
+
+      // Should be back on home screen
+      expect(find.text('Welcome to the App!'), findsOneWidget);
+
+      // Go to settings
+      await tester.tap(find.byKey(const Key('settings-icon')));
+      await tester.pumpAndSettle();
+
+      // Change some settings
+      await tester.tap(find.byKey(const Key('notifications-switch')));
+      await tester.drag(find.byKey(const Key('volume-slider')), const Offset(50, 0));
+      await tester.tap(find.byKey(const Key('save-settings')));
+      await tester.pumpAndSettle();
+
+      // Verify save message
+      expect(find.text('Settings saved!'), findsOneWidget);
+    });
+
+    testWidgets('error handling and recovery test', (WidgetTester tester) async {
+      await tester.pumpWidget(const TestApp());
+      await tester.pumpAndSettle();
+
+      // Navigate to login
+      await tester.tap(find.byKey(const Key('login-button')));
+      await tester.pumpAndSettle();
+
+      // Try multiple failed login attempts
+      for (int i = 0; i < 3; i++) {
+        await tester.enterText(find.byKey(const Key('username-field')), 'user$i');
+        await tester.enterText(find.byKey(const Key('password-field')), 'wrong$i');
+        await tester.tap(find.byKey(const Key('submit-login')));
+        
+        // Wait for response
+        await tester.pump(const Duration(seconds: 2));
+        await tester.pumpAndSettle();
+        
+        // Should show error
+        expect(find.text('Invalid credentials'), findsOneWidget);
+        
+        // Wait for snackbar to disappear
+        await tester.pump(const Duration(seconds: 3));
+        await tester.pump();
+      }
+
+      // Finally login successfully
+      await tester.enterText(find.byKey(const Key('username-field')), 'admin');
+      await tester.enterText(find.byKey(const Key('password-field')), 'password');
+      await tester.tap(find.byKey(const Key('submit-login')));
+      await tester.pump(const Duration(seconds: 2));
+      await tester.pumpAndSettle();
+
+      // Should eventually succeed
+      expect(find.text('Welcome, Admin!'), findsOneWidget);
+    });
+  });
+}
+```
+
+This example demonstrates comprehensive integration testing including full  
+user workflows, navigation testing, form interactions, error handling,  
+and complex multi-screen user journeys that test the entire app flow.
+
+## End-to-End User Flows
+
+Testing complete user scenarios that span multiple screens and features,  
+simulating real-world usage patterns and user behavior.  
+
+```dart
+import 'package:flutter/material.dart';
+import 'package:flutter_test/flutter_test.dart';
+import 'package:integration_test/integration_test.dart';
+
+// E-commerce app for end-to-end testing
+class ShoppingApp extends StatelessWidget {
+  const ShoppingApp({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return MaterialApp(
+      title: 'Shopping App E2E Test',
+      theme: ThemeData.dark(),
+      home: const ProductListScreen(),
+    );
+  }
+}
+
+class Product {
+  final String id;
+  final String name;
+  final double price;
+  final String description;
+
+  Product({
+    required this.id,
+    required this.name,
+    required this.price,
+    required this.description,
+  });
+}
+
+class CartItem {
+  final Product product;
+  int quantity;
+
+  CartItem({required this.product, this.quantity = 1});
+}
+
+class Cart {
+  static final Cart _instance = Cart._internal();
+  factory Cart() => _instance;
+  Cart._internal();
+
+  final List<CartItem> _items = [];
+
+  List<CartItem> get items => List.unmodifiable(_items);
+
+  void addItem(Product product) {
+    final existingIndex = _items.indexWhere((item) => item.product.id == product.id);
+    if (existingIndex >= 0) {
+      _items[existingIndex].quantity++;
+    } else {
+      _items.add(CartItem(product: product));
+    }
+  }
+
+  void removeItem(String productId) {
+    _items.removeWhere((item) => item.product.id == productId);
+  }
+
+  void updateQuantity(String productId, int quantity) {
+    final index = _items.indexWhere((item) => item.product.id == productId);
+    if (index >= 0) {
+      if (quantity <= 0) {
+        _items.removeAt(index);
+      } else {
+        _items[index].quantity = quantity;
+      }
+    }
+  }
+
+  double get total => _items.fold(0.0, (sum, item) => sum + (item.product.price * item.quantity));
+
+  int get itemCount => _items.fold(0, (sum, item) => sum + item.quantity);
+
+  void clear() => _items.clear();
+}
+
+class ProductListScreen extends StatelessWidget {
+  const ProductListScreen({super.key});
+
+  static final List<Product> _products = [
+    Product(id: '1', name: 'Laptop', price: 999.99, description: 'High-performance laptop'),
+    Product(id: '2', name: 'Phone', price: 699.99, description: 'Latest smartphone'),
+    Product(id: '3', name: 'Headphones', price: 199.99, description: 'Noise-cancelling headphones'),
+    Product(id: '4', name: 'Tablet', price: 449.99, description: '10-inch tablet'),
+  ];
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text('Products'),
+        actions: [
+          IconButton(
+            key: const Key('search-icon'),
+            icon: const Icon(Icons.search),
+            onPressed: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (context) => const SearchScreen()),
+              );
+            },
+          ),
+          IconButton(
+            key: const Key('cart-icon'),
+            icon: Badge(
+              label: Text('${Cart().itemCount}'),
+              child: const Icon(Icons.shopping_cart),
+            ),
+            onPressed: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (context) => const CartScreen()),
+              );
+            },
+          ),
+        ],
+      ),
+      body: ListView.builder(
+        key: const Key('product-list'),
+        itemCount: _products.length,
+        itemBuilder: (context, index) {
+          final product = _products[index];
+          return ListTile(
+            key: Key('product-${product.id}'),
+            leading: const Icon(Icons.phone_android, size: 40),
+            title: Text(product.name),
+            subtitle: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(product.description),
+                Text('\$${product.price.toStringAsFixed(2)}'),
+              ],
+            ),
+            trailing: ElevatedButton(
+              key: Key('add-to-cart-${product.id}'),
+              onPressed: () {
+                Cart().addItem(product);
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    key: Key('added-snackbar-${product.id}'),
+                    content: Text('${product.name} added to cart'),
+                    duration: const Duration(seconds: 1),
+                  ),
+                );
+              },
+              child: const Text('Add to Cart'),
+            ),
+            onTap: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => ProductDetailScreen(product: product),
+                ),
+              );
+            },
+          );
+        },
+      ),
+    );
+  }
+}
+
+class ProductDetailScreen extends StatelessWidget {
+  final Product product;
+
+  const ProductDetailScreen({super.key, required this.product});
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        title: Text(product.name),
+      ),
+      body: Padding(
+        padding: const EdgeInsets.all(16.0),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Container(
+              key: const Key('product-image'),
+              width: double.infinity,
+              height: 200,
+              color: Colors.grey[800],
+              child: const Icon(Icons.image, size: 80),
+            ),
+            const SizedBox(height: 20),
+            Text(
+              product.name,
+              style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
+            ),
+            const SizedBox(height: 10),
+            Text(
+              '\$${product.price.toStringAsFixed(2)}',
+              style: const TextStyle(fontSize: 20, color: Colors.green),
+            ),
+            const SizedBox(height: 20),
+            Text(
+              product.description,
+              style: const TextStyle(fontSize: 16),
+            ),
+            const Spacer(),
+            SizedBox(
+              width: double.infinity,
+              child: ElevatedButton(
+                key: const Key('add-to-cart-detail'),
+                onPressed: () {
+                  Cart().addItem(product);
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      key: const Key('detail-added-snackbar'),
+                      content: Text('${product.name} added to cart'),
+                    ),
+                  );
+                },
+                child: const Text('Add to Cart'),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class SearchScreen extends StatefulWidget {
+  const SearchScreen({super.key});
+
+  @override
+  State<SearchScreen> createState() => _SearchScreenState();
+}
+
+class _SearchScreenState extends State<SearchScreen> {
+  final _searchController = TextEditingController();
+  List<Product> _searchResults = [];
+
+  static final List<Product> _allProducts = [
+    Product(id: '1', name: 'Laptop', price: 999.99, description: 'High-performance laptop'),
+    Product(id: '2', name: 'Phone', price: 699.99, description: 'Latest smartphone'),
+    Product(id: '3', name: 'Headphones', price: 199.99, description: 'Noise-cancelling headphones'),
+    Product(id: '4', name: 'Tablet', price: 449.99, description: '10-inch tablet'),
+    Product(id: '5', name: 'Mouse', price: 29.99, description: 'Wireless mouse'),
+    Product(id: '6', name: 'Keyboard', price: 79.99, description: 'Mechanical keyboard'),
+  ];
+
+  @override
+  void dispose() {
+    _searchController.dispose();
+    super.dispose();
+  }
+
+  void _performSearch(String query) {
+    if (query.isEmpty) {
+      setState(() {
+        _searchResults = [];
+      });
+      return;
+    }
+
+    setState(() {
+      _searchResults = _allProducts
+          .where((product) =>
+              product.name.toLowerCase().contains(query.toLowerCase()) ||
+              product.description.toLowerCase().contains(query.toLowerCase()))
+          .toList();
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        title: TextField(
+          key: const Key('search-field'),
+          controller: _searchController,
+          autofocus: true,
+          decoration: const InputDecoration(
+            hintText: 'Search products...',
+            border: InputBorder.none,
+          ),
+          onChanged: _performSearch,
+        ),
+      ),
+      body: _searchResults.isEmpty
+          ? const Center(
+              child: Text(
+                'No results found',
+                key: Key('no-results'),
+              ),
+            )
+          : ListView.builder(
+              key: const Key('search-results'),
+              itemCount: _searchResults.length,
+              itemBuilder: (context, index) {
+                final product = _searchResults[index];
+                return ListTile(
+                  key: Key('search-result-${product.id}'),
+                  title: Text(product.name),
+                  subtitle: Text('\$${product.price.toStringAsFixed(2)}'),
+                  onTap: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => ProductDetailScreen(product: product),
+                      ),
+                    );
+                  },
+                );
+              },
+            ),
+    );
+  }
+}
+
+class CartScreen extends StatefulWidget {
+  const CartScreen({super.key});
+
+  @override
+  State<CartScreen> createState() => _CartScreenState();
+}
+
+class _CartScreenState extends State<CartScreen> {
+  @override
+  Widget build(BuildContext context) {
+    final cart = Cart();
+    
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text('Shopping Cart'),
+      ),
+      body: cart.items.isEmpty
+          ? const Center(
+              child: Text(
+                'Your cart is empty',
+                key: Key('empty-cart'),
+                style: TextStyle(fontSize: 18),
+              ),
+            )
+          : Column(
+              children: [
+                Expanded(
+                  child: ListView.builder(
+                    key: const Key('cart-items'),
+                    itemCount: cart.items.length,
+                    itemBuilder: (context, index) {
+                      final cartItem = cart.items[index];
+                      return ListTile(
+                        key: Key('cart-item-${cartItem.product.id}'),
+                        title: Text(cartItem.product.name),
+                        subtitle: Text('\$${cartItem.product.price.toStringAsFixed(2)}'),
+                        trailing: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            IconButton(
+                              key: Key('decrease-${cartItem.product.id}'),
+                              icon: const Icon(Icons.remove),
+                              onPressed: () {
+                                setState(() {
+                                  cart.updateQuantity(cartItem.product.id, cartItem.quantity - 1);
+                                });
+                              },
+                            ),
+                            Text('${cartItem.quantity}'),
+                            IconButton(
+                              key: Key('increase-${cartItem.product.id}'),
+                              icon: const Icon(Icons.add),
+                              onPressed: () {
+                                setState(() {
+                                  cart.updateQuantity(cartItem.product.id, cartItem.quantity + 1);
+                                });
+                              },
+                            ),
+                            IconButton(
+                              key: Key('remove-${cartItem.product.id}'),
+                              icon: const Icon(Icons.delete, color: Colors.red),
+                              onPressed: () {
+                                setState(() {
+                                  cart.removeItem(cartItem.product.id);
+                                });
+                              },
+                            ),
+                          ],
+                        ),
+                      );
+                    },
+                  ),
+                ),
+                Container(
+                  padding: const EdgeInsets.all(16),
+                  child: Column(
+                    children: [
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          const Text('Total:', style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
+                          Text(
+                            '\$${cart.total.toStringAsFixed(2)}',
+                            key: const Key('cart-total'),
+                            style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 16),
+                      SizedBox(
+                        width: double.infinity,
+                        child: ElevatedButton(
+                          key: const Key('checkout-button'),
+                          onPressed: cart.items.isNotEmpty
+                              ? () {
+                                  Navigator.push(
+                                    context,
+                                    MaterialPageRoute(
+                                      builder: (context) => const CheckoutScreen(),
+                                    ),
+                                  );
+                                }
+                              : null,
+                          child: const Text('Proceed to Checkout'),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+    );
+  }
+}
+
+class CheckoutScreen extends StatefulWidget {
+  const CheckoutScreen({super.key});
+
+  @override
+  State<CheckoutScreen> createState() => _CheckoutScreenState();
+}
+
+class _CheckoutScreenState extends State<CheckoutScreen> {
+  final _nameController = TextEditingController();
+  final _addressController = TextEditingController();
+  final _phoneController = TextEditingController();
+  bool _isProcessing = false;
+
+  @override
+  void dispose() {
+    _nameController.dispose();
+    _addressController.dispose();
+    _phoneController.dispose();
+    super.dispose();
+  }
+
+  Future<void> _processOrder() async {
+    if (_nameController.text.isEmpty ||
+        _addressController.text.isEmpty ||
+        _phoneController.text.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          key: Key('checkout-error'),
+          content: Text('Please fill in all fields'),
+        ),
+      );
+      return;
+    }
+
+    setState(() {
+      _isProcessing = true;
+    });
+
+    // Simulate payment processing
+    await Future.delayed(const Duration(seconds: 3));
+
+    Cart().clear();
+
+    if (mounted) {
+      Navigator.pushAndRemoveUntil(
+        context,
+        MaterialPageRoute(builder: (context) => const OrderSuccessScreen()),
+        (route) => false,
+      );
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final cart = Cart();
+    
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text('Checkout'),
+      ),
+      body: SingleChildScrollView(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text(
+              'Order Summary',
+              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+            ),
+            const SizedBox(height: 10),
+            ...cart.items.map((item) => Padding(
+              padding: const EdgeInsets.symmetric(vertical: 4),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Text('${item.product.name} x${item.quantity}'),
+                  Text('\$${(item.product.price * item.quantity).toStringAsFixed(2)}'),
+                ],
+              ),
+            )),
+            const Divider(),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                const Text('Total:', style: TextStyle(fontWeight: FontWeight.bold)),
+                Text(
+                  '\$${cart.total.toStringAsFixed(2)}',
+                  key: const Key('checkout-total'),
+                  style: const TextStyle(fontWeight: FontWeight.bold),
+                ),
+              ],
+            ),
+            const SizedBox(height: 30),
+            const Text(
+              'Shipping Information',
+              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+            ),
+            const SizedBox(height: 10),
+            TextField(
+              key: const Key('checkout-name'),
+              controller: _nameController,
+              decoration: const InputDecoration(
+                labelText: 'Full Name',
+                border: OutlineInputBorder(),
+              ),
+            ),
+            const SizedBox(height: 16),
+            TextField(
+              key: const Key('checkout-address'),
+              controller: _addressController,
+              maxLines: 3,
+              decoration: const InputDecoration(
+                labelText: 'Shipping Address',
+                border: OutlineInputBorder(),
+              ),
+            ),
+            const SizedBox(height: 16),
+            TextField(
+              key: const Key('checkout-phone'),
+              controller: _phoneController,
+              keyboardType: TextInputType.phone,
+              decoration: const InputDecoration(
+                labelText: 'Phone Number',
+                border: OutlineInputBorder(),
+              ),
+            ),
+            const SizedBox(height: 30),
+            SizedBox(
+              width: double.infinity,
+              child: ElevatedButton(
+                key: const Key('place-order'),
+                onPressed: _isProcessing ? null : _processOrder,
+                child: _isProcessing
+                    ? const CircularProgressIndicator()
+                    : const Text('Place Order'),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class OrderSuccessScreen extends StatelessWidget {
+  const OrderSuccessScreen({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      body: Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            const Icon(
+              Icons.check_circle,
+              key: Key('success-icon'),
+              color: Colors.green,
+              size: 100,
+            ),
+            const SizedBox(height: 20),
+            const Text(
+              'Order Placed Successfully!',
+              key: Key('success-message'),
+              style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
+            ),
+            const SizedBox(height: 10),
+            const Text(
+              'Thank you for your purchase.',
+              style: TextStyle(fontSize: 16),
+            ),
+            const SizedBox(height: 30),
+            ElevatedButton(
+              key: const Key('back-to-products'),
+              onPressed: () {
+                Navigator.pushAndRemoveUntil(
+                  context,
+                  MaterialPageRoute(builder: (context) => const ProductListScreen()),
+                  (route) => false,
+                );
+              },
+              child: const Text('Continue Shopping'),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+void main() {
+  IntegrationTestWidgetsFlutterBinding.ensureInitialized();
+
+  group('E2E Shopping Flow Tests', () {
+    setUp(() {
+      // Clear cart before each test
+      Cart().clear();
+    });
+
+    testWidgets('complete shopping journey - single product', (WidgetTester tester) async {
+      await tester.pumpWidget(const ShoppingApp());
+      await tester.pumpAndSettle();
+
+      // Step 1: Browse products
+      expect(find.text('Products'), findsOneWidget);
+      expect(find.byKey(const Key('product-list')), findsOneWidget);
+
+      // Step 2: Add laptop to cart from main list
+      await tester.tap(find.byKey(const Key('add-to-cart-1')));
+      await tester.pump();
+      expect(find.text('Laptop added to cart'), findsOneWidget);
+      await tester.pump(const Duration(seconds: 2));
+
+      // Step 3: Check cart icon shows item count
+      expect(find.text('1'), findsOneWidget); // Badge on cart icon
+
+      // Step 4: Go to cart
+      await tester.tap(find.byKey(const Key('cart-icon')));
+      await tester.pumpAndSettle();
+
+      // Step 5: Verify cart contents
+      expect(find.text('Shopping Cart'), findsOneWidget);
+      expect(find.text('Laptop'), findsOneWidget);
+      expect(find.text('\$999.99'), findsOneWidget);
+
+      // Step 6: Proceed to checkout
+      await tester.tap(find.byKey(const Key('checkout-button')));
+      await tester.pumpAndSettle();
+
+      // Step 7: Fill in shipping information
+      expect(find.text('Checkout'), findsOneWidget);
+      await tester.enterText(find.byKey(const Key('checkout-name')), 'John Doe');
+      await tester.enterText(find.byKey(const Key('checkout-address')), '123 Main St, City, State');
+      await tester.enterText(find.byKey(const Key('checkout-phone')), '123-456-7890');
+
+      // Step 8: Place order
+      await tester.tap(find.byKey(const Key('place-order')));
+      await tester.pump();
+
+      // Verify loading state
+      expect(find.byType(CircularProgressIndicator), findsOneWidget);
+
+      // Wait for processing
+      await tester.pump(const Duration(seconds: 3));
+      await tester.pumpAndSettle();
+
+      // Step 9: Verify success screen
+      expect(find.byKey(const Key('success-icon')), findsOneWidget);
+      expect(find.text('Order Placed Successfully!'), findsOneWidget);
+
+      // Step 10: Return to shopping
+      await tester.tap(find.byKey(const Key('back-to-products')));
+      await tester.pumpAndSettle();
+
+      // Should be back at product list
+      expect(find.text('Products'), findsOneWidget);
+    });
+
+    testWidgets('multiple products shopping journey', (WidgetTester tester) async {
+      await tester.pumpWidget(const ShoppingApp());
+      await tester.pumpAndSettle();
+
+      // Add multiple products to cart
+      await tester.tap(find.byKey(const Key('add-to-cart-1'))); // Laptop
+      await tester.pump(const Duration(seconds: 1));
+      
+      await tester.tap(find.byKey(const Key('add-to-cart-2'))); // Phone
+      await tester.pump(const Duration(seconds: 1));
+      
+      await tester.tap(find.byKey(const Key('add-to-cart-3'))); // Headphones
+      await tester.pump(const Duration(seconds: 1));
+
+      // Verify cart count
+      expect(find.text('3'), findsOneWidget);
+
+      // Go to cart
+      await tester.tap(find.byKey(const Key('cart-icon')));
+      await tester.pumpAndSettle();
+
+      // Increase quantity of laptop
+      await tester.tap(find.byKey(const Key('increase-1')));
+      await tester.pump();
+
+      // Remove phone from cart
+      await tester.tap(find.byKey(const Key('remove-2')));
+      await tester.pump();
+
+      // Verify total calculation
+      // Should be: (999.99 * 2) + 199.99 = 2399.97
+      expect(find.text('\$2399.97'), findsOneWidget);
+
+      // Complete checkout
+      await tester.tap(find.byKey(const Key('checkout-button')));
+      await tester.pumpAndSettle();
+
+      await tester.enterText(find.byKey(const Key('checkout-name')), 'Jane Smith');
+      await tester.enterText(find.byKey(const Key('checkout-address')), '456 Oak St');
+      await tester.enterText(find.byKey(const Key('checkout-phone')), '987-654-3210');
+
+      await tester.tap(find.byKey(const Key('place-order')));
+      await tester.pump(const Duration(seconds: 3));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Order Placed Successfully!'), findsOneWidget);
+    });
+
+    testWidgets('product detail view shopping journey', (WidgetTester tester) async {
+      await tester.pumpWidget(const ShoppingApp());
+      await tester.pumpAndSettle();
+
+      // Tap on product to view details
+      await tester.tap(find.byKey(const Key('product-1')));
+      await tester.pumpAndSettle();
+
+      // Verify product detail screen
+      expect(find.text('Laptop'), findsOneWidget);
+      expect(find.text('\$999.99'), findsOneWidget);
+      expect(find.text('High-performance laptop'), findsOneWidget);
+      expect(find.byKey(const Key('product-image')), findsOneWidget);
+
+      // Add to cart from detail view
+      await tester.tap(find.byKey(const Key('add-to-cart-detail')));
+      await tester.pump();
+      expect(find.byKey(const Key('detail-added-snackbar')), findsOneWidget);
+
+      // Go back and check cart
+      await tester.pageBack();
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.byKey(const Key('cart-icon')));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Laptop'), findsOneWidget);
+    });
+
+    testWidgets('search and purchase journey', (WidgetTester tester) async {
+      await tester.pumpWidget(const ShoppingApp());
+      await tester.pumpAndSettle();
+
+      // Open search
+      await tester.tap(find.byKey(const Key('search-icon')));
+      await tester.pumpAndSettle();
+
+      // Search for mouse
+      await tester.enterText(find.byKey(const Key('search-field')), 'mouse');
+      await tester.pump();
+
+      // Tap on search result
+      await tester.tap(find.byKey(const Key('search-result-5')));
+      await tester.pumpAndSettle();
+
+      // Should be on mouse detail page
+      expect(find.text('Mouse'), findsOneWidget);
+      expect(find.text('\$29.99'), findsOneWidget);
+
+      // Add to cart
+      await tester.tap(find.byKey(const Key('add-to-cart-detail')));
+      await tester.pump();
+
+      // Navigate to cart and checkout
+      await tester.pageBack();
+      await tester.pumpAndSettle();
+      await tester.pageBack();
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.byKey(const Key('cart-icon')));
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.byKey(const Key('checkout-button')));
+      await tester.pumpAndSettle();
+
+      // Complete order
+      await tester.enterText(find.byKey(const Key('checkout-name')), 'Test User');
+      await tester.enterText(find.byKey(const Key('checkout-address')), 'Test Address');
+      await tester.enterText(find.byKey(const Key('checkout-phone')), '555-0123');
+
+      await tester.tap(find.byKey(const Key('place-order')));
+      await tester.pump(const Duration(seconds: 3));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Order Placed Successfully!'), findsOneWidget);
+    });
+
+    testWidgets('cart management journey', (WidgetTester tester) async {
+      await tester.pumpWidget(const ShoppingApp());
+      await tester.pumpAndSettle();
+
+      // Add multiple items
+      await tester.tap(find.byKey(const Key('add-to-cart-1')));
+      await tester.pump(const Duration(seconds: 1));
+      await tester.tap(find.byKey(const Key('add-to-cart-2')));
+      await tester.pump(const Duration(seconds: 1));
+
+      // Go to cart
+      await tester.tap(find.byKey(const Key('cart-icon')));
+      await tester.pumpAndSettle();
+
+      // Test quantity manipulation
+      await tester.tap(find.byKey(const Key('increase-1'))); // Laptop: 2
+      await tester.pump();
+      await tester.tap(find.byKey(const Key('increase-2'))); // Phone: 2
+      await tester.pump();
+      await tester.tap(find.byKey(const Key('decrease-1'))); // Laptop: 1
+      await tester.pump();
+
+      // Verify total: (999.99 * 1) + (699.99 * 2) = 2399.97
+      expect(find.text('\$2399.97'), findsOneWidget);
+
+      // Remove an item completely
+      await tester.tap(find.byKey(const Key('decrease-2'))); // Phone: 1
+      await tester.pump();
+      await tester.tap(find.byKey(const Key('decrease-2'))); // Phone: 0 (removed)
+      await tester.pump();
+
+      // Should only have laptop now
+      expect(find.text('\$999.99'), findsOneWidget);
+      expect(find.text('Phone'), findsNothing);
+    });
+
+    testWidgets('error handling during checkout', (WidgetTester tester) async {
+      await tester.pumpWidget(const ShoppingApp());
+      await tester.pumpAndSettle();
+
+      // Add item and go to checkout
+      await tester.tap(find.byKey(const Key('add-to-cart-1')));
+      await tester.pump();
+
+      await tester.tap(find.byKey(const Key('cart-icon')));
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.byKey(const Key('checkout-button')));
+      await tester.pumpAndSettle();
+
+      // Try to place order without filling fields
+      await tester.tap(find.byKey(const Key('place-order')));
+      await tester.pump();
+
+      // Should show error message
+      expect(find.byKey(const Key('checkout-error')), findsOneWidget);
+      expect(find.text('Please fill in all fields'), findsOneWidget);
+
+      // Fill in partial information
+      await tester.enterText(find.byKey(const Key('checkout-name')), 'Test Name');
+
+      // Try again
+      await tester.tap(find.byKey(const Key('place-order')));
+      await tester.pump();
+
+      // Should still show error
+      expect(find.text('Please fill in all fields'), findsOneWidget);
+
+      // Complete all fields
+      await tester.enterText(find.byKey(const Key('checkout-address')), 'Complete Address');
+      await tester.enterText(find.byKey(const Key('checkout-phone')), '123-456-7890');
+
+      // Now should succeed
+      await tester.tap(find.byKey(const Key('place-order')));
+      await tester.pump(const Duration(seconds: 3));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Order Placed Successfully!'), findsOneWidget);
+    });
+  });
+}
+```
+
+This example demonstrates comprehensive end-to-end testing scenarios  
+including complete shopping workflows, multi-product cart management,  
+search functionality, product detail navigation, error handling, and  
+complex user journeys that test the entire application flow.
+
+## Testing App Performance
+
+Performance testing to measure app startup time, scroll performance,  
+memory usage, and identifying performance bottlenecks.  
+
+```dart
+import 'package:flutter/material.dart';
+import 'package:flutter_test/flutter_test.dart';
+import 'package:integration_test/integration_test.dart';
+import 'dart:math' as math;
+
+// Performance test app with heavy operations
+class PerformanceTestApp extends StatelessWidget {
+  const PerformanceTestApp({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return MaterialApp(
+      title: 'Performance Test App',
+      theme: ThemeData.dark(),
+      home: const MainScreen(),
+    );
+  }
+}
+
+class MainScreen extends StatefulWidget {
+  const MainScreen({super.key});
+
+  @override
+  State<MainScreen> createState() => _MainScreenState();
+}
+
+class _MainScreenState extends State<MainScreen> {
+  int _selectedIndex = 0;
+
+  static const List<Widget> _pages = [
+    HeavyListScreen(),
+    AnimatedScreen(),
+    ImageGridScreen(),
+    ComplexLayoutScreen(),
+  ];
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      body: IndexedStack(
+        index: _selectedIndex,
+        children: _pages,
+      ),
+      bottomNavigationBar: BottomNavigationBar(
+        key: const Key('bottom-nav'),
+        type: BottomNavigationBarType.fixed,
+        currentIndex: _selectedIndex,
+        onTap: (index) => setState(() => _selectedIndex = index),
+        items: const [
+          BottomNavigationBarItem(icon: Icon(Icons.list), label: 'List'),
+          BottomNavigationBarItem(icon: Icon(Icons.animation), label: 'Animation'),
+          BottomNavigationBarItem(icon: Icon(Icons.image), label: 'Images'),
+          BottomNavigationBarItem(icon: Icon(Icons.dashboard), label: 'Layout'),
+        ],
+      ),
+    );
+  }
+}
+
+// Heavy list with complex items
+class HeavyListScreen extends StatefulWidget {
+  const HeavyListScreen({super.key});
+
+  @override
+  State<HeavyListScreen> createState() => _HeavyListScreenState();
+}
+
+class _HeavyListScreenState extends State<HeavyListScreen> {
+  List<ComplexItem> _items = [];
+
+  @override
+  void initState() {
+    super.initState();
+    _generateItems();
+  }
+
+  void _generateItems() {
+    _items = List.generate(1000, (index) {
+      return ComplexItem(
+        id: index,
+        title: 'Complex Item $index',
+        subtitle: 'This is item $index with some complex content',
+        value: math.Random().nextDouble() * 100,
+        category: ['Category A', 'Category B', 'Category C'][index % 3],
+        isImportant: index % 10 == 0,
+      );
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text('Heavy List'),
+        actions: [
+          IconButton(
+            key: const Key('refresh-list'),
+            icon: const Icon(Icons.refresh),
+            onPressed: () {
+              setState(() {
+                _generateItems();
+              });
+            },
+          ),
+        ],
+      ),
+      body: ListView.builder(
+        key: const Key('heavy-list'),
+        itemCount: _items.length,
+        itemBuilder: (context, index) {
+          return ComplexListItem(
+            key: Key('item-$index'),
+            item: _items[index],
+            onTap: () {
+              // Simulate expensive operation
+              final result = _performHeavyCalculation(index);
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(content: Text('Calculated: $result')),
+              );
+            },
+          );
+        },
+      ),
+    );
+  }
+
+  double _performHeavyCalculation(int seed) {
+    // Simulate CPU-intensive operation
+    double result = 0.0;
+    for (int i = 0; i < 10000; i++) {
+      result += math.sin(seed + i) * math.cos(seed + i);
+    }
+    return result;
+  }
+}
+
+class ComplexItem {
+  final int id;
+  final String title;
+  final String subtitle;
+  final double value;
+  final String category;
+  final bool isImportant;
+
+  ComplexItem({
+    required this.id,
+    required this.title,
+    required this.subtitle,
+    required this.value,
+    required this.category,
+    required this.isImportant,
+  });
+}
+
+class ComplexListItem extends StatelessWidget {
+  final ComplexItem item;
+  final VoidCallback? onTap;
+
+  const ComplexListItem({super.key, required this.item, this.onTap});
+
+  @override
+  Widget build(BuildContext context) {
+    return Card(
+      margin: const EdgeInsets.all(4),
+      child: ListTile(
+        leading: Container(
+          width: 50,
+          height: 50,
+          decoration: BoxDecoration(
+            color: item.isImportant ? Colors.red : Colors.blue,
+            shape: BoxShape.circle,
+          ),
+          child: Center(
+            child: Text(
+              '${item.id}',
+              style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+            ),
+          ),
+        ),
+        title: Text(item.title),
+        subtitle: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(item.subtitle),
+            const SizedBox(height: 4),
+            Row(
+              children: [
+                Chip(
+                  label: Text(item.category),
+                  materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                ),
+                const SizedBox(width: 8),
+                Text('Value: ${item.value.toStringAsFixed(2)}'),
+              ],
+            ),
+          ],
+        ),
+        trailing: item.isImportant
+            ? const Icon(Icons.star, color: Colors.amber)
+            : null,
+        onTap: onTap,
+      ),
+    );
+  }
+}
+
+// Screen with multiple simultaneous animations
+class AnimatedScreen extends StatefulWidget {
+  const AnimatedScreen({super.key});
+
+  @override
+  State<AnimatedScreen> createState() => _AnimatedScreenState();
+}
+
+class _AnimatedScreenState extends State<AnimatedScreen>
+    with TickerProviderStateMixin {
+  late List<AnimationController> _controllers;
+  late List<Animation<double>> _animations;
+  bool _isAnimating = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _initializeAnimations();
+  }
+
+  void _initializeAnimations() {
+    _controllers = List.generate(20, (index) {
+      return AnimationController(
+        duration: Duration(milliseconds: 1000 + (index * 100)),
+        vsync: this,
+      );
+    });
+
+    _animations = _controllers.map((controller) {
+      return Tween<double>(begin: 0, end: 1).animate(
+        CurvedAnimation(parent: controller, curve: Curves.easeInOut),
+      );
+    }).toList();
+  }
+
+  @override
+  void dispose() {
+    for (final controller in _controllers) {
+      controller.dispose();
+    }
+    super.dispose();
+  }
+
+  void _startAnimations() {
+    setState(() => _isAnimating = true);
+    for (final controller in _controllers) {
+      controller.repeat(reverse: true);
+    }
+  }
+
+  void _stopAnimations() {
+    setState(() => _isAnimating = false);
+    for (final controller in _controllers) {
+      controller.stop();
+      controller.reset();
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text('Animations'),
+        actions: [
+          IconButton(
+            key: const Key('toggle-animations'),
+            icon: Icon(_isAnimating ? Icons.stop : Icons.play_arrow),
+            onPressed: _isAnimating ? _stopAnimations : _startAnimations,
+          ),
+        ],
+      ),
+      body: GridView.builder(
+        key: const Key('animation-grid'),
+        padding: const EdgeInsets.all(16),
+        gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+          crossAxisCount: 4,
+          crossAxisSpacing: 10,
+          mainAxisSpacing: 10,
+        ),
+        itemCount: _animations.length,
+        itemBuilder: (context, index) {
+          return AnimatedBuilder(
+            animation: _animations[index],
+            builder: (context, child) {
+              return Transform.scale(
+                scale: 0.5 + (_animations[index].value * 0.5),
+                child: Transform.rotate(
+                  angle: _animations[index].value * 2 * math.pi,
+                  child: Container(
+                    decoration: BoxDecoration(
+                      color: Color.lerp(
+                        Colors.blue,
+                        Colors.red,
+                        _animations[index].value,
+                      ),
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: Center(
+                      child: Text(
+                        '$index',
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+              );
+            },
+          );
+        },
+      ),
+    );
+  }
+}
+
+// Image grid screen for memory testing
+class ImageGridScreen extends StatelessWidget {
+  const ImageGridScreen({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text('Image Grid'),
+      ),
+      body: GridView.builder(
+        key: const Key('image-grid'),
+        padding: const EdgeInsets.all(8),
+        gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+          crossAxisCount: 3,
+          crossAxisSpacing: 4,
+          mainAxisSpacing: 4,
+        ),
+        itemCount: 100,
+        itemBuilder: (context, index) {
+          return Container(
+            key: Key('image-$index'),
+            decoration: BoxDecoration(
+              color: Color.fromRGBO(
+                (index * 50) % 255,
+                (index * 80) % 255,
+                (index * 120) % 255,
+                1.0,
+              ),
+              borderRadius: BorderRadius.circular(8),
+            ),
+            child: Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Icon(
+                    Icons.image,
+                    size: 40,
+                    color: Colors.white.withOpacity(0.7),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    'Img $index',
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 12,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          );
+        },
+      ),
+    );
+  }
+}
+
+// Complex layout screen
+class ComplexLayoutScreen extends StatelessWidget {
+  const ComplexLayoutScreen({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text('Complex Layout'),
+      ),
+      body: SingleChildScrollView(
+        key: const Key('complex-scroll'),
+        child: Column(
+          children: [
+            // Header section
+            Container(
+              height: 200,
+              decoration: const BoxDecoration(
+                gradient: LinearGradient(
+                  colors: [Colors.purple, Colors.blue],
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                ),
+              ),
+              child: const Center(
+                child: Text(
+                  'Complex Layout Header',
+                  style: TextStyle(fontSize: 24, color: Colors.white),
+                ),
+              ),
+            ),
+            
+            // Cards section
+            ...List.generate(10, (index) {
+              return Card(
+                key: Key('complex-card-$index'),
+                margin: const EdgeInsets.all(8),
+                child: Padding(
+                  padding: const EdgeInsets.all(16),
+                  child: Column(
+                    children: [
+                      Row(
+                        children: [
+                          Container(
+                            width: 60,
+                            height: 60,
+                            decoration: BoxDecoration(
+                              color: Colors.primaries[index % Colors.primaries.length],
+                              shape: BoxShape.circle,
+                            ),
+                            child: Center(child: Text('$index')),
+                          ),
+                          const SizedBox(width: 16),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  'Complex Item $index',
+                                  style: const TextStyle(
+                                    fontSize: 18,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
+                                const SizedBox(height: 4),
+                                Text('Description for item $index'),
+                              ],
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 16),
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                        children: [
+                          ElevatedButton(
+                            onPressed: () {},
+                            child: const Text('Action 1'),
+                          ),
+                          ElevatedButton(
+                            onPressed: () {},
+                            child: const Text('Action 2'),
+                          ),
+                          ElevatedButton(
+                            onPressed: () {},
+                            child: const Text('Action 3'),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
+                ),
+              );
+            }),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+void main() {
+  IntegrationTestWidgetsFlutterBinding.ensureInitialized();
+  final binding = IntegrationTestWidgetsFlutterBinding.ensureInitialized();
+
+  group('Performance Tests', () {
+    testWidgets('app startup performance', (WidgetTester tester) async {
+      final startTime = DateTime.now();
+      
+      await tester.pumpWidget(const PerformanceTestApp());
+      await tester.pumpAndSettle();
+      
+      final endTime = DateTime.now();
+      final startupTime = endTime.difference(startTime);
+      
+      // Log startup time
+      print('App startup time: ${startupTime.inMilliseconds}ms');
+      
+      // Verify app loads within reasonable time (adjust threshold as needed)
+      expect(startupTime.inMilliseconds, lessThan(5000)); // 5 seconds
+      expect(find.byType(BottomNavigationBar), findsOneWidget);
+    });
+
+    testWidgets('heavy list scroll performance', (WidgetTester tester) async {
+      await tester.pumpWidget(const PerformanceTestApp());
+      await tester.pumpAndSettle();
+
+      // Navigate to list screen (already default)
+      expect(find.byKey(const Key('heavy-list')), findsOneWidget);
+
+      // Measure scroll performance
+      final timeline = await binding.traceAction(() async {
+        // Perform multiple scroll operations
+        final listFinder = find.byKey(const Key('heavy-list'));
+        
+        // Scroll down multiple times
+        for (int i = 0; i < 10; i++) {
+          await tester.fling(listFinder, const Offset(0, -300), 1000);
+          await tester.pumpAndSettle(const Duration(milliseconds: 100));
+        }
+        
+        // Scroll back up
+        for (int i = 0; i < 10; i++) {
+          await tester.fling(listFinder, const Offset(0, 300), 1000);
+          await tester.pumpAndSettle(const Duration(milliseconds: 100));
+        }
+      });
+
+      // Extract performance metrics
+      final summary = TimelineSummary.summarize(timeline);
+      
+      // Check frame rate (should be close to 60fps)
+      final averageFrameTime = summary.averageFrameBuildTimeMillis;
+      print('Average frame build time: ${averageFrameTime}ms');
+      expect(averageFrameTime, lessThan(16.67)); // ~60fps threshold
+
+      // Check for missed frames
+      final missedFrames = summary.countFrames();
+      print('Total frames during scroll: $missedFrames');
+    });
+
+    testWidgets('animation performance test', (WidgetTester tester) async {
+      await tester.pumpWidget(const PerformanceTestApp());
+      await tester.pumpAndSettle();
+
+      // Navigate to animation screen
+      await tester.tap(find.text('Animation'));
+      await tester.pumpAndSettle();
+
+      expect(find.byKey(const Key('animation-grid')), findsOneWidget);
+
+      // Start animations and measure performance
+      final timeline = await binding.traceAction(() async {
+        await tester.tap(find.byKey(const Key('toggle-animations')));
+        await tester.pump();
+
+        // Let animations run for a period
+        await tester.pump(const Duration(seconds: 3));
+
+        // Stop animations
+        await tester.tap(find.byKey(const Key('toggle-animations')));
+        await tester.pumpAndSettle();
+      });
+
+      final summary = TimelineSummary.summarize(timeline);
+      print('Animation average frame time: ${summary.averageFrameBuildTimeMillis}ms');
+      
+      // Animation should maintain good performance
+      expect(summary.averageFrameBuildTimeMillis, lessThan(20)); // Allow some overhead for animations
+    });
+
+    testWidgets('image grid memory test', (WidgetTester tester) async {
+      await tester.pumpWidget(const PerformanceTestApp());
+      await tester.pumpAndSettle();
+
+      // Navigate to image screen
+      await tester.tap(find.text('Images'));
+      await tester.pumpAndSettle();
+
+      // Scroll through images to test memory usage
+      final imageGrid = find.byKey(const Key('image-grid'));
+      expect(imageGrid, findsOneWidget);
+
+      // Scroll through the grid
+      for (int i = 0; i < 20; i++) {
+        await tester.fling(imageGrid, const Offset(0, -200), 800);
+        await tester.pump(const Duration(milliseconds: 50));
+      }
+
+      await tester.pumpAndSettle();
+      
+      // Verify images are still loaded
+      expect(find.byKey(const Key('image-0')), findsNothing); // Scrolled out of view
+      expect(find.textContaining('Img'), findsWidgets); // Some images should be visible
+    });
+
+    testWidgets('complex layout performance', (WidgetTester tester) async {
+      await tester.pumpWidget(const PerformanceTestApp());
+      await tester.pumpAndSettle();
+
+      // Navigate to complex layout screen
+      await tester.tap(find.text('Layout'));
+      await tester.pumpAndSettle();
+
+      // Measure complex layout performance
+      final timeline = await binding.traceAction(() async {
+        final scrollView = find.byKey(const Key('complex-scroll'));
+        
+        // Scroll through complex layouts
+        for (int i = 0; i < 5; i++) {
+          await tester.fling(scrollView, const Offset(0, -400), 1200);
+          await tester.pumpAndSettle(const Duration(milliseconds: 200));
+        }
+        
+        // Scroll back to top
+        for (int i = 0; i < 5; i++) {
+          await tester.fling(scrollView, const Offset(0, 400), 1200);
+          await tester.pumpAndSettle(const Duration(milliseconds: 200));
+        }
+      });
+
+      final summary = TimelineSummary.summarize(timeline);
+      print('Complex layout frame time: ${summary.averageFrameBuildTimeMillis}ms');
+      
+      // Complex layouts should still perform reasonably
+      expect(summary.averageFrameBuildTimeMillis, lessThan(25));
+    });
+
+    testWidgets('navigation performance test', (WidgetTester tester) async {
+      await tester.pumpWidget(const PerformanceTestApp());
+      await tester.pumpAndSettle();
+
+      // Measure performance of rapid tab switching
+      final timeline = await binding.traceAction(() async {
+        final tabs = ['List', 'Animation', 'Images', 'Layout'];
+        
+        // Switch between tabs rapidly
+        for (int cycle = 0; cycle < 3; cycle++) {
+          for (final tab in tabs) {
+            await tester.tap(find.text(tab));
+            await tester.pump();
+            await tester.pump(const Duration(milliseconds: 50));
+          }
+        }
+        
+        await tester.pumpAndSettle();
+      });
+
+      final summary = TimelineSummary.summarize(timeline);
+      print('Tab navigation frame time: ${summary.averageFrameBuildTimeMillis}ms');
+      
+      // Tab switching should be fast
+      expect(summary.averageFrameBuildTimeMillis, lessThan(16.67));
+    });
+
+    testWidgets('stress test - combined operations', (WidgetTester tester) async {
+      await tester.pumpWidget(const PerformanceTestApp());
+      await tester.pumpAndSettle();
+
+      // Stress test with multiple operations
+      final timeline = await binding.traceAction(() async {
+        // Navigate to list and interact
+        await tester.tap(find.text('List'));
+        await tester.pump();
+        
+        // Scroll and interact with list
+        await tester.fling(find.byKey(const Key('heavy-list')), const Offset(0, -500), 2000);
+        await tester.pumpAndSettle(const Duration(milliseconds: 100));
+        
+        // Tap on an item to trigger heavy calculation
+        await tester.tap(find.byKey(const Key('item-10')));
+        await tester.pump();
+        await tester.pump(const Duration(seconds: 1)); // Wait for snackbar
+        
+        // Switch to animations
+        await tester.tap(find.text('Animation'));
+        await tester.pump();
+        
+        // Start animations
+        await tester.tap(find.byKey(const Key('toggle-animations')));
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 500));
+        
+        // Switch to images while animations are running
+        await tester.tap(find.text('Images'));
+        await tester.pump();
+        
+        // Quick scroll through images
+        await tester.fling(find.byKey(const Key('image-grid')), const Offset(0, -300), 1500);
+        await tester.pump(const Duration(milliseconds: 200));
+        
+        // Go back to animations and stop them
+        await tester.tap(find.text('Animation'));
+        await tester.pump();
+        await tester.tap(find.byKey(const Key('toggle-animations')));
+        await tester.pumpAndSettle();
+      });
+
+      final summary = TimelineSummary.summarize(timeline);
+      print('Stress test frame time: ${summary.averageFrameBuildTimeMillis}ms');
+      
+      // Even under stress, should maintain reasonable performance
+      expect(summary.averageFrameBuildTimeMillis, lessThan(30));
+    });
+  });
+}
+```
+
+This example demonstrates comprehensive performance testing including  
+startup time measurement, scroll performance testing, animation frame  
+rate monitoring, memory usage testing, and stress testing with multiple  
+simultaneous operations to identify performance bottlenecks.
+
+## Testing Helpers and Utilities
+
+Creating reusable test helpers, utilities, and custom matchers to  
+improve test maintainability and reduce code duplication.  
+
+```dart
+import 'package:flutter/material.dart';
+import 'package:flutter_test/flutter_test.dart';
+
+// Custom test utilities and helpers
+class TestHelpers {
+  // Widget wrapper for consistent testing environment
+  static Widget createTestApp({
+    required Widget child,
+    ThemeData? theme,
+    List<NavigatorObserver>? navigatorObservers,
+    Map<String, WidgetBuilder>? routes,
+  }) {
+    return MaterialApp(
+      theme: theme ?? ThemeData.light(),
+      navigatorObservers: navigatorObservers ?? [],
+      routes: routes ?? {},
+      home: Scaffold(body: child),
+    );
+  }
+
+  // Helper for finding widgets with timeout
+  static Future<void> waitForWidget(
+    WidgetTester tester,
+    Finder finder, {
+    Duration timeout = const Duration(seconds: 5),
+    Duration interval = const Duration(milliseconds: 100),
+  }) async {
+    final endTime = DateTime.now().add(timeout);
+    
+    while (DateTime.now().isBefore(endTime)) {
+      if (tester.any(finder)) {
+        return;
+      }
+      await tester.pump(interval);
+    }
+    
+    throw TimeoutException('Widget not found within timeout', timeout);
+  }
+
+  // Helper for entering text with delay (useful for testing input validation)
+  static Future<void> enterTextSlowly(
+    WidgetTester tester,
+    Finder finder,
+    String text, {
+    Duration delay = const Duration(milliseconds: 100),
+  }) async {
+    for (int i = 0; i < text.length; i++) {
+      await tester.enterText(finder, text.substring(0, i + 1));
+      await tester.pump(delay);
+    }
+  }
+
+  // Helper for scrolling to find a widget
+  static Future<void> scrollToWidget(
+    WidgetTester tester,
+    Finder scrollable,
+    Finder target, {
+    double delta = 300.0,
+    int maxAttempts = 10,
+  }) async {
+    for (int attempt = 0; attempt < maxAttempts; attempt++) {
+      if (tester.any(target)) {
+        return;
+      }
+      
+      await tester.fling(scrollable, Offset(0, -delta), 1000);
+      await tester.pumpAndSettle();
+    }
+    
+    throw Exception('Could not scroll to target widget');
+  }
+
+  // Helper for taking screenshots during tests
+  static Future<void> takeScreenshot(
+    WidgetTester tester,
+    String name, {
+    String? description,
+  }) async {
+    // In a real implementation, you might save actual screenshots
+    print('📸 Screenshot: $name${description != null ? ' - $description' : ''}');
+    await tester.pump();
+  }
+
+  // Helper for simulating network delays
+  static Future<void> simulateNetworkDelay({
+    Duration min = const Duration(milliseconds: 500),
+    Duration max = const Duration(milliseconds: 2000),
+  }) async {
+    final delay = Duration(
+      milliseconds: min.inMilliseconds + 
+          (max.inMilliseconds - min.inMilliseconds) * (0.5), // Could use Random here
+    );
+    await Future.delayed(delay);
+  }
+
+  // Helper for verifying widget properties
+  static void verifyWidgetProperties<T extends Widget>(
+    WidgetTester tester,
+    Finder finder,
+    Map<String, dynamic> expectedProperties,
+  ) {
+    final widget = tester.widget<T>(finder);
+    final widgetProps = _getWidgetProperties(widget);
+    
+    expectedProperties.forEach((property, expectedValue) {
+      final actualValue = widgetProps[property];
+      expect(actualValue, equals(expectedValue), 
+          reason: 'Property $property mismatch');
+    });
+  }
+
+  static Map<String, dynamic> _getWidgetProperties(Widget widget) {
+    // This would be implemented based on the specific widget type
+    // For demonstration, returning a simple map
+    if (widget is Text) {
+      return {
+        'data': widget.data,
+        'style': widget.style,
+        'textAlign': widget.textAlign,
+      };
+    } else if (widget is ElevatedButton) {
+      return {
+        'onPressed': widget.onPressed,
+        'style': widget.style,
+      };
+    }
+    return {};
+  }
+}
+
+// Custom matchers for more expressive tests
+class CustomMatchers {
+  // Matcher for checking if a widget is visible on screen
+  static Matcher isVisible() {
+    return predicate<Finder>((finder) {
+      return finder.evaluate().isNotEmpty;
+    }, 'is visible on screen');
+  }
+
+  // Matcher for checking text content with case insensitive matching
+  static Matcher containsTextIgnoreCase(String text) {
+    return predicate<Widget>((widget) {
+      if (widget is Text) {
+        return widget.data?.toLowerCase().contains(text.toLowerCase()) ?? false;
+      }
+      return false;
+    }, 'contains text "$text" (case insensitive)');
+  }
+
+  // Matcher for checking widget colors
+  static Matcher hasColor(Color expectedColor) {
+    return predicate<Widget>((widget) {
+      if (widget is Container) {
+        final decoration = widget.decoration;
+        if (decoration is BoxDecoration) {
+          return decoration.color == expectedColor;
+        }
+      }
+      return false;
+    }, 'has color $expectedColor');
+  }
+
+  // Matcher for checking list length
+  static Matcher hasLength(int expectedLength) {
+    return predicate<List>((list) {
+      return list.length == expectedLength;
+    }, 'has length $expectedLength');
+  }
+
+  // Matcher for checking if a number is within range
+  static Matcher isWithinRange(num min, num max) {
+    return predicate<num>((value) {
+      return value >= min && value <= max;
+    }, 'is between $min and $max');
+  }
+}
+
+// Test data factory for creating consistent test objects
+class TestDataFactory {
+  static List<Map<String, dynamic>> createSampleUsers(int count) {
+    return List.generate(count, (index) => {
+      'id': 'user_$index',
+      'name': 'Test User $index',
+      'email': 'user$index@example.com',
+      'age': 20 + (index % 50),
+      'isActive': index % 2 == 0,
+    });
+  }
+
+  static List<Map<String, dynamic>> createSampleProducts(int count) {
+    final categories = ['Electronics', 'Clothing', 'Books', 'Home', 'Sports'];
+    
+    return List.generate(count, (index) => {
+      'id': 'product_$index',
+      'name': 'Product $index',
+      'price': 10.0 + (index * 5.5),
+      'category': categories[index % categories.length],
+      'inStock': index % 3 != 0,
+      'rating': 1.0 + (index % 5),
+    });
+  }
+
+  static Map<String, dynamic> createSampleOrder({
+    String? orderId,
+    int? itemCount,
+    double? total,
+  }) {
+    return {
+      'id': orderId ?? 'order_${DateTime.now().millisecondsSinceEpoch}',
+      'items': createSampleProducts(itemCount ?? 3),
+      'total': total ?? 99.99,
+      'status': 'pending',
+      'createdAt': DateTime.now().toIso8601String(),
+    };
+  }
+}
+
+// Mock response generator for API testing
+class MockResponseGenerator {
+  static Map<String, dynamic> successResponse(dynamic data) {
+    return {
+      'success': true,
+      'data': data,
+      'timestamp': DateTime.now().toIso8601String(),
+    };
+  }
+
+  static Map<String, dynamic> errorResponse(String message, {int? code}) {
+    return {
+      'success': false,
+      'error': {
+        'message': message,
+        'code': code ?? 400,
+      },
+      'timestamp': DateTime.now().toIso8601String(),
+    };
+  }
+
+  static Map<String, dynamic> paginatedResponse(
+    List<dynamic> data, {
+    int page = 1,
+    int perPage = 10,
+    int? total,
+  }) {
+    final totalItems = total ?? data.length;
+    final totalPages = (totalItems / perPage).ceil();
+    
+    return successResponse({
+      'items': data,
+      'pagination': {
+        'page': page,
+        'perPage': perPage,
+        'total': totalItems,
+        'totalPages': totalPages,
+        'hasNext': page < totalPages,
+        'hasPrev': page > 1,
+      },
+    });
+  }
+}
+
+// Test execution wrapper with common setup/teardown
+class TestRunner {
+  static Future<void> runTest(
+    String description,
+    Future<void> Function(WidgetTester tester) testFunction,
+    WidgetTester tester, {
+    Duration? timeout,
+    bool takeScreenshots = false,
+    Map<String, dynamic>? setup,
+  }) async {
+    print('🧪 Starting test: $description');
+    final startTime = DateTime.now();
+    
+    try {
+      // Setup phase
+      if (setup != null) {
+        print('⚙️ Setting up test environment...');
+        // Apply any setup configuration
+      }
+      
+      // Run the actual test
+      await testFunction(tester);
+      
+      // Success
+      final duration = DateTime.now().difference(startTime);
+      print('✅ Test completed successfully in ${duration.inMilliseconds}ms');
+      
+      if (takeScreenshots) {
+        await TestHelpers.takeScreenshot(tester, description);
+      }
+      
+    } catch (error) {
+      final duration = DateTime.now().difference(startTime);
+      print('❌ Test failed after ${duration.inMilliseconds}ms: $error');
+      
+      if (takeScreenshots) {
+        await TestHelpers.takeScreenshot(tester, '$description-FAILED');
+      }
+      
+      rethrow;
+    }
+  }
+}
+
+// Example widget to demonstrate utilities
+class UtilityDemoWidget extends StatefulWidget {
+  const UtilityDemoWidget({super.key});
+
+  @override
+  State<UtilityDemoWidget> createState() => _UtilityDemoWidgetState();
+}
+
+class _UtilityDemoWidgetState extends State<UtilityDemoWidget> {
+  final _controller = TextEditingController();
+  Color _backgroundColor = Colors.blue;
+  List<String> _items = [];
+  bool _isLoading = false;
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  Future<void> _loadData() async {
+    setState(() => _isLoading = true);
+    
+    await TestHelpers.simulateNetworkDelay();
+    
+    setState(() {
+      _items = ['Item 1', 'Item 2', 'Item 3', 'Item 4', 'Item 5'];
+      _isLoading = false;
+    });
+  }
+
+  void _changeColor() {
+    setState(() {
+      _backgroundColor = _backgroundColor == Colors.blue 
+          ? Colors.green 
+          : Colors.blue;
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      key: const Key('main-container'),
+      color: _backgroundColor,
+      padding: const EdgeInsets.all(16),
+      child: Column(
+        children: [
+          TextField(
+            key: const Key('text-input'),
+            controller: _controller,
+            decoration: const InputDecoration(
+              labelText: 'Enter text',
+              border: OutlineInputBorder(),
+            ),
+          ),
+          const SizedBox(height: 16),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+            children: [
+              ElevatedButton(
+                key: const Key('load-button'),
+                onPressed: _isLoading ? null : _loadData,
+                child: const Text('Load Data'),
+              ),
+              ElevatedButton(
+                key: const Key('color-button'),
+                onPressed: _changeColor,
+                child: const Text('Change Color'),
+              ),
+            ],
+          ),
+          const SizedBox(height: 16),
+          Expanded(
+            child: _isLoading
+                ? const Center(
+                    child: CircularProgressIndicator(key: Key('loading-indicator')),
+                  )
+                : ListView.builder(
+                    key: const Key('items-list'),
+                    itemCount: _items.length,
+                    itemBuilder: (context, index) {
+                      return ListTile(
+                        key: Key('item-$index'),
+                        title: Text(_items[index]),
+                        onTap: () {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(content: Text('Tapped ${_items[index]}')),
+                          );
+                        },
+                      );
+                    },
+                  ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+void main() {
+  group('Test Utilities and Helpers', () {
+    testWidgets('TestHelpers.createTestApp creates proper environment', (WidgetTester tester) async {
+      await tester.pumpWidget(
+        TestHelpers.createTestApp(
+          child: const Text('Test Widget'),
+          theme: ThemeData.dark(),
+        ),
+      );
+
+      expect(find.text('Test Widget'), findsOneWidget);
+      expect(find.byType(MaterialApp), findsOneWidget);
+      expect(find.byType(Scaffold), findsOneWidget);
+    });
+
+    testWidgets('TestHelpers.waitForWidget waits for widget to appear', (WidgetTester tester) async {
+      bool showWidget = false;
+
+      await tester.pumpWidget(
+        TestHelpers.createTestApp(
+          child: StatefulBuilder(
+            builder: (context, setState) {
+              return Column(
+                children: [
+                  ElevatedButton(
+                    onPressed: () => setState(() => showWidget = true),
+                    child: const Text('Show Widget'),
+                  ),
+                  if (showWidget) const Text('Delayed Widget', key: Key('delayed-widget')),
+                ],
+              );
+            },
+          ),
+        ),
+      );
+
+      // Trigger widget appearance
+      await tester.tap(find.text('Show Widget'));
+      
+      // Wait for widget to appear
+      await TestHelpers.waitForWidget(
+        tester,
+        find.byKey(const Key('delayed-widget')),
+        timeout: const Duration(seconds: 2),
+      );
+
+      expect(find.text('Delayed Widget'), findsOneWidget);
+    });
+
+    testWidgets('TestHelpers.enterTextSlowly simulates gradual input', (WidgetTester tester) async {
+      await tester.pumpWidget(
+        TestHelpers.createTestApp(
+          child: const TextField(key: Key('slow-input')),
+        ),
+      );
+
+      await TestHelpers.enterTextSlowly(
+        tester,
+        find.byKey(const Key('slow-input')),
+        'Hello',
+        delay: const Duration(milliseconds: 50),
+      );
+
+      expect(find.text('Hello'), findsOneWidget);
+    });
+
+    testWidgets('CustomMatchers.containsTextIgnoreCase works correctly', (WidgetTester tester) async {
+      await tester.pumpWidget(
+        TestHelpers.createTestApp(
+          child: const Text('Hello World'),
+        ),
+      );
+
+      final textWidget = tester.widget(find.text('Hello World'));
+      expect(textWidget, CustomMatchers.containsTextIgnoreCase('HELLO'));
+      expect(textWidget, CustomMatchers.containsTextIgnoreCase('world'));
+    });
+
+    testWidgets('CustomMatchers.hasColor validates container colors', (WidgetTester tester) async {
+      await tester.pumpWidget(
+        TestHelpers.createTestApp(
+          child: Container(
+            decoration: const BoxDecoration(color: Colors.red),
+            child: const Text('Colored Container'),
+          ),
+        ),
+      );
+
+      final containerWidget = tester.widget(find.byType(Container).first);
+      expect(containerWidget, CustomMatchers.hasColor(Colors.red));
+    });
+
+    testWidgets('TestDataFactory creates consistent test data', (WidgetTester tester) async {
+      final users = TestDataFactory.createSampleUsers(3);
+      final products = TestDataFactory.createSampleProducts(2);
+      final order = TestDataFactory.createSampleOrder();
+
+      expect(users, CustomMatchers.hasLength(3));
+      expect(products, CustomMatchers.hasLength(2));
+      expect(users.first['name'], equals('Test User 0'));
+      expect(products.first['category'], equals('Electronics'));
+      expect(order['status'], equals('pending'));
+    });
+
+    testWidgets('MockResponseGenerator creates proper response formats', (WidgetTester tester) async {
+      final successResp = MockResponseGenerator.successResponse({'message': 'OK'});
+      final errorResp = MockResponseGenerator.errorResponse('Not found', code: 404);
+      final pagedResp = MockResponseGenerator.paginatedResponse([1, 2, 3], page: 1, perPage: 2);
+
+      expect(successResp['success'], isTrue);
+      expect(errorResp['success'], isFalse);
+      expect(errorResp['error']['code'], equals(404));
+      expect(pagedResp['data']['pagination']['totalPages'], equals(2));
+    });
+
+    testWidgets('complete utility demo test', (WidgetTester tester) async {
+      await TestRunner.runTest(
+        'Utility Demo Widget Test',
+        (tester) async {
+          await tester.pumpWidget(
+            TestHelpers.createTestApp(child: const UtilityDemoWidget()),
+          );
+
+          // Test initial state
+          expect(find.byKey(const Key('main-container')), findsOneWidget);
+          final container = tester.widget<Container>(find.byKey(const Key('main-container')));
+          expect(container.color, equals(Colors.blue));
+
+          // Test text input
+          await TestHelpers.enterTextSlowly(
+            tester,
+            find.byKey(const Key('text-input')),
+            'Test Input',
+          );
+
+          // Test color change
+          await tester.tap(find.byKey(const Key('color-button')));
+          await tester.pump();
+
+          final updatedContainer = tester.widget<Container>(find.byKey(const Key('main-container')));
+          expect(updatedContainer.color, equals(Colors.green));
+
+          // Test data loading
+          await tester.tap(find.byKey(const Key('load-button')));
+          await tester.pump();
+
+          // Wait for loading to complete
+          await TestHelpers.waitForWidget(
+            tester,
+            find.byKey(const Key('items-list')),
+            timeout: const Duration(seconds: 3),
+          );
+
+          // Verify data loaded
+          expect(find.text('Item 1'), findsOneWidget);
+          expect(find.text('Item 5'), findsOneWidget);
+
+          // Test item interaction
+          await tester.tap(find.byKey(const Key('item-2')));
+          await tester.pump();
+
+          expect(find.text('Tapped Item 3'), findsOneWidget);
+
+        },
+        tester,
+        takeScreenshots: true,
+      );
+    });
+
+    testWidgets('error handling in utilities', (WidgetTester tester) async {
+      await tester.pumpWidget(
+        TestHelpers.createTestApp(child: const Text('Simple Widget')),
+      );
+
+      // Test timeout in waitForWidget
+      expect(
+        () => TestHelpers.waitForWidget(
+          tester,
+          find.byKey(const Key('non-existent')),
+          timeout: const Duration(milliseconds: 100),
+        ),
+        throwsA(isA<TimeoutException>()),
+      );
+    });
+
+    testWidgets('performance monitoring with utilities', (WidgetTester tester) async {
+      await tester.pumpWidget(
+        TestHelpers.createTestApp(child: const UtilityDemoWidget()),
+      );
+
+      final startTime = DateTime.now();
+
+      // Perform multiple operations
+      await tester.tap(find.byKey(const Key('color-button')));
+      await tester.pump();
+
+      await TestHelpers.enterTextSlowly(
+        tester,
+        find.byKey(const Key('text-input')),
+        'Performance Test',
+        delay: const Duration(milliseconds: 10),
+      );
+
+      await tester.tap(find.byKey(const Key('load-button')));
+      await TestHelpers.waitForWidget(
+        tester,
+        find.byKey(const Key('items-list')),
+      );
+
+      final duration = DateTime.now().difference(startTime);
+      print('Operations completed in ${duration.inMilliseconds}ms');
+      
+      // Should complete within reasonable time
+      expect(duration.inSeconds, lessThan(10));
+    });
+  });
+}
+```
+
+This example demonstrates comprehensive testing utilities including custom  
+test helpers, matchers, data factories, mock generators, and test runners  
+that improve test maintainability and provide reusable testing  
+infrastructure.
+
+## Advanced Test Configuration
+
+Advanced testing setup with custom test environments, CI/CD integration,  
+code coverage analysis, and testing best practices.  
+
+```dart
+import 'package:flutter/material.dart';
+import 'package:flutter_test/flutter_test.dart';
+import 'package:integration_test/integration_test.dart';
+
+// Test configuration class
+class TestConfig {
+  static const bool isCI = bool.fromEnvironment('CI', defaultValue: false);
+  static const String testEnvironment = String.fromEnvironment('TEST_ENV', defaultValue: 'development');
+  static const bool enablePerformanceTests = bool.fromEnvironment('PERFORMANCE_TESTS', defaultValue: false);
+  static const int defaultTimeout = int.fromEnvironment('TEST_TIMEOUT', defaultValue: 30000);
+  static const bool verboseLogging = bool.fromEnvironment('VERBOSE_TESTS', defaultValue: false);
+  
+  static Duration get timeoutDuration => Duration(milliseconds: defaultTimeout);
+  
+  static void log(String message) {
+    if (verboseLogging) {
+      print('🔍 [TEST] $message');
+    }
+  }
+}
+
+// Test environment setup
+class TestEnvironment {
+  static late Map<String, dynamic> _config;
+  static bool _isInitialized = false;
+
+  static Future<void> initialize() async {
+    if (_isInitialized) return;
+    
+    TestConfig.log('Initializing test environment: ${TestConfig.testEnvironment}');
+    
+    _config = await _loadConfig();
+    await _setupTestData();
+    await _configureServices();
+    
+    _isInitialized = true;
+    TestConfig.log('Test environment initialized successfully');
+  }
+
+  static Future<Map<String, dynamic>> _loadConfig() async {
+    // In a real app, this might load from a config file
+    switch (TestConfig.testEnvironment) {
+      case 'ci':
+        return {
+          'apiUrl': 'https://test-api.example.com',
+          'enableMocking': true,
+          'logLevel': 'error',
+          'animationDuration': 0, // Disable animations in CI
+        };
+      case 'development':
+        return {
+          'apiUrl': 'https://dev-api.example.com',
+          'enableMocking': false,
+          'logLevel': 'debug',
+          'animationDuration': 200,
+        };
+      default:
+        return {
+          'apiUrl': 'https://staging-api.example.com',
+          'enableMocking': true,
+          'logLevel': 'info',
+          'animationDuration': 100,
+        };
+    }
+  }
+
+  static Future<void> _setupTestData() async {
+    TestConfig.log('Setting up test data...');
+    // Initialize test database or mock data
+    await Future.delayed(const Duration(milliseconds: 100));
+  }
+
+  static Future<void> _configureServices() async {
+    TestConfig.log('Configuring services...');
+    // Configure HTTP client, database, etc.
+    await Future.delayed(const Duration(milliseconds: 100));
+  }
+
+  static T getConfig<T>(String key, T defaultValue) {
+    return _config[key] as T? ?? defaultValue;
+  }
+
+  static Future<void> cleanup() async {
+    TestConfig.log('Cleaning up test environment...');
+    // Cleanup test data, close connections, etc.
+    _isInitialized = false;
+  }
+}
+
+// Custom test wrapper with environment setup
+class AdvancedTestWidget extends StatelessWidget {
+  final Widget child;
+
+  const AdvancedTestWidget({super.key, required this.child});
+
+  @override
+  Widget build(BuildContext context) {
+    return MaterialApp(
+      theme: ThemeData(
+        // Configure theme for testing
+        animations: TestEnvironment.getConfig('animationDuration', 200) == 0
+            ? null // Disable animations
+            : const PageTransitionsTheme(),
+      ),
+      home: child,
+    );
+  }
+}
+
+// Test suite runner with advanced configuration
+class TestSuiteRunner {
+  static final List<String> _executedTests = [];
+  static final Map<String, TestResult> _testResults = {};
+
+  static Future<void> runTestSuite(
+    String suiteName,
+    Map<String, Future<void> Function(WidgetTester)> tests,
+    WidgetTester tester, {
+    bool parallel = false,
+    List<String>? tags,
+    bool skipIfCI = false,
+  }) async {
+    if (skipIfCI && TestConfig.isCI) {
+      TestConfig.log('Skipping test suite $suiteName (CI environment)');
+      return;
+    }
+
+    TestConfig.log('Running test suite: $suiteName');
+    final suiteStartTime = DateTime.now();
+
+    await TestEnvironment.initialize();
+
+    try {
+      if (parallel && !TestConfig.isCI) {
+        await _runTestsInParallel(suiteName, tests, tester);
+      } else {
+        await _runTestsSequentially(suiteName, tests, tester);
+      }
+    } finally {
+      await TestEnvironment.cleanup();
+    }
+
+    final suiteDuration = DateTime.now().difference(suiteStartTime);
+    _generateTestReport(suiteName, suiteDuration);
+  }
+
+  static Future<void> _runTestsSequentially(
+    String suiteName,
+    Map<String, Future<void> Function(WidgetTester)> tests,
+    WidgetTester tester,
+  ) async {
+    for (final entry in tests.entries) {
+      await _runSingleTest(suiteName, entry.key, entry.value, tester);
+    }
+  }
+
+  static Future<void> _runTestsInParallel(
+    String suiteName,
+    Map<String, Future<void> Function(WidgetTester)> tests,
+    WidgetTester tester,
+  ) async {
+    // Note: In reality, widget tests can't run in parallel with the same tester
+    // This is a conceptual example of how you might structure parallel execution
+    TestConfig.log('Running ${tests.length} tests in sequence (widget tests cannot be truly parallel)');
+    await _runTestsSequentially(suiteName, tests, tester);
+  }
+
+  static Future<void> _runSingleTest(
+    String suiteName,
+    String testName,
+    Future<void> Function(WidgetTester) testFunction,
+    WidgetTester tester,
+  ) async {
+    final fullTestName = '$suiteName::$testName';
+    TestConfig.log('Executing test: $fullTestName');
+    
+    final startTime = DateTime.now();
+    try {
+      await testFunction(tester).timeout(TestConfig.timeoutDuration);
+      
+      final duration = DateTime.now().difference(startTime);
+      _testResults[fullTestName] = TestResult.success(duration);
+      _executedTests.add(fullTestName);
+      
+      TestConfig.log('✅ Test passed: $fullTestName (${duration.inMilliseconds}ms)');
+      
+    } catch (error, stackTrace) {
+      final duration = DateTime.now().difference(startTime);
+      _testResults[fullTestName] = TestResult.failure(duration, error.toString());
+      
+      TestConfig.log('❌ Test failed: $fullTestName (${duration.inMilliseconds}ms)');
+      TestConfig.log('Error: $error');
+      if (TestConfig.verboseLogging) {
+        TestConfig.log('Stack trace: $stackTrace');
+      }
+      
+      rethrow;
+    }
+  }
+
+  static void _generateTestReport(String suiteName, Duration totalDuration) {
+    final suiteResults = _testResults.entries
+        .where((entry) => entry.key.startsWith(suiteName))
+        .toList();
+
+    final passed = suiteResults.where((result) => result.value.passed).length;
+    final failed = suiteResults.where((result) => !result.value.passed).length;
+    
+    print('\n📊 Test Suite Report: $suiteName');
+    print('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+    print('Total Duration: ${totalDuration.inMilliseconds}ms');
+    print('Tests Run: ${suiteResults.length}');
+    print('Passed: $passed');
+    print('Failed: $failed');
+    print('Success Rate: ${(passed / suiteResults.length * 100).toStringAsFixed(1)}%');
+    
+    if (failed > 0) {
+      print('\nFailed Tests:');
+      for (final result in suiteResults.where((r) => !r.value.passed)) {
+        print('  ❌ ${result.key}: ${result.value.error}');
+      }
+    }
+    
+    print('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n');
+  }
+
+  static Map<String, TestResult> getResults() => Map.unmodifiable(_testResults);
+  static List<String> getExecutedTests() => List.unmodifiable(_executedTests);
+  
+  static void reset() {
+    _executedTests.clear();
+    _testResults.clear();
+  }
+}
+
+class TestResult {
+  final Duration duration;
+  final bool passed;
+  final String? error;
+
+  TestResult.success(this.duration) : passed = true, error = null;
+  TestResult.failure(this.duration, this.error) : passed = false;
+}
+
+// Coverage analysis helper
+class CoverageAnalyzer {
+  static final Set<String> _coveredComponents = {};
+  static final Set<String> _allComponents = {
+    'LoginScreen',
+    'HomeScreen',
+    'ProfileScreen',
+    'SettingsScreen',
+    'CustomButton',
+    'FormField',
+    'LoadingIndicator',
+  };
+
+  static void markCovered(String component) {
+    _coveredComponents.add(component);
+    TestConfig.log('Component covered: $component');
+  }
+
+  static double getCoveragePercentage() {
+    return _coveredComponents.length / _allComponents.length;
+  }
+
+  static List<String> getUncoveredComponents() {
+    return _allComponents.difference(_coveredComponents).toList();
+  }
+
+  static void generateCoverageReport() {
+    final coverage = getCoveragePercentage();
+    final uncovered = getUncoveredComponents();
+    
+    print('\n📈 Code Coverage Report');
+    print('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+    print('Overall Coverage: ${(coverage * 100).toStringAsFixed(1)}%');
+    print('Covered Components: ${_coveredComponents.length}/${_allComponents.length}');
+    
+    if (uncovered.isNotEmpty) {
+      print('\nUncovered Components:');
+      for (final component in uncovered) {
+        print('  ⚠️  $component');
+      }
+    }
+    
+    print('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n');
+  }
+
+  static void reset() {
+    _coveredComponents.clear();
+  }
+}
+
+// Sample components for testing
+class SampleComponent extends StatelessWidget {
+  final String name;
+  final Widget child;
+
+  const SampleComponent({super.key, required this.name, required this.child});
+
+  @override
+  Widget build(BuildContext context) {
+    // Mark component as covered when built
+    CoverageAnalyzer.markCovered(name);
+    return child;
+  }
+}
+
+class TestableApp extends StatefulWidget {
+  const TestableApp({super.key});
+
+  @override
+  State<TestableApp> createState() => _TestableAppState();
+}
+
+class _TestableAppState extends State<TestableApp> {
+  int _currentIndex = 0;
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text('Advanced Test App'),
+      ),
+      body: IndexedStack(
+        index: _currentIndex,
+        children: [
+          SampleComponent(
+            name: 'HomeScreen',
+            child: const Center(
+              child: Text('Home Screen', key: Key('home-content')),
+            ),
+          ),
+          SampleComponent(
+            name: 'ProfileScreen', 
+            child: const Center(
+              child: Text('Profile Screen', key: Key('profile-content')),
+            ),
+          ),
+          SampleComponent(
+            name: 'SettingsScreen',
+            child: const Center(
+              child: Text('Settings Screen', key: Key('settings-content')),
+            ),
+          ),
+        ],
+      ),
+      bottomNavigationBar: BottomNavigationBar(
+        currentIndex: _currentIndex,
+        onTap: (index) => setState(() => _currentIndex = index),
+        items: const [
+          BottomNavigationBarItem(icon: Icon(Icons.home), label: 'Home'),
+          BottomNavigationBarItem(icon: Icon(Icons.person), label: 'Profile'),
+          BottomNavigationBarItem(icon: Icon(Icons.settings), label: 'Settings'),
+        ],
+      ),
+    );
+  }
+}
+
+void main() {
+  IntegrationTestWidgetsFlutterBinding.ensureInitialized();
+
+  // Global test setup
+  setUpAll(() async {
+    TestConfig.log('Setting up global test environment...');
+    await TestEnvironment.initialize();
+    
+    // Configure test-specific settings
+    if (TestConfig.isCI) {
+      TestConfig.log('Running in CI environment - optimizing for speed');
+    }
+  });
+
+  tearDownAll(() async {
+    TestConfig.log('Tearing down global test environment...');
+    await TestEnvironment.cleanup();
+    
+    // Generate final reports
+    CoverageAnalyzer.generateCoverageReport();
+    TestConfig.log('All tests completed');
+  });
+
+  group('Advanced Configuration Tests', () {
+    setUp(() {
+      TestSuiteRunner.reset();
+      CoverageAnalyzer.reset();
+    });
+
+    testWidgets('environment configuration test', (WidgetTester tester) async {
+      await TestEnvironment.initialize();
+      
+      expect(TestEnvironment.getConfig('apiUrl', ''), isNotEmpty);
+      expect(TestEnvironment.getConfig('logLevel', 'info'), isIn(['debug', 'info', 'error']));
+      
+      TestConfig.log('Environment configuration validated');
+    });
+
+    testWidgets('test suite execution with coverage', (WidgetTester tester) async {
+      await TestSuiteRunner.runTestSuite(
+        'Sample Test Suite',
+        {
+          'navigation_test': (tester) async {
+            await tester.pumpWidget(const AdvancedTestWidget(child: TestableApp()));
+            await tester.pumpAndSettle();
+            
+            // Test navigation
+            expect(find.byKey(const Key('home-content')), findsOneWidget);
+            
+            await tester.tap(find.text('Profile'));
+            await tester.pumpAndSettle();
+            
+            expect(find.byKey(const Key('profile-content')), findsOneWidget);
+            
+            await tester.tap(find.text('Settings'));
+            await tester.pumpAndSettle();
+            
+            expect(find.byKey(const Key('settings-content')), findsOneWidget);
+          },
+          
+          'component_rendering_test': (tester) async {
+            await tester.pumpWidget(
+              const AdvancedTestWidget(
+                child: SampleComponent(
+                  name: 'CustomButton',
+                  child: ElevatedButton(
+                    onPressed: null,
+                    child: Text('Test Button'),
+                  ),
+                ),
+              ),
+            );
+            
+            expect(find.text('Test Button'), findsOneWidget);
+            expect(find.byType(ElevatedButton), findsOneWidget);
+          },
+          
+          'performance_aware_test': (tester) async {
+            final startTime = DateTime.now();
+            
+            await tester.pumpWidget(const AdvancedTestWidget(child: TestableApp()));
+            await tester.pumpAndSettle();
+            
+            // Perform rapid navigation
+            for (int i = 0; i < 10; i++) {
+              await tester.tap(find.text('Profile'));
+              await tester.pump();
+              await tester.tap(find.text('Home'));
+              await tester.pump();
+            }
+            
+            await tester.pumpAndSettle();
+            
+            final duration = DateTime.now().difference(startTime);
+            expect(duration.inMilliseconds, lessThan(5000)); // Should complete quickly
+            
+            TestConfig.log('Performance test completed in ${duration.inMilliseconds}ms');
+          },
+        },
+        tester,
+      );
+
+      // Verify test suite ran successfully
+      final results = TestSuiteRunner.getResults();
+      expect(results.length, equals(3));
+      expect(results.values.where((r) => r.passed).length, equals(3));
+    });
+
+    testWidgets('coverage analysis test', (WidgetTester tester) async {
+      await tester.pumpWidget(const AdvancedTestWidget(child: TestableApp()));
+      await tester.pumpAndSettle();
+      
+      // Navigate through app to increase coverage
+      await tester.tap(find.text('Profile'));
+      await tester.pumpAndSettle();
+      
+      await tester.tap(find.text('Settings'));
+      await tester.pumpAndSettle();
+      
+      // Check coverage
+      final coverage = CoverageAnalyzer.getCoveragePercentage();
+      expect(coverage, greaterThan(0.3)); // Should have covered at least 30%
+      
+      final coveredComponents = CoverageAnalyzer.getUncoveredComponents();
+      TestConfig.log('Uncovered components: $coveredComponents');
+    });
+
+    testWidgets('error handling and recovery test', (WidgetTester tester) async {
+      bool errorHandled = false;
+      
+      try {
+        await TestSuiteRunner.runTestSuite(
+          'Error Test Suite',
+          {
+            'failing_test': (tester) async {
+              throw Exception('Intentional test failure');
+            },
+            'recovery_test': (tester) async {
+              errorHandled = true;
+              // This test should still run despite previous failure
+              expect(true, isTrue);
+            },
+          },
+          tester,
+        );
+      } catch (e) {
+        // Expected to catch the failing test
+      }
+      
+      // Verify error was handled and recovery test ran
+      expect(errorHandled, isTrue);
+      
+      final results = TestSuiteRunner.getResults();
+      expect(results.length, equals(2));
+      expect(results.values.where((r) => !r.passed).length, equals(1)); // One failure
+      expect(results.values.where((r) => r.passed).length, equals(1)); // One success
+    });
+
+    testWidgets('conditional test execution', (WidgetTester tester) async {
+      // Test that should skip in CI
+      if (!TestConfig.isCI) {
+        await tester.pumpWidget(const AdvancedTestWidget(child: TestableApp()));
+        await tester.pumpAndSettle();
+        
+        // Perform some expensive operation that we don't want in CI
+        await Future.delayed(const Duration(milliseconds: 100));
+        
+        expect(find.byType(TestableApp), findsOneWidget);
+        TestConfig.log('Non-CI test executed');
+      } else {
+        TestConfig.log('Skipped expensive test in CI environment');
+      }
+    });
+
+    testWidgets('test timeout configuration', (WidgetTester tester) async {
+      final startTime = DateTime.now();
+      
+      try {
+        await Future.delayed(const Duration(milliseconds: 100)).timeout(
+          const Duration(milliseconds: 50),
+        );
+        fail('Should have timed out');
+      } catch (e) {
+        expect(e, isA<TimeoutException>());
+      }
+      
+      final duration = DateTime.now().difference(startTime);
+      expect(duration.inMilliseconds, lessThan(100)); // Should timeout before completing
+    });
+
+    testWidgets('comprehensive integration test', (WidgetTester tester) async {
+      // This test combines multiple aspects of advanced testing
+      await TestSuiteRunner.runTestSuite(
+        'Comprehensive Suite',
+        {
+          'full_app_flow': (tester) async {
+            // Initialize with coverage tracking
+            await tester.pumpWidget(const AdvancedTestWidget(child: TestableApp()));
+            await tester.pumpAndSettle();
+            
+            // Navigate through all screens
+            final screens = ['Profile', 'Settings', 'Home'];
+            for (final screen in screens) {
+              await tester.tap(find.text(screen));
+              await tester.pumpAndSettle();
+              
+              // Verify navigation worked
+              expect(find.text('$screen Screen'), findsOneWidget);
+              TestConfig.log('Navigated to $screen');
+            }
+            
+            // Check performance
+            final startTime = DateTime.now();
+            for (int i = 0; i < 5; i++) {
+              await tester.tap(find.text('Profile'));
+              await tester.pump();
+              await tester.tap(find.text('Home'));
+              await tester.pump();
+            }
+            final duration = DateTime.now().difference(startTime);
+            
+            expect(duration.inMilliseconds, lessThan(1000));
+            
+            // Verify coverage improved
+            final coverage = CoverageAnalyzer.getCoveragePercentage();
+            expect(coverage, greaterThan(0.4));
+            
+            TestConfig.log('Comprehensive test completed successfully');
+          },
+        },
+        tester,
+      );
+      
+      // Final verification
+      final results = TestSuiteRunner.getResults();
+      final allPassed = results.values.every((result) => result.passed);
+      expect(allPassed, isTrue);
+      
+      // Generate final reports
+      CoverageAnalyzer.generateCoverageReport();
+    });
+  });
+}
+```
+
+This final example demonstrates advanced testing configuration including  
+environment setup, test suite management, coverage analysis, conditional  
+test execution, performance monitoring, error handling, and comprehensive  
+reporting for professional Flutter testing workflows.
+
+---
+
+## Summary
+
+This comprehensive guide covers 25 essential Flutter testing examples:
+
+**Unit Testing (8 examples):**  
+- Basic unit test setup and organization  
+- Testing functions, methods, and classes with dependencies  
+- Mocking external services and APIs  
+- Testing asynchronous operations and error scenarios  
+- Using fixtures, test data, and parameterized tests  
+
+**Widget Testing (8 examples):**  
+- Basic widget testing and rendering verification  
+- Testing user interactions and form inputs  
+- Navigation testing between screens  
+- Testing stateful widgets and custom components  
+- Animation testing and performance verification  
+
+**Integration Testing (7 examples):**  
+- End-to-end user workflows and complete app testing  
+- Performance testing and bottleneck identification  
+- Testing with external services and platform features  
+- Golden file testing and accessibility verification  
+
+**Testing Utilities (2 examples):**  
+- Reusable test helpers, matchers, and data factories  
+- Advanced configuration, coverage analysis, and CI/CD integration  
+
+Each example builds upon previous concepts while demonstrating real-world  
+testing scenarios. The examples follow Flutter and Dart best practices,  
+use descriptive test names, and include proper error handling and edge  
+case coverage to ensure robust, maintainable test suites.
