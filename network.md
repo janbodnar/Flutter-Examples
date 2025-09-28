@@ -1271,3 +1271,1255 @@ This example demonstrates comprehensive error handling with retry logic.
 Different error types are categorized and handled appropriately. The retry  
 mechanism automatically attempts failed requests with exponential backoff,  
 providing users with clear feedback throughout the process.  
+
+## Custom Headers and Authentication
+
+Adding custom headers and handling API authentication.  
+
+```dart
+import 'package:flutter/material.dart';
+import 'package:http/http.dart' as http;
+import 'dart:convert';
+
+void main() {
+  runApp(const MyApp());
+}
+
+class MyApp extends StatelessWidget {
+  const MyApp({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return MaterialApp(
+      darkTheme: ThemeData.dark(),
+      themeMode: ThemeMode.dark,
+      title: 'Custom Headers & Auth',
+      home: const AuthenticatedRequestPage(),
+    );
+  }
+}
+
+class ApiService {
+  static const String baseUrl = 'https://jsonplaceholder.typicode.com';
+  static String? _authToken;
+
+  static Map<String, String> get _headers {
+    final headers = {
+      'Content-Type': 'application/json; charset=UTF-8',
+      'Accept': 'application/json',
+      'User-Agent': 'Flutter-App/1.0',
+    };
+
+    if (_authToken != null) {
+      headers['Authorization'] = 'Bearer $_authToken';
+    }
+
+    return headers;
+  }
+
+  static Future<bool> login(String username, String password) async {
+    try {
+      // Simulate login request
+      await Future.delayed(const Duration(seconds: 1));
+      
+      if (username == 'admin' && password == 'password') {
+        _authToken = 'fake-jwt-token-${DateTime.now().millisecondsSinceEpoch}';
+        return true;
+      }
+      return false;
+    } catch (e) {
+      return false;
+    }
+  }
+
+  static void logout() {
+    _authToken = null;
+  }
+
+  static Future<http.Response> authenticatedGet(String endpoint) async {
+    return await http.get(
+      Uri.parse('$baseUrl$endpoint'),
+      headers: _headers,
+    );
+  }
+
+  static Future<http.Response> authenticatedPost(
+    String endpoint, 
+    Map<String, dynamic> body,
+  ) async {
+    return await http.post(
+      Uri.parse('$baseUrl$endpoint'),
+      headers: _headers,
+      body: jsonEncode(body),
+    );
+  }
+
+  static bool get isAuthenticated => _authToken != null;
+  static String? get authToken => _authToken;
+}
+
+class AuthenticatedRequestPage extends StatefulWidget {
+  const AuthenticatedRequestPage({super.key});
+
+  @override
+  State<AuthenticatedRequestPage> createState() => _AuthenticatedRequestPageState();
+}
+
+class _AuthenticatedRequestPageState extends State<AuthenticatedRequestPage> {
+  final _usernameController = TextEditingController();
+  final _passwordController = TextEditingController();
+  bool _isLoading = false;
+  String _status = '';
+  String _apiResponse = '';
+
+  Future<void> _login() async {
+    setState(() {
+      _isLoading = true;
+      _status = '';
+    });
+
+    try {
+      final success = await ApiService.login(
+        _usernameController.text,
+        _passwordController.text,
+      );
+
+      setState(() {
+        if (success) {
+          _status = 'Login successful! Token: ${ApiService.authToken}';
+        } else {
+          _status = 'Login failed. Try username: admin, password: password';
+        }
+      });
+    } catch (e) {
+      setState(() {
+        _status = 'Login error: $e';
+      });
+    } finally {
+      setState(() {
+        _isLoading = false;
+      });
+    }
+  }
+
+  Future<void> _makeAuthenticatedRequest() async {
+    if (!ApiService.isAuthenticated) {
+      setState(() {
+        _status = 'Please login first';
+      });
+      return;
+    }
+
+    setState(() {
+      _isLoading = true;
+      _apiResponse = '';
+    });
+
+    try {
+      final response = await ApiService.authenticatedGet('/posts/1');
+
+      if (response.statusCode == 200) {
+        final data = json.decode(response.body);
+        setState(() {
+          _apiResponse = 'Title: ${data['title']}\n\n'
+              'Body: ${data['body']}\n\n'
+              'Request Headers:\n'
+              '• Authorization: Bearer ${ApiService.authToken!.substring(0, 20)}...\n'
+              '• Content-Type: application/json\n'
+              '• Accept: application/json\n'
+              '• User-Agent: Flutter-App/1.0';
+        });
+      } else {
+        setState(() {
+          _apiResponse = 'Request failed: ${response.statusCode}';
+        });
+      }
+    } catch (e) {
+      setState(() {
+        _apiResponse = 'Request error: $e';
+      });
+    } finally {
+      setState(() {
+        _isLoading = false;
+      });
+    }
+  }
+
+  void _logout() {
+    ApiService.logout();
+    setState(() {
+      _status = 'Logged out successfully';
+      _apiResponse = '';
+    });
+  }
+
+  @override
+  void dispose() {
+    _usernameController.dispose();
+    _passwordController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text('Authenticated Requests'),
+        actions: [
+          if (ApiService.isAuthenticated)
+            IconButton(
+              icon: const Icon(Icons.logout),
+              onPressed: _logout,
+            ),
+        ],
+      ),
+      body: Padding(
+        padding: const EdgeInsets.all(16.0),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            if (!ApiService.isAuthenticated) ...[
+              TextField(
+                controller: _usernameController,
+                decoration: const InputDecoration(
+                  labelText: 'Username (try: admin)',
+                  border: OutlineInputBorder(),
+                ),
+              ),
+              const SizedBox(height: 16),
+              TextField(
+                controller: _passwordController,
+                decoration: const InputDecoration(
+                  labelText: 'Password (try: password)',
+                  border: OutlineInputBorder(),
+                ),
+                obscureText: true,
+              ),
+              const SizedBox(height: 16),
+              ElevatedButton(
+                onPressed: _isLoading ? null : _login,
+                child: const Text('Login'),
+              ),
+            ] else ...[
+              Card(
+                color: Colors.green.withOpacity(0.1),
+                child: Padding(
+                  padding: const EdgeInsets.all(16.0),
+                  child: Row(
+                    children: [
+                      const Icon(Icons.check_circle, color: Colors.green),
+                      const SizedBox(width: 8),
+                      const Expanded(
+                        child: Text('Authenticated - Ready to make API calls'),
+                      ),
+                      TextButton(
+                        onPressed: _logout,
+                        child: const Text('Logout'),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+              const SizedBox(height: 16),
+              ElevatedButton(
+                onPressed: _isLoading ? null : _makeAuthenticatedRequest,
+                child: const Text('Make Authenticated Request'),
+              ),
+            ],
+            const SizedBox(height: 20),
+            if (_isLoading)
+              const Center(child: CircularProgressIndicator())
+            else if (_status.isNotEmpty)
+              Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: _status.contains('successful') || _status.contains('Token')
+                      ? Colors.green.withOpacity(0.1)
+                      : Colors.red.withOpacity(0.1),
+                  border: Border.all(
+                    color: _status.contains('successful') || _status.contains('Token')
+                        ? Colors.green
+                        : Colors.red,
+                  ),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Text(_status),
+              ),
+            if (_apiResponse.isNotEmpty) ...[
+              const SizedBox(height: 16),
+              Expanded(
+                child: Container(
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: Colors.blue.withOpacity(0.1),
+                    border: Border.all(color: Colors.blue),
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: SingleChildScrollView(
+                    child: Text(_apiResponse),
+                  ),
+                ),
+              ),
+            ],
+          ],
+        ),
+      ),
+    );
+  }
+}
+```
+
+This example demonstrates custom headers and authentication patterns.  
+The ApiService class manages authentication tokens and automatically  
+includes them in requests. Custom headers like User-Agent provide  
+additional request metadata.  
+
+## Network Connectivity Check
+
+Checking network connectivity before making requests.  
+
+```dart
+import 'package:flutter/material.dart';
+import 'package:http/http.dart' as http;
+import 'dart:convert';
+import 'dart:io';
+
+void main() {
+  runApp(const MyApp());
+}
+
+class MyApp extends StatelessWidget {
+  const MyApp({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return MaterialApp(
+      darkTheme: ThemeData.dark(),
+      themeMode: ThemeMode.dark,
+      title: 'Connectivity Check',
+      home: const ConnectivityCheckPage(),
+    );
+  }
+}
+
+enum ConnectivityStatus {
+  online,
+  offline,
+  checking,
+  unknown,
+}
+
+class ConnectivityService {
+  static Future<ConnectivityStatus> checkConnectivity() async {
+    try {
+      final result = await InternetAddress.lookup('google.com');
+      if (result.isNotEmpty && result[0].rawAddress.isNotEmpty) {
+        return ConnectivityStatus.online;
+      }
+    } on SocketException catch (_) {
+      return ConnectivityStatus.offline;
+    }
+    return ConnectivityStatus.offline;
+  }
+
+  static Future<bool> canReachApi({String testUrl = 'https://jsonplaceholder.typicode.com/posts/1'}) async {
+    try {
+      final response = await http.head(Uri.parse(testUrl)).timeout(
+        const Duration(seconds: 5),
+      );
+      return response.statusCode >= 200 && response.statusCode < 300;
+    } catch (e) {
+      return false;
+    }
+  }
+}
+
+class ConnectivityCheckPage extends StatefulWidget {
+  const ConnectivityCheckPage({super.key});
+
+  @override
+  State<ConnectivityCheckPage> createState() => _ConnectivityCheckPageState();
+}
+
+class _ConnectivityCheckPageState extends State<ConnectivityCheckPage> {
+  ConnectivityStatus _connectivityStatus = ConnectivityStatus.unknown;
+  bool _apiReachable = false;
+  bool _isChecking = false;
+  String _apiData = '';
+  String _lastChecked = '';
+
+  @override
+  void initState() {
+    super.initState();
+    _checkConnectivity();
+  }
+
+  Future<void> _checkConnectivity() async {
+    setState(() {
+      _isChecking = true;
+      _connectivityStatus = ConnectivityStatus.checking;
+    });
+
+    try {
+      final connectivityStatus = await ConnectivityService.checkConnectivity();
+      final apiReachable = connectivityStatus == ConnectivityStatus.online
+          ? await ConnectivityService.canReachApi()
+          : false;
+
+      setState(() {
+        _connectivityStatus = connectivityStatus;
+        _apiReachable = apiReachable;
+        _lastChecked = DateTime.now().toString().substring(0, 19);
+      });
+    } catch (e) {
+      setState(() {
+        _connectivityStatus = ConnectivityStatus.unknown;
+        _apiReachable = false;
+      });
+    } finally {
+      setState(() {
+        _isChecking = false;
+      });
+    }
+  }
+
+  Future<void> _fetchDataWithCheck() async {
+    if (_connectivityStatus != ConnectivityStatus.online) {
+      _showConnectivityDialog();
+      return;
+    }
+
+    if (!_apiReachable) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('API is not reachable. Please try again later.'),
+          backgroundColor: Colors.orange,
+        ),
+      );
+      return;
+    }
+
+    setState(() {
+      _apiData = '';
+    });
+
+    try {
+      final response = await http.get(
+        Uri.parse('https://jsonplaceholder.typicode.com/posts/1'),
+      );
+
+      if (response.statusCode == 200) {
+        final data = json.decode(response.body);
+        setState(() {
+          _apiData = data['title'];
+        });
+      }
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Failed to fetch data: $e'),
+          backgroundColor: Colors.red,
+        ),
+      );
+    }
+  }
+
+  void _showConnectivityDialog() {
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: const Row(
+            children: [
+              Icon(Icons.wifi_off, color: Colors.red),
+              SizedBox(width: 8),
+              Text('No Internet Connection'),
+            ],
+          ),
+          content: const Text(
+            'Please check your internet connection and try again.',
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(),
+              child: const Text('Cancel'),
+            ),
+            TextButton(
+              onPressed: () {
+                Navigator.of(context).pop();
+                _checkConnectivity();
+              },
+              child: const Text('Retry'),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  Widget _buildConnectivityIndicator() {
+    IconData icon;
+    Color color;
+    String status;
+
+    switch (_connectivityStatus) {
+      case ConnectivityStatus.online:
+        icon = Icons.wifi;
+        color = Colors.green;
+        status = 'Online';
+        break;
+      case ConnectivityStatus.offline:
+        icon = Icons.wifi_off;
+        color = Colors.red;
+        status = 'Offline';
+        break;
+      case ConnectivityStatus.checking:
+        icon = Icons.wifi_find;
+        color = Colors.orange;
+        status = 'Checking...';
+        break;
+      case ConnectivityStatus.unknown:
+        icon = Icons.help;
+        color = Colors.grey;
+        status = 'Unknown';
+        break;
+    }
+
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(16.0),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Icon(icon, color: color),
+                const SizedBox(width: 8),
+                Text(
+                  'Connection Status: $status',
+                  style: TextStyle(
+                    fontWeight: FontWeight.bold,
+                    color: color,
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 8),
+            Row(
+              children: [
+                Icon(
+                  _apiReachable ? Icons.check_circle : Icons.error,
+                  color: _apiReachable ? Colors.green : Colors.red,
+                  size: 20,
+                ),
+                const SizedBox(width: 8),
+                Text('API Reachable: ${_apiReachable ? 'Yes' : 'No'}'),
+              ],
+            ),
+            if (_lastChecked.isNotEmpty) ...[
+              const SizedBox(height: 8),
+              Text(
+                'Last checked: $_lastChecked',
+                style: TextStyle(
+                  fontSize: 12,
+                  color: Colors.grey[400],
+                ),
+              ),
+            ],
+          ],
+        ),
+      ),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text('Connectivity Check'),
+        actions: [
+          IconButton(
+            icon: _isChecking 
+                ? const SizedBox(
+                    width: 20,
+                    height: 20,
+                    child: CircularProgressIndicator(strokeWidth: 2),
+                  )
+                : const Icon(Icons.refresh),
+            onPressed: _isChecking ? null : _checkConnectivity,
+          ),
+        ],
+      ),
+      body: Padding(
+        padding: const EdgeInsets.all(16.0),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            _buildConnectivityIndicator(),
+            const SizedBox(height: 20),
+            ElevatedButton(
+              onPressed: _fetchDataWithCheck,
+              child: const Text('Fetch Data (with connectivity check)'),
+            ),
+            const SizedBox(height: 20),
+            if (_apiData.isNotEmpty)
+              Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: Colors.green.withOpacity(0.1),
+                  border: Border.all(color: Colors.green),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text(
+                      'API Response:',
+                      style: TextStyle(fontWeight: FontWeight.bold),
+                    ),
+                    const SizedBox(height: 8),
+                    Text(_apiData),
+                  ],
+                ),
+              ),
+            const Spacer(),
+            const Card(
+              child: Padding(
+                padding: EdgeInsets.all(16.0),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Connectivity Features:',
+                      style: TextStyle(fontWeight: FontWeight.bold),
+                    ),
+                    SizedBox(height: 8),
+                    Text('• Internet connectivity detection'),
+                    Text('• API endpoint reachability test'),
+                    Text('• Graceful offline handling'),
+                    Text('• User-friendly error messages'),
+                    Text('• Automatic retry mechanisms'),
+                  ],
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+```
+
+This example demonstrates network connectivity checking before making API  
+requests. It includes both general internet connectivity and specific API  
+reachability tests. The UI provides clear feedback about connection status  
+and gracefully handles offline scenarios.  
+
+## Request Timeout and Cancellation
+
+Managing request timeouts and canceling ongoing requests.  
+
+```dart
+import 'package:flutter/material.dart';
+import 'package:http/http.dart' as http;
+import 'dart:convert';
+import 'dart:async';
+
+void main() {
+  runApp(const MyApp());
+}
+
+class MyApp extends StatelessWidget {
+  const MyApp({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return MaterialApp(
+      darkTheme: ThemeData.dark(),
+      themeMode: ThemeMode.dark,
+      title: 'Request Timeout & Cancel',
+      home: const TimeoutCancelPage(),
+    );
+  }
+}
+
+class TimeoutCancelPage extends StatefulWidget {
+  const TimeoutCancelPage({super.key});
+
+  @override
+  State<TimeoutCancelPage> createState() => _TimeoutCancelPageState();
+}
+
+class _TimeoutCancelPageState extends State<TimeoutCancelPage> {
+  bool _isLoading = false;
+  String _result = '';
+  Timer? _progressTimer;
+  int _progressValue = 0;
+  http.Client? _httpClient;
+
+  Future<void> _makeRequestWithTimeout({required int timeoutSeconds}) async {
+    setState(() {
+      _isLoading = true;
+      _result = '';
+      _progressValue = 0;
+    });
+
+    _httpClient = http.Client();
+    
+    // Start progress timer
+    _progressTimer = Timer.periodic(const Duration(milliseconds: 100), (timer) {
+      setState(() {
+        _progressValue = (timer.tick * 100) ~/ (timeoutSeconds * 10);
+        if (_progressValue > 100) _progressValue = 100;
+      });
+    });
+
+    try {
+      final response = await _httpClient!
+          .get(Uri.parse('https://httpbin.org/delay/8')) // 8-second delay
+          .timeout(Duration(seconds: timeoutSeconds));
+
+      if (response.statusCode == 200) {
+        final data = json.decode(response.body);
+        setState(() {
+          _result = 'Request completed successfully!\n'
+              'Response time: ${data['headers']['User-Agent'] ?? 'N/A'}';
+        });
+      }
+    } on TimeoutException catch (_) {
+      setState(() {
+        _result = 'Request timed out after $timeoutSeconds seconds';
+      });
+    } catch (e) {
+      setState(() {
+        _result = 'Request error: $e';
+      });
+    } finally {
+      _cleanup();
+    }
+  }
+
+  void _cancelRequest() {
+    if (_httpClient != null) {
+      _httpClient!.close();
+      _httpClient = null;
+      setState(() {
+        _result = 'Request cancelled by user';
+      });
+      _cleanup();
+    }
+  }
+
+  void _cleanup() {
+    _progressTimer?.cancel();
+    _progressTimer = null;
+    _httpClient?.close();
+    _httpClient = null;
+    setState(() {
+      _isLoading = false;
+      _progressValue = 0;
+    });
+  }
+
+  @override
+  void dispose() {
+    _cleanup();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text('Request Timeout & Cancel'),
+      ),
+      body: Padding(
+        padding: const EdgeInsets.all(16.0),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            const Text(
+              'Test different timeout scenarios:',
+              style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+            ),
+            const SizedBox(height: 16),
+            Row(
+              children: [
+                Expanded(
+                  child: ElevatedButton(
+                    onPressed: _isLoading 
+                        ? null 
+                        : () => _makeRequestWithTimeout(timeoutSeconds: 5),
+                    child: const Text('5s Timeout\n(Will fail)'),
+                  ),
+                ),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: ElevatedButton(
+                    onPressed: _isLoading 
+                        ? null 
+                        : () => _makeRequestWithTimeout(timeoutSeconds: 10),
+                    child: const Text('10s Timeout\n(Will succeed)'),
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 20),
+            if (_isLoading) ...[
+              Column(
+                children: [
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      const Text('Request Progress:'),
+                      Text('$_progressValue%'),
+                    ],
+                  ),
+                  const SizedBox(height: 8),
+                  LinearProgressIndicator(
+                    value: _progressValue / 100,
+                  ),
+                  const SizedBox(height: 20),
+                  ElevatedButton(
+                    onPressed: _cancelRequest,
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.red.withOpacity(0.8),
+                    ),
+                    child: const Text('Cancel Request'),
+                  ),
+                ],
+              ),
+            ],
+            const SizedBox(height: 20),
+            if (_result.isNotEmpty)
+              Container(
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: _result.contains('error') || _result.contains('timed out')
+                      ? Colors.red.withOpacity(0.1)
+                      : _result.contains('cancelled')
+                          ? Colors.orange.withOpacity(0.1)
+                          : Colors.green.withOpacity(0.1),
+                  border: Border.all(
+                    color: _result.contains('error') || _result.contains('timed out')
+                        ? Colors.red
+                        : _result.contains('cancelled')
+                            ? Colors.orange
+                            : Colors.green,
+                  ),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Text(_result),
+              ),
+            const Spacer(),
+            const Card(
+              child: Padding(
+                padding: EdgeInsets.all(16.0),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Timeout & Cancellation Features:',
+                      style: TextStyle(fontWeight: FontWeight.bold),
+                    ),
+                    SizedBox(height: 8),
+                    Text('• Configurable request timeouts'),
+                    Text('• Progress tracking with visual feedback'),
+                    Text('• Manual request cancellation'),
+                    Text('• Proper resource cleanup'),
+                    Text('• Different timeout scenarios'),
+                  ],
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+```
+
+This example demonstrates request timeout handling and manual cancellation.  
+The progress indicator shows request status while the cancel button allows  
+users to abort long-running requests. Proper resource cleanup prevents  
+memory leaks.  
+
+## HTTP Interceptors
+
+Implementing HTTP interceptors for logging and request modification.  
+
+```dart
+import 'package:flutter/material.dart';
+import 'package:http/http.dart' as http;
+import 'dart:convert';
+
+void main() {
+  runApp(const MyApp());
+}
+
+class MyApp extends StatelessWidget {
+  const MyApp({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return MaterialApp(
+      darkTheme: ThemeData.dark(),
+      themeMode: ThemeMode.dark,
+      title: 'HTTP Interceptors',
+      home: const InterceptorPage(),
+    );
+  }
+}
+
+class RequestLog {
+  final String method;
+  final String url;
+  final Map<String, String> headers;
+  final String? body;
+  final DateTime timestamp;
+  final int? statusCode;
+  final String? response;
+  final Duration? duration;
+  final String? error;
+
+  RequestLog({
+    required this.method,
+    required this.url,
+    required this.headers,
+    this.body,
+    required this.timestamp,
+    this.statusCode,
+    this.response,
+    this.duration,
+    this.error,
+  });
+}
+
+class InterceptorClient extends http.BaseClient {
+  final http.Client _inner = http.Client();
+  final List<RequestLog> _logs = [];
+  final Function(RequestLog) onRequestCompleted;
+
+  InterceptorClient({required this.onRequestCompleted});
+
+  @override
+  Future<http.StreamedResponse> send(http.BaseRequest request) async {
+    final startTime = DateTime.now();
+    
+    // Log outgoing request
+    print('→ ${request.method} ${request.url}');
+    print('  Headers: ${request.headers}');
+    
+    String? bodyContent;
+    if (request is http.Request && request.body.isNotEmpty) {
+      bodyContent = request.body;
+      print('  Body: ${request.body}');
+    }
+
+    try {
+      final response = await _inner.send(request);
+      final endTime = DateTime.now();
+      final duration = endTime.difference(startTime);
+
+      // Read response body
+      final responseBody = await response.stream.bytesToString();
+      
+      print('← ${response.statusCode} ${request.url}');
+      print('  Duration: ${duration.inMilliseconds}ms');
+      print('  Response: ${responseBody.length > 100 ? responseBody.substring(0, 100) + '...' : responseBody}');
+
+      // Create log entry
+      final log = RequestLog(
+        method: request.method,
+        url: request.url.toString(),
+        headers: request.headers,
+        body: bodyContent,
+        timestamp: startTime,
+        statusCode: response.statusCode,
+        response: responseBody,
+        duration: duration,
+      );
+
+      _logs.add(log);
+      onRequestCompleted(log);
+
+      // Return new response with the body
+      return http.StreamedResponse(
+        Stream.value(utf8.encode(responseBody)),
+        response.statusCode,
+        headers: response.headers,
+        isRedirect: response.isRedirect,
+        persistentConnection: response.persistentConnection,
+        reasonPhrase: response.reasonPhrase,
+      );
+    } catch (error) {
+      final endTime = DateTime.now();
+      final duration = endTime.difference(startTime);
+
+      print('✗ ${request.method} ${request.url}');
+      print('  Error: $error');
+      print('  Duration: ${duration.inMilliseconds}ms');
+
+      // Create error log entry
+      final log = RequestLog(
+        method: request.method,
+        url: request.url.toString(),
+        headers: request.headers,
+        body: bodyContent,
+        timestamp: startTime,
+        duration: duration,
+        error: error.toString(),
+      );
+
+      _logs.add(log);
+      onRequestCompleted(log);
+
+      rethrow;
+    }
+  }
+
+  List<RequestLog> get logs => List.unmodifiable(_logs);
+
+  void clearLogs() {
+    _logs.clear();
+  }
+
+  @override
+  void close() {
+    _inner.close();
+    super.close();
+  }
+}
+
+class InterceptorPage extends StatefulWidget {
+  const InterceptorPage({super.key});
+
+  @override
+  State<InterceptorPage> createState() => _InterceptorPageState();
+}
+
+class _InterceptorPageState extends State<InterceptorPage> {
+  late InterceptorClient _client;
+  List<RequestLog> _logs = [];
+  bool _isLoading = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _client = InterceptorClient(
+      onRequestCompleted: (log) {
+        setState(() {
+          _logs = List.from(_client.logs);
+        });
+      },
+    );
+  }
+
+  Future<void> _makeGetRequest() async {
+    setState(() {
+      _isLoading = true;
+    });
+
+    try {
+      await _client.get(Uri.parse('https://jsonplaceholder.typicode.com/posts/1'));
+    } catch (e) {
+      // Error already logged by interceptor
+    } finally {
+      setState(() {
+        _isLoading = false;
+      });
+    }
+  }
+
+  Future<void> _makePostRequest() async {
+    setState(() {
+      _isLoading = true;
+    });
+
+    try {
+      await _client.post(
+        Uri.parse('https://jsonplaceholder.typicode.com/posts'),
+        headers: {'Content-Type': 'application/json'},
+        body: jsonEncode({
+          'title': 'Test Post',
+          'body': 'This is a test post from interceptor',
+          'userId': 1,
+        }),
+      );
+    } catch (e) {
+      // Error already logged by interceptor
+    } finally {
+      setState(() {
+        _isLoading = false;
+      });
+    }
+  }
+
+  Future<void> _makeErrorRequest() async {
+    setState(() {
+      _isLoading = true;
+    });
+
+    try {
+      await _client.get(Uri.parse('https://jsonplaceholder.typicode.com/posts/999999'));
+    } catch (e) {
+      // Error already logged by interceptor
+    } finally {
+      setState(() {
+        _isLoading = false;
+      });
+    }
+  }
+
+  Widget _buildLogItem(RequestLog log) {
+    final isError = log.error != null || (log.statusCode != null && log.statusCode! >= 400);
+    
+    return Card(
+      color: isError 
+          ? Colors.red.withOpacity(0.1) 
+          : Colors.green.withOpacity(0.1),
+      child: ExpansionTile(
+        leading: Icon(
+          log.method == 'GET' ? Icons.download : Icons.upload,
+          color: isError ? Colors.red : Colors.green,
+        ),
+        title: Text('${log.method} ${Uri.parse(log.url).path}'),
+        subtitle: Text(
+          '${log.timestamp.toString().substring(11, 19)} • '
+          '${log.duration?.inMilliseconds ?? 0}ms • '
+          '${log.statusCode ?? 'Error'}',
+          style: const TextStyle(fontSize: 12),
+        ),
+        children: [
+          Padding(
+            padding: const EdgeInsets.all(16.0),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'URL: ${log.url}',
+                  style: const TextStyle(fontWeight: FontWeight.bold),
+                ),
+                const SizedBox(height: 8),
+                if (log.headers.isNotEmpty) ...[
+                  const Text('Headers:'),
+                  ...log.headers.entries.map(
+                    (entry) => Text('  ${entry.key}: ${entry.value}',
+                        style: const TextStyle(fontSize: 12)),
+                  ),
+                  const SizedBox(height: 8),
+                ],
+                if (log.body != null) ...[
+                  const Text('Request Body:'),
+                  Text(log.body!, style: const TextStyle(fontSize: 12)),
+                  const SizedBox(height: 8),
+                ],
+                if (log.response != null) ...[
+                  const Text('Response:'),
+                  Text(
+                    log.response!.length > 200 
+                        ? '${log.response!.substring(0, 200)}...'
+                        : log.response!,
+                    style: const TextStyle(fontSize: 12),
+                  ),
+                ],
+                if (log.error != null) ...[
+                  const Text('Error:'),
+                  Text(log.error!, style: const TextStyle(fontSize: 12, color: Colors.red)),
+                ],
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text('HTTP Interceptors'),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.clear_all),
+            onPressed: () {
+              setState(() {
+                _client.clearLogs();
+                _logs.clear();
+              });
+            },
+          ),
+        ],
+      ),
+      body: Column(
+        children: [
+          Padding(
+            padding: const EdgeInsets.all(16.0),
+            child: Column(
+              children: [
+                Row(
+                  children: [
+                    Expanded(
+                      child: ElevatedButton(
+                        onPressed: _isLoading ? null : _makeGetRequest,
+                        child: const Text('GET Request'),
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: ElevatedButton(
+                        onPressed: _isLoading ? null : _makePostRequest,
+                        child: const Text('POST Request'),
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 8),
+                ElevatedButton(
+                  onPressed: _isLoading ? null : _makeErrorRequest,
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.orange.withOpacity(0.8),
+                  ),
+                  child: const Text('Error Request'),
+                ),
+              ],
+            ),
+          ),
+          if (_isLoading)
+            const Padding(
+              padding: EdgeInsets.all(16.0),
+              child: CircularProgressIndicator(),
+            ),
+          Expanded(
+            child: _logs.isEmpty
+                ? const Center(
+                    child: Text('No requests logged yet.\nMake a request to see logs.'),
+                  )
+                : ListView.builder(
+                    itemCount: _logs.length,
+                    itemBuilder: (context, index) {
+                      final log = _logs.reversed.toList()[index];
+                      return _buildLogItem(log);
+                    },
+                  ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  @override
+  void dispose() {
+    _client.close();
+    super.dispose();
+  }
+}
+```
+
+This example demonstrates HTTP interceptors for request/response logging.  
+The custom InterceptorClient extends BaseClient to capture all network  
+activity with detailed logging. It tracks request timing, headers, body  
+content, and responses for debugging purposes.  
