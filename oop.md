@@ -2166,3 +2166,2433 @@ system. The abstract PaymentProcessor class defines contracts that
 concrete implementations must fulfill, while providing shared  
 functionality through template methods. Each processor implements  
 abstract methods differently while inheriting common behavior.
+
+## Interface Implementation
+
+Implementing implicit interfaces and abstract classes as contracts.
+
+```dart
+import 'package:flutter/material.dart';
+
+void main() {
+  runApp(const MyApp());
+}
+
+class MyApp extends StatelessWidget {
+  const MyApp({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return MaterialApp(
+      title: 'Interface Implementation',
+      theme: ThemeData.dark(),
+      home: const InterfaceDemo(),
+    );
+  }
+}
+
+// Abstract interface for data serialization
+abstract class Serializable {
+  Map<String, dynamic> toJson();
+  void fromJson(Map<String, dynamic> json);
+  String serialize();
+}
+
+// Abstract interface for data validation
+abstract class Validatable {
+  bool isValid();
+  List<String> getValidationErrors();
+}
+
+// Abstract interface for auditing
+abstract class Auditable {
+  DateTime get createdAt;
+  DateTime get updatedAt;
+  String get createdBy;
+  void updateAuditInfo(String user);
+}
+
+// Concrete class implementing multiple interfaces
+class User implements Serializable, Validatable, Auditable {
+  String id;
+  String name;
+  String email;
+  int age;
+  DateTime _createdAt;
+  DateTime _updatedAt;
+  String _createdBy;
+
+  User({
+    required this.id,
+    required this.name,
+    required this.email,
+    required this.age,
+    String? createdBy,
+  }) : _createdAt = DateTime.now(),
+       _updatedAt = DateTime.now(),
+       _createdBy = createdBy ?? 'system';
+
+  // Implementing Serializable interface
+  @override
+  Map<String, dynamic> toJson() {
+    return {
+      'id': id,
+      'name': name,
+      'email': email,
+      'age': age,
+      'createdAt': _createdAt.toIso8601String(),
+      'updatedAt': _updatedAt.toIso8601String(),
+      'createdBy': _createdBy,
+    };
+  }
+
+  @override
+  void fromJson(Map<String, dynamic> json) {
+    id = json['id'] ?? '';
+    name = json['name'] ?? '';
+    email = json['email'] ?? '';
+    age = json['age'] ?? 0;
+    _createdAt = DateTime.tryParse(json['createdAt'] ?? '') ?? DateTime.now();
+    _updatedAt = DateTime.tryParse(json['updatedAt'] ?? '') ?? DateTime.now();
+    _createdBy = json['createdBy'] ?? 'system';
+  }
+
+  @override
+  String serialize() {
+    return '${toJson()}'.replaceAll('{', '').replaceAll('}', '');
+  }
+
+  // Implementing Validatable interface
+  @override
+  bool isValid() {
+    return getValidationErrors().isEmpty;
+  }
+
+  @override
+  List<String> getValidationErrors() {
+    List<String> errors = [];
+    
+    if (id.isEmpty) errors.add('ID is required');
+    if (name.isEmpty || name.length < 2) errors.add('Name must be at least 2 characters');
+    if (!email.contains('@') || !email.contains('.')) errors.add('Invalid email format');
+    if (age < 0 || age > 150) errors.add('Age must be between 0 and 150');
+    
+    return errors;
+  }
+
+  // Implementing Auditable interface
+  @override
+  DateTime get createdAt => _createdAt;
+
+  @override
+  DateTime get updatedAt => _updatedAt;
+
+  @override
+  String get createdBy => _createdBy;
+
+  @override
+  void updateAuditInfo(String user) {
+    _updatedAt = DateTime.now();
+    // Note: We don't change _createdBy, only track who made the update
+  }
+
+  // Additional User-specific methods
+  bool get isAdult => age >= 18;
+  
+  String getDisplayName() {
+    return '$name (${email})';
+  }
+}
+
+// Another class implementing the same interfaces
+class Product implements Serializable, Validatable, Auditable {
+  String sku;
+  String name;
+  double price;
+  int quantity;
+  String category;
+  DateTime _createdAt;
+  DateTime _updatedAt;
+  String _createdBy;
+
+  Product({
+    required this.sku,
+    required this.name,
+    required this.price,
+    required this.quantity,
+    required this.category,
+    String? createdBy,
+  }) : _createdAt = DateTime.now(),
+       _updatedAt = DateTime.now(),
+       _createdBy = createdBy ?? 'system';
+
+  // Implementing Serializable interface
+  @override
+  Map<String, dynamic> toJson() {
+    return {
+      'sku': sku,
+      'name': name,
+      'price': price,
+      'quantity': quantity,
+      'category': category,
+      'createdAt': _createdAt.toIso8601String(),
+      'updatedAt': _updatedAt.toIso8601String(),
+      'createdBy': _createdBy,
+    };
+  }
+
+  @override
+  void fromJson(Map<String, dynamic> json) {
+    sku = json['sku'] ?? '';
+    name = json['name'] ?? '';
+    price = (json['price'] ?? 0.0).toDouble();
+    quantity = json['quantity'] ?? 0;
+    category = json['category'] ?? '';
+    _createdAt = DateTime.tryParse(json['createdAt'] ?? '') ?? DateTime.now();
+    _updatedAt = DateTime.tryParse(json['updatedAt'] ?? '') ?? DateTime.now();
+    _createdBy = json['createdBy'] ?? 'system';
+  }
+
+  @override
+  String serialize() {
+    return 'Product[$sku]: $name, \$${price.toStringAsFixed(2)}, Qty: $quantity';
+  }
+
+  // Implementing Validatable interface
+  @override
+  bool isValid() {
+    return getValidationErrors().isEmpty;
+  }
+
+  @override
+  List<String> getValidationErrors() {
+    List<String> errors = [];
+    
+    if (sku.isEmpty) errors.add('SKU is required');
+    if (name.isEmpty) errors.add('Product name is required');
+    if (price < 0) errors.add('Price cannot be negative');
+    if (quantity < 0) errors.add('Quantity cannot be negative');
+    if (category.isEmpty) errors.add('Category is required');
+    
+    return errors;
+  }
+
+  // Implementing Auditable interface
+  @override
+  DateTime get createdAt => _createdAt;
+
+  @override
+  DateTime get updatedAt => _updatedAt;
+
+  @override
+  String get createdBy => _createdBy;
+
+  @override
+  void updateAuditInfo(String user) {
+    _updatedAt = DateTime.now();
+  }
+
+  // Product-specific methods
+  double get totalValue => price * quantity;
+  bool get isInStock => quantity > 0;
+}
+
+// Service class that works with any object implementing these interfaces
+class DataService {
+  // Method that works with any Serializable object
+  static String exportData<T extends Serializable>(List<T> items) {
+    return items.map((item) => item.serialize()).join('\n');
+  }
+
+  // Method that works with any Validatable object
+  static Map<String, List<String>> validateData<T extends Validatable>(List<T> items) {
+    Map<String, List<String>> validationResults = {};
+    
+    for (int i = 0; i < items.length; i++) {
+      List<String> errors = items[i].getValidationErrors();
+      if (errors.isNotEmpty) {
+        validationResults['Item $i'] = errors;
+      }
+    }
+    
+    return validationResults;
+  }
+
+  // Method that works with any Auditable object
+  static List<Map<String, dynamic>> getAuditInfo<T extends Auditable>(List<T> items) {
+    return items.map((item) => {
+      'createdAt': item.createdAt.toIso8601String(),
+      'updatedAt': item.updatedAt.toIso8601String(),
+      'createdBy': item.createdBy,
+      'type': item.runtimeType.toString(),
+    }).toList();
+  }
+
+  // Generic method working with objects that implement multiple interfaces
+  static List<T> getValidItems<T extends Validatable>(List<T> items) {
+    return items.where((item) => item.isValid()).toList();
+  }
+}
+
+class InterfaceDemo extends StatefulWidget {
+  const InterfaceDemo({super.key});
+
+  @override
+  State<InterfaceDemo> createState() => _InterfaceDemoState();
+}
+
+class _InterfaceDemoState extends State<InterfaceDemo> {
+  List<User> users = [];
+  List<Product> products = [];
+  String _exportData = '';
+  Map<String, List<String>> _validationErrors = {};
+
+  @override
+  void initState() {
+    super.initState();
+    
+    // Initialize with sample data
+    users = [
+      User(id: '1', name: 'Alice Johnson', email: 'alice@example.com', age: 28),
+      User(id: '2', name: 'Bob Smith', email: 'bob@example.com', age: 35),
+      User(id: '3', name: '', email: 'invalid-email', age: -5), // Invalid user
+    ];
+    
+    products = [
+      Product(sku: 'LAPTOP001', name: 'Gaming Laptop', price: 1299.99, quantity: 15, category: 'Electronics'),
+      Product(sku: 'BOOK001', name: 'Flutter Guide', price: 29.99, quantity: 50, category: 'Books'),
+      Product(sku: '', name: '', price: -10, quantity: -5, category: ''), // Invalid product
+    ];
+  }
+
+  void _exportAllData() {
+    // Polymorphic usage - treating different types uniformly
+    List<Serializable> allSerializable = [...users, ...products];
+    
+    setState(() {
+      _exportData = DataService.exportData(allSerializable);
+    });
+  }
+
+  void _validateAllData() {
+    List<Validatable> allValidatable = [...users, ...products];
+    
+    setState(() {
+      _validationErrors = DataService.validateData(allValidatable);
+    });
+  }
+
+  void _updateAuditInfo() {
+    List<Auditable> allAuditable = [...users, ...products];
+    
+    for (var item in allAuditable) {
+      item.updateAuditInfo('admin_user');
+    }
+    
+    setState(() {
+      // Force rebuild to show updated times
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text('Interface Implementation'),
+      ),
+      body: SingleChildScrollView(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // Action buttons
+            Card(
+              child: Padding(
+                padding: const EdgeInsets.all(16),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text(
+                      'Interface Operations',
+                      style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                    ),
+                    const SizedBox(height: 12),
+                    Wrap(
+                      spacing: 8,
+                      runSpacing: 8,
+                      children: [
+                        ElevatedButton(
+                          onPressed: _exportAllData,
+                          child: const Text('Export All Data'),
+                        ),
+                        ElevatedButton(
+                          onPressed: _validateAllData,
+                          child: const Text('Validate All Data'),
+                        ),
+                        ElevatedButton(
+                          onPressed: _updateAuditInfo,
+                          child: const Text('Update Audit Info'),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+            ),
+            const SizedBox(height: 16),
+            
+            // Users section
+            const Text(
+              'Users (Implementing All Interfaces)',
+              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+            ),
+            const SizedBox(height: 8),
+            ...users.map((user) => Card(
+              color: user.isValid() ? Colors.green.shade900 : Colors.red.shade900,
+              child: Padding(
+                padding: const EdgeInsets.all(16),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      user.name.isEmpty ? 'Unnamed User' : user.name,
+                      style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                    ),
+                    Text('ID: ${user.id}, Email: ${user.email}, Age: ${user.age}'),
+                    Text('Valid: ${user.isValid() ? "Yes" : "No"}'),
+                    Text('Created: ${user.createdAt.toString().substring(0, 19)}'),
+                    Text('Updated: ${user.updatedAt.toString().substring(0, 19)}'),
+                    Text('Created by: ${user.createdBy}'),
+                    if (!user.isValid()) ...[
+                      const SizedBox(height: 8),
+                      const Text('Validation Errors:', style: TextStyle(color: Colors.red)),
+                      ...user.getValidationErrors().map((error) => Text('  • $error')),
+                    ],
+                  ],
+                ),
+              ),
+            )),
+            
+            const SizedBox(height: 16),
+            
+            // Products section
+            const Text(
+              'Products (Implementing All Interfaces)',
+              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+            ),
+            const SizedBox(height: 8),
+            ...products.map((product) => Card(
+              color: product.isValid() ? Colors.blue.shade900 : Colors.red.shade900,
+              child: Padding(
+                padding: const EdgeInsets.all(16),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      product.name.isEmpty ? 'Unnamed Product' : product.name,
+                      style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                    ),
+                    Text('SKU: ${product.sku}, Category: ${product.category}'),
+                    Text('Price: \$${product.price.toStringAsFixed(2)}, Quantity: ${product.quantity}'),
+                    Text('Total Value: \$${product.totalValue.toStringAsFixed(2)}'),
+                    Text('Valid: ${product.isValid() ? "Yes" : "No"}'),
+                    Text('Created: ${product.createdAt.toString().substring(0, 19)}'),
+                    Text('Updated: ${product.updatedAt.toString().substring(0, 19)}'),
+                    if (!product.isValid()) ...[
+                      const SizedBox(height: 8),
+                      const Text('Validation Errors:', style: TextStyle(color: Colors.red)),
+                      ...product.getValidationErrors().map((error) => Text('  • $error')),
+                    ],
+                  ],
+                ),
+              ),
+            )),
+            
+            const SizedBox(height: 16),
+            
+            // Export data results
+            if (_exportData.isNotEmpty) ...[
+              Card(
+                child: Padding(
+                  padding: const EdgeInsets.all(16),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Text(
+                        'Exported Data (Serializable Interface)',
+                        style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                      ),
+                      const SizedBox(height: 8),
+                      Container(
+                        width: double.infinity,
+                        padding: const EdgeInsets.all(12),
+                        decoration: BoxDecoration(
+                          color: Colors.grey.shade900,
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child: Text(
+                          _exportData,
+                          style: const TextStyle(fontFamily: 'monospace', fontSize: 12),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+              const SizedBox(height: 16),
+            ],
+            
+            // Validation errors
+            if (_validationErrors.isNotEmpty) ...[
+              Card(
+                color: Colors.red.shade900,
+                child: Padding(
+                  padding: const EdgeInsets.all(16),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Text(
+                        'Validation Errors (Validatable Interface)',
+                        style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                      ),
+                      const SizedBox(height: 8),
+                      ..._validationErrors.entries.map((entry) => Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text('${entry.key}:', style: const TextStyle(fontWeight: FontWeight.bold)),
+                          ...entry.value.map((error) => Text('  • $error')),
+                          const SizedBox(height: 8),
+                        ],
+                      )),
+                    ],
+                  ),
+                ),
+              ),
+              const SizedBox(height: 16),
+            ],
+            
+            Card(
+              child: Padding(
+                padding: const EdgeInsets.all(16),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text(
+                      'Interface Implementation Concepts Demonstrated',
+                      style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                    ),
+                    const SizedBox(height: 8),
+                    const Text('• Multiple interface implementation: User and Product implement 3 interfaces'),
+                    const Text('• Interface segregation: Separate interfaces for different concerns'),
+                    const Text('• Polymorphism: DataService works with any object implementing interfaces'),
+                    const Text('• Generic constraints: <T extends Interface> for type safety'),
+                    const Text('• Duck typing: Same interface, different implementations'),
+                    const Text('• Contract enforcement: Abstract methods must be implemented'),
+                    const Text('• Code reusability: Generic service methods work with any conforming type'),
+                  ],
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+```
+
+This example demonstrates interface implementation through multiple  
+abstract contracts. User and Product classes implement Serializable,  
+Validatable, and Auditable interfaces, showing how different types can  
+conform to common contracts. The DataService uses generic constraints  
+to work polymorphically with any implementing type.
+
+## Polymorphism and Dynamic Dispatch
+
+Demonstrating polymorphic behavior and runtime method resolution.
+
+```dart
+import 'package:flutter/material.dart';
+import 'dart:math' as math;
+
+void main() {
+  runApp(const MyApp());
+}
+
+class MyApp extends StatelessWidget {
+  const MyApp({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return MaterialApp(
+      title: 'Polymorphism and Dynamic Dispatch',
+      theme: ThemeData.dark(),
+      home: const PolymorphismDemo(),
+    );
+  }
+}
+
+// Base class for different media types
+abstract class Media {
+  String title;
+  String creator;
+  DateTime releaseDate;
+  double rating;
+  
+  Media(this.title, this.creator, this.releaseDate, this.rating);
+  
+  // Abstract methods for polymorphic behavior
+  String getMediaType();
+  String getDescription();
+  Duration getDuration();
+  Widget getIcon();
+  
+  // Virtual method that can be overridden
+  String getDisplayTitle() {
+    return title;
+  }
+  
+  // Concrete method using template method pattern
+  String getFullInfo() {
+    return '${getMediaType()}: ${getDisplayTitle()} by $creator (${rating}/5)';
+  }
+  
+  // Polymorphic method for different play behaviors
+  String play() {
+    return 'Playing ${getMediaType()}: $title';
+  }
+  
+  bool get isHighRated => rating >= 4.0;
+  
+  String get formattedReleaseDate => 
+      '${releaseDate.day}/${releaseDate.month}/${releaseDate.year}';
+}
+
+// Movie implementation
+class Movie extends Media {
+  String director;
+  String genre;
+  List<String> actors;
+  
+  Movie({
+    required String title,
+    required this.director,
+    required DateTime releaseDate,
+    required double rating,
+    required this.genre,
+    required this.actors,
+  }) : super(title, director, releaseDate, rating);
+  
+  @override
+  String getMediaType() => 'Movie';
+  
+  @override
+  String getDescription() {
+    return 'A $genre film directed by $director, starring ${actors.join(", ")}';
+  }
+  
+  @override
+  Duration getDuration() {
+    // Movies typically 90-180 minutes
+    return Duration(minutes: 90 + (title.length * 2));
+  }
+  
+  @override
+  Widget getIcon() {
+    return const Icon(Icons.movie, color: Colors.red, size: 30);
+  }
+  
+  @override
+  String play() {
+    return '🎬 ${super.play()} - Now showing in theater mode!';
+  }
+  
+  @override
+  String getDisplayTitle() {
+    return isHighRated ? '⭐ ${super.getDisplayTitle()}' : super.getDisplayTitle();
+  }
+}
+
+// Book implementation
+class Book extends Media {
+  String author;
+  String publisher;
+  int pages;
+  
+  Book({
+    required String title,
+    required this.author,
+    required DateTime releaseDate,
+    required double rating,
+    required this.publisher,
+    required this.pages,
+  }) : super(title, author, releaseDate, rating);
+  
+  @override
+  String getMediaType() => 'Book';
+  
+  @override
+  String getDescription() {
+    return 'A $pages-page book by $author, published by $publisher';
+  }
+  
+  @override
+  Duration getDuration() {
+    // Estimate reading time: ~250 words per minute, ~250 words per page
+    return Duration(minutes: pages);
+  }
+  
+  @override
+  Widget getIcon() {
+    return const Icon(Icons.menu_book, color: Colors.green, size: 30);
+  }
+  
+  @override
+  String play() {
+    return '📖 ${super.play()} - Opening e-reader mode!';
+  }
+}
+
+// Music implementation
+class Song extends Media {
+  String artist;
+  String album;
+  String genre;
+  
+  Song({
+    required String title,
+    required this.artist,
+    required DateTime releaseDate,
+    required double rating,
+    required this.album,
+    required this.genre,
+  }) : super(title, artist, releaseDate, rating);
+  
+  @override
+  String getMediaType() => 'Song';
+  
+  @override
+  String getDescription() {
+    return 'A $genre track by $artist from the album "$album"';
+  }
+  
+  @override
+  Duration getDuration() {
+    // Songs typically 3-5 minutes
+    return Duration(minutes: 3, seconds: (title.length * 5) % 60);
+  }
+  
+  @override
+  Widget getIcon() {
+    return const Icon(Icons.music_note, color: Colors.blue, size: 30);
+  }
+  
+  @override
+  String play() {
+    return '🎵 ${super.play()} - Now playing with enhanced audio!';
+  }
+  
+  @override
+  String getDisplayTitle() {
+    return '$title ${isHighRated ? "🎵" : "♪"}';
+  }
+}
+
+// Podcast implementation
+class Podcast extends Media {
+  String host;
+  int episodeNumber;
+  String category;
+  
+  Podcast({
+    required String title,
+    required this.host,
+    required DateTime releaseDate,
+    required double rating,
+    required this.episodeNumber,
+    required this.category,
+  }) : super(title, host, releaseDate, rating);
+  
+  @override
+  String getMediaType() => 'Podcast';
+  
+  @override
+  String getDescription() {
+    return 'Episode $episodeNumber: $title, a $category podcast hosted by $host';
+  }
+  
+  @override
+  Duration getDuration() {
+    // Podcasts vary widely, 20-90 minutes
+    return Duration(minutes: 30 + (episodeNumber * 2) % 60);
+  }
+  
+  @override
+  Widget getIcon() {
+    return const Icon(Icons.mic, color: Colors.orange, size: 30);
+  }
+  
+  @override
+  String play() {
+    return '🎙️ ${super.play()} - Streaming episode $episodeNumber!';
+  }
+  
+  @override
+  String getDisplayTitle() {
+    return 'Ep. $episodeNumber: ${super.getDisplayTitle()}';
+  }
+}
+
+// MediaPlayer class demonstrating polymorphic usage
+class MediaPlayer {
+  List<Media> playlist = [];
+  int currentIndex = 0;
+  
+  void addMedia(Media media) {
+    playlist.add(media);
+  }
+  
+  void removeMedia(int index) {
+    if (index >= 0 && index < playlist.length) {
+      playlist.removeAt(index);
+      if (currentIndex >= playlist.length && playlist.isNotEmpty) {
+        currentIndex = playlist.length - 1;
+      }
+    }
+  }
+  
+  String playCurrentMedia() {
+    if (playlist.isEmpty) return 'No media in playlist';
+    return playlist[currentIndex].play();
+  }
+  
+  Media? getCurrentMedia() {
+    return playlist.isEmpty ? null : playlist[currentIndex];
+  }
+  
+  void next() {
+    if (playlist.isNotEmpty) {
+      currentIndex = (currentIndex + 1) % playlist.length;
+    }
+  }
+  
+  void previous() {
+    if (playlist.isNotEmpty) {
+      currentIndex = currentIndex > 0 ? currentIndex - 1 : playlist.length - 1;
+    }
+  }
+  
+  // Polymorphic operations
+  Duration getTotalDuration() {
+    Duration total = Duration.zero;
+    for (Media media in playlist) {
+      total += media.getDuration();
+    }
+    return total;
+  }
+  
+  List<Media> getHighRatedMedia() {
+    return playlist.where((media) => media.isHighRated).toList();
+  }
+  
+  List<Media> getMediaByType(Type type) {
+    return playlist.where((media) => media.runtimeType == type).toList();
+  }
+  
+  // Demonstrate late binding / dynamic dispatch
+  List<String> getAllDescriptions() {
+    return playlist.map((media) => media.getDescription()).toList();
+  }
+}
+
+class PolymorphismDemo extends StatefulWidget {
+  const PolymorphismDemo({super.key});
+
+  @override
+  State<PolymorphismDemo> createState() => _PolymorphismDemoState();
+}
+
+class _PolymorphismDemoState extends State<PolymorphismDemo> {
+  MediaPlayer player = MediaPlayer();
+  String _playMessage = '';
+
+  @override
+  void initState() {
+    super.initState();
+    
+    // Initialize with diverse media types
+    player.addMedia(Movie(
+      title: 'The Matrix',
+      director: 'Wachowski Sisters',
+      releaseDate: DateTime(1999, 3, 31),
+      rating: 4.8,
+      genre: 'Sci-Fi',
+      actors: ['Keanu Reeves', 'Laurence Fishburne', 'Carrie-Anne Moss'],
+    ));
+    
+    player.addMedia(Book(
+      title: 'Clean Code',
+      author: 'Robert Martin',
+      releaseDate: DateTime(2008, 8, 1),
+      rating: 4.5,
+      publisher: 'Prentice Hall',
+      pages: 464,
+    ));
+    
+    player.addMedia(Song(
+      title: 'Bohemian Rhapsody',
+      artist: 'Queen',
+      releaseDate: DateTime(1975, 10, 31),
+      rating: 4.9,
+      album: 'A Night at the Opera',
+      genre: 'Rock',
+    ));
+    
+    player.addMedia(Podcast(
+      title: 'The Future of AI',
+      host: 'Tech Insights',
+      releaseDate: DateTime(2024, 1, 15),
+      rating: 4.2,
+      episodeNumber: 42,
+      category: 'Technology',
+    ));
+    
+    player.addMedia(Movie(
+      title: 'Inception',
+      director: 'Christopher Nolan',
+      releaseDate: DateTime(2010, 7, 16),
+      rating: 4.7,
+      genre: 'Thriller',
+      actors: ['Leonardo DiCaprio', 'Marion Cotillard'],
+    ));
+  }
+
+  void _playCurrentMedia() {
+    setState(() {
+      _playMessage = player.playCurrentMedia();
+    });
+  }
+
+  String _formatDuration(Duration duration) {
+    int hours = duration.inHours;
+    int minutes = duration.inMinutes % 60;
+    if (hours > 0) {
+      return '${hours}h ${minutes}m';
+    }
+    return '${minutes}m';
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final currentMedia = player.getCurrentMedia();
+    
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text('Polymorphism and Dynamic Dispatch'),
+      ),
+      body: SingleChildScrollView(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // Media Player Controls
+            Card(
+              child: Padding(
+                padding: const EdgeInsets.all(16),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text(
+                      'Media Player (Polymorphic Behavior)',
+                      style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                    ),
+                    const SizedBox(height: 12),
+                    if (currentMedia != null) ...[
+                      Row(
+                        children: [
+                          currentMedia.getIcon(),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  currentMedia.getDisplayTitle(),
+                                  style: const TextStyle(
+                                    fontSize: 16,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
+                                Text(currentMedia.creator),
+                                Text(currentMedia.getDescription()),
+                                Text('Duration: ${_formatDuration(currentMedia.getDuration())}'),
+                                Text('Rating: ${currentMedia.rating}/5 ⭐'),
+                              ],
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 16),
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                        children: [
+                          IconButton(
+                            onPressed: () {
+                              setState(() {
+                                player.previous();
+                              });
+                            },
+                            icon: const Icon(Icons.skip_previous),
+                            iconSize: 32,
+                          ),
+                          ElevatedButton.icon(
+                            onPressed: _playCurrentMedia,
+                            icon: const Icon(Icons.play_arrow),
+                            label: const Text('Play'),
+                          ),
+                          IconButton(
+                            onPressed: () {
+                              setState(() {
+                                player.next();
+                              });
+                            },
+                            icon: const Icon(Icons.skip_next),
+                            iconSize: 32,
+                          ),
+                        ],
+                      ),
+                      if (_playMessage.isNotEmpty) ...[
+                        const SizedBox(height: 12),
+                        Container(
+                          width: double.infinity,
+                          padding: const EdgeInsets.all(12),
+                          decoration: BoxDecoration(
+                            color: Colors.green.shade800,
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          child: Text(_playMessage),
+                        ),
+                      ],
+                    ] else ...[
+                      const Text('No media in playlist'),
+                    ],
+                  ],
+                ),
+              ),
+            ),
+            const SizedBox(height: 16),
+            
+            // Playlist Statistics
+            Card(
+              child: Padding(
+                padding: const EdgeInsets.all(16),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text(
+                      'Playlist Statistics (Polymorphic Operations)',
+                      style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                    ),
+                    const SizedBox(height: 12),
+                    Text('Total Items: ${player.playlist.length}'),
+                    Text('Total Duration: ${_formatDuration(player.getTotalDuration())}'),
+                    Text('High Rated Items: ${player.getHighRatedMedia().length}'),
+                    Text('Movies: ${player.getMediaByType(Movie).length}'),
+                    Text('Books: ${player.getMediaByType(Book).length}'),
+                    Text('Songs: ${player.getMediaByType(Song).length}'),
+                    Text('Podcasts: ${player.getMediaByType(Podcast).length}'),
+                  ],
+                ),
+              ),
+            ),
+            const SizedBox(height: 16),
+            
+            // Complete Playlist
+            const Text(
+              'Complete Playlist (Different Types, Same Interface)',
+              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+            ),
+            const SizedBox(height: 8),
+            ...player.playlist.asMap().entries.map((entry) {
+              int index = entry.key;
+              Media media = entry.value;
+              bool isCurrent = index == player.currentIndex;
+              
+              return Card(
+                color: isCurrent ? Colors.blue.shade800 : null,
+                margin: const EdgeInsets.only(bottom: 8),
+                child: Padding(
+                  padding: const EdgeInsets.all(16),
+                  child: Row(
+                    children: [
+                      media.getIcon(),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              media.getFullInfo(),
+                              style: TextStyle(
+                                fontWeight: isCurrent ? FontWeight.bold : FontWeight.normal,
+                              ),
+                            ),
+                            Text(
+                              media.getDescription(),
+                              style: const TextStyle(fontSize: 12, color: Colors.grey),
+                            ),
+                            Text(
+                              'Duration: ${_formatDuration(media.getDuration())} • Released: ${media.formattedReleaseDate}',
+                              style: const TextStyle(fontSize: 11, color: Colors.grey),
+                            ),
+                          ],
+                        ),
+                      ),
+                      if (isCurrent)
+                        const Icon(Icons.volume_up, color: Colors.blue),
+                      IconButton(
+                        onPressed: () {
+                          setState(() {
+                            player.removeMedia(index);
+                          });
+                        },
+                        icon: const Icon(Icons.remove_circle, color: Colors.red),
+                      ),
+                    ],
+                  ),
+                ),
+              );
+            }),
+            
+            const SizedBox(height: 16),
+            Card(
+              child: Padding(
+                padding: const EdgeInsets.all(16),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text(
+                      'Polymorphism Concepts Demonstrated',
+                      style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                    ),
+                    const SizedBox(height: 8),
+                    const Text('• Runtime polymorphism: Same method calls, different implementations'),
+                    const Text('• Dynamic dispatch: Method resolution at runtime based on actual type'),
+                    const Text('• Interface uniformity: List<Media> contains different concrete types'),
+                    const Text('• Method overriding: Each type provides specialized behavior'),
+                    const Text('• Late binding: Actual method called determined at runtime'),
+                    const Text('• Template method pattern: Base class orchestrates polymorphic calls'),
+                    const Text('• Type checking: runtimeType and whereType<T>() for filtering'),
+                    const Text('• Liskov substitution: Derived types substitutable for base type'),
+                  ],
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+```
+
+This example demonstrates polymorphism and dynamic dispatch through a  
+media player system. Different media types (Movie, Book, Song, Podcast)  
+share a common interface while providing specialized implementations.  
+The MediaPlayer treats all types uniformly, with method resolution  
+occurring at runtime based on the actual object type.
+
+## Mixins and Multiple Inheritance
+
+Implementing code reuse through mixins and composition patterns.
+
+```dart
+import 'package:flutter/material.dart';
+
+void main() {
+  runApp(const MyApp());
+}
+
+class MyApp extends StatelessWidget {
+  const MyApp({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return MaterialApp(
+      title: 'Mixins and Multiple Inheritance',
+      theme: ThemeData.dark(),
+      home: const MixinsDemo(),
+    );
+  }
+}
+
+// Mixin for logging capabilities
+mixin Loggable {
+  final List<String> _logs = [];
+  
+  void log(String message) {
+    final timestamp = DateTime.now().toString().substring(0, 19);
+    _logs.add('[$timestamp] $message');
+    print('LOG: $message');
+  }
+  
+  List<String> getLogs() => List.unmodifiable(_logs);
+  
+  void clearLogs() => _logs.clear();
+  
+  String getLastLog() => _logs.isEmpty ? 'No logs' : _logs.last;
+}
+
+// Mixin for validation capabilities
+mixin Validatable {
+  List<String> _validationRules = [];
+  
+  void addValidationRule(String rule) {
+    _validationRules.add(rule);
+  }
+  
+  List<String> getValidationRules() => List.unmodifiable(_validationRules);
+  
+  // Abstract-like method that must be implemented
+  bool validate();
+  
+  List<String> getValidationErrors() {
+    List<String> errors = [];
+    if (!validate()) {
+      errors.add('Validation failed');
+    }
+    return errors;
+  }
+}
+
+// Mixin for caching capabilities
+mixin Cacheable<T> {
+  final Map<String, T> _cache = {};
+  int _maxCacheSize = 10;
+  
+  void setMaxCacheSize(int size) {
+    _maxCacheSize = size;
+    if (_cache.length > _maxCacheSize) {
+      // Remove oldest entries
+      final entries = _cache.entries.take(_cache.length - _maxCacheSize);
+      for (var entry in entries) {
+        _cache.remove(entry.key);
+      }
+    }
+  }
+  
+  void cacheValue(String key, T value) {
+    if (_cache.length >= _maxCacheSize) {
+      // Remove oldest entry
+      final firstKey = _cache.keys.first;
+      _cache.remove(firstKey);
+    }
+    _cache[key] = value;
+  }
+  
+  T? getCachedValue(String key) {
+    return _cache[key];
+  }
+  
+  bool isCached(String key) => _cache.containsKey(key);
+  
+  void clearCache() => _cache.clear();
+  
+  int getCacheSize() => _cache.length;
+  
+  List<String> getCacheKeys() => List.unmodifiable(_cache.keys);
+}
+
+// Mixin for serialization
+mixin Serializable {
+  Map<String, dynamic> toJson();
+  void fromJson(Map<String, dynamic> json);
+  
+  String serialize() {
+    try {
+      return toJson().toString();
+    } catch (e) {
+      return 'Serialization failed: $e';
+    }
+  }
+}
+
+// Class using multiple mixins
+class SmartUser with Loggable, Validatable, Cacheable<String>, Serializable {
+  String id;
+  String name;
+  String email;
+  int age;
+  Map<String, dynamic> preferences;
+  
+  SmartUser({
+    required this.id,
+    required this.name,
+    required this.email,
+    required this.age,
+    Map<String, dynamic>? preferences,
+  }) : preferences = preferences ?? {} {
+    log('SmartUser created: $name');
+    addValidationRule('Name must not be empty');
+    addValidationRule('Email must contain @');
+    addValidationRule('Age must be positive');
+    setMaxCacheSize(5);
+  }
+  
+  // Implementation for Validatable mixin
+  @override
+  bool validate() {
+    if (name.isEmpty) {
+      log('Validation failed: Name is empty');
+      return false;
+    }
+    if (!email.contains('@')) {
+      log('Validation failed: Invalid email format');
+      return false;
+    }
+    if (age <= 0) {
+      log('Validation failed: Invalid age');
+      return false;
+    }
+    log('Validation passed for user: $name');
+    return true;
+  }
+  
+  // Implementation for Serializable mixin
+  @override
+  Map<String, dynamic> toJson() {
+    return {
+      'id': id,
+      'name': name,
+      'email': email,
+      'age': age,
+      'preferences': preferences,
+    };
+  }
+  
+  @override
+  void fromJson(Map<String, dynamic> json) {
+    id = json['id'] ?? '';
+    name = json['name'] ?? '';
+    email = json['email'] ?? '';
+    age = json['age'] ?? 0;
+    preferences = json['preferences'] ?? {};
+    log('User data loaded from JSON');
+  }
+  
+  // Using cache for expensive operations
+  String getDisplayName() {
+    const key = 'display_name';
+    
+    if (isCached(key)) {
+      log('Retrieved display name from cache');
+      return getCachedValue(key)!;
+    }
+    
+    // Simulate expensive operation
+    final displayName = '$name (${email.split('@')[0]})';
+    cacheValue(key, displayName);
+    log('Computed and cached display name');
+    
+    return displayName;
+  }
+  
+  void updateProfile({String? newName, String? newEmail, int? newAge}) {
+    if (newName != null) {
+      name = newName;
+      log('Name updated to: $newName');
+    }
+    if (newEmail != null) {
+      email = newEmail;
+      log('Email updated to: $newEmail');
+    }
+    if (newAge != null) {
+      age = newAge;
+      log('Age updated to: $newAge');
+    }
+    
+    // Clear cache when profile changes
+    clearCache();
+    log('Cache cleared due to profile update');
+  }
+  
+  void setPreference(String key, dynamic value) {
+    preferences[key] = value;
+    log('Preference set: $key = $value');
+  }
+  
+  T? getPreference<T>(String key) {
+    return preferences[key] as T?;
+  }
+}
+
+// Another class demonstrating different mixin combinations
+class SmartProduct with Loggable, Cacheable<double> {
+  String sku;
+  String name;
+  double basePrice;
+  Map<String, double> regionPrices;
+  
+  SmartProduct({
+    required this.sku,
+    required this.name,
+    required this.basePrice,
+    Map<String, double>? regionPrices,
+  }) : regionPrices = regionPrices ?? {} {
+    log('SmartProduct created: $name ($sku)');
+    setMaxCacheSize(3);
+  }
+  
+  double getPriceForRegion(String region) {
+    final key = 'price_$region';
+    
+    if (isCached(key)) {
+      log('Retrieved $region price from cache');
+      return getCachedValue(key)!;
+    }
+    
+    // Calculate price with region-specific adjustments
+    double price = regionPrices[region] ?? basePrice;
+    
+    // Simulate complex pricing calculation
+    if (region == 'premium') {
+      price *= 1.2;
+    } else if (region == 'discount') {
+      price *= 0.8;
+    }
+    
+    cacheValue(key, price);
+    log('Calculated and cached $region price: \$${price.toStringAsFixed(2)}');
+    
+    return price;
+  }
+  
+  void updateRegionPrice(String region, double price) {
+    regionPrices[region] = price;
+    clearCache(); // Invalidate cache
+    log('Updated $region price to \$${price.toStringAsFixed(2)}');
+  }
+}
+
+// Class showing mixin ordering and method resolution
+class AdvancedLogger with Loggable {
+  String name;
+  
+  AdvancedLogger(this.name) {
+    log('AdvancedLogger initialized: $name');
+  }
+  
+  // Override mixin method to add custom behavior
+  @override
+  void log(String message) {
+    super.log('[$name] $message');
+    // Could add additional logging behavior here
+  }
+  
+  void performOperation(String operation) {
+    log('Starting operation: $operation');
+    
+    // Simulate some work
+    for (int i = 0; i < 3; i++) {
+      log('Step ${i + 1} of $operation');
+    }
+    
+    log('Completed operation: $operation');
+  }
+}
+
+class MixinsDemo extends StatefulWidget {
+  const MixinsDemo({super.key});
+
+  @override
+  State<MixinsDemo> createState() => _MixinsDemoState();
+}
+
+class _MixinsDemoState extends State<MixinsDemo> {
+  late SmartUser user;
+  late SmartProduct product;
+  late AdvancedLogger logger;
+  String _operationResult = '';
+
+  @override
+  void initState() {
+    super.initState();
+    
+    user = SmartUser(
+      id: '1',
+      name: 'Alice Johnson',
+      email: 'alice@example.com',
+      age: 28,
+      preferences: {'theme': 'dark', 'language': 'en'},
+    );
+    
+    product = SmartProduct(
+      sku: 'LAPTOP001',
+      name: 'Gaming Laptop',
+      basePrice: 1299.99,
+      regionPrices: {'us': 1299.99, 'eu': 1199.99, 'asia': 999.99},
+    );
+    
+    logger = AdvancedLogger('SystemLogger');
+  }
+
+  void _performUserOperation(String operation) {
+    setState(() {
+      switch (operation) {
+        case 'validate':
+          bool isValid = user.validate();
+          _operationResult = 'User validation: ${isValid ? "Passed" : "Failed"}';
+          break;
+        case 'serialize':
+          String serialized = user.serialize();
+          _operationResult = 'Serialized: $serialized';
+          break;
+        case 'cache_display_name':
+          String displayName = user.getDisplayName();
+          _operationResult = 'Display name: $displayName';
+          break;
+        case 'update_profile':
+          user.updateProfile(newName: 'Alice Smith', newAge: 29);
+          _operationResult = 'Profile updated successfully';
+          break;
+      }
+    });
+  }
+
+  void _performProductOperation(String region) {
+    setState(() {
+      double price = product.getPriceForRegion(region);
+      _operationResult = 'Price for $region: \$${price.toStringAsFixed(2)}';
+    });
+  }
+
+  void _performLoggerOperation() {
+    setState(() {
+      logger.performOperation('Data Processing');
+      _operationResult = 'Logger operation completed - check logs';
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text('Mixins and Multiple Inheritance'),
+      ),
+      body: SingleChildScrollView(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // Operation Result
+            if (_operationResult.isNotEmpty) ...[
+              Card(
+                color: Colors.blue.shade800,
+                child: Padding(
+                  padding: const EdgeInsets.all(16),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Text(
+                        'Operation Result',
+                        style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                      ),
+                      const SizedBox(height: 8),
+                      Text(_operationResult),
+                    ],
+                  ),
+                ),
+              ),
+              const SizedBox(height: 16),
+            ],
+            
+            // SmartUser Demo
+            Card(
+              child: Padding(
+                padding: const EdgeInsets.all(16),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text(
+                      'SmartUser (Multiple Mixins)',
+                      style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                    ),
+                    const SizedBox(height: 12),
+                    Text('Name: ${user.name}'),
+                    Text('Email: ${user.email}'),
+                    Text('Age: ${user.age}'),
+                    Text('Cache Size: ${user.getCacheSize()}/${5}'),
+                    Text('Validation Rules: ${user.getValidationRules().length}'),
+                    Text('Logs: ${user.getLogs().length}'),
+                    const SizedBox(height: 12),
+                    Wrap(
+                      spacing: 8,
+                      runSpacing: 8,
+                      children: [
+                        ElevatedButton(
+                          onPressed: () => _performUserOperation('validate'),
+                          child: const Text('Validate'),
+                        ),
+                        ElevatedButton(
+                          onPressed: () => _performUserOperation('serialize'),
+                          child: const Text('Serialize'),
+                        ),
+                        ElevatedButton(
+                          onPressed: () => _performUserOperation('cache_display_name'),
+                          child: const Text('Get Display Name'),
+                        ),
+                        ElevatedButton(
+                          onPressed: () => _performUserOperation('update_profile'),
+                          child: const Text('Update Profile'),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+            ),
+            const SizedBox(height: 16),
+            
+            // SmartProduct Demo
+            Card(
+              child: Padding(
+                padding: const EdgeInsets.all(16),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text(
+                      'SmartProduct (Selective Mixins)',
+                      style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                    ),
+                    const SizedBox(height: 12),
+                    Text('SKU: ${product.sku}'),
+                    Text('Name: ${product.name}'),
+                    Text('Base Price: \$${product.basePrice.toStringAsFixed(2)}'),
+                    Text('Cache Size: ${product.getCacheSize()}/${3}'),
+                    Text('Logs: ${product.getLogs().length}'),
+                    const SizedBox(height: 12),
+                    const Text('Get Regional Pricing:'),
+                    const SizedBox(height: 8),
+                    Wrap(
+                      spacing: 8,
+                      runSpacing: 8,
+                      children: [
+                        ElevatedButton(
+                          onPressed: () => _performProductOperation('us'),
+                          child: const Text('US Price'),
+                        ),
+                        ElevatedButton(
+                          onPressed: () => _performProductOperation('eu'),
+                          child: const Text('EU Price'),
+                        ),
+                        ElevatedButton(
+                          onPressed: () => _performProductOperation('premium'),
+                          child: const Text('Premium Price'),
+                        ),
+                        ElevatedButton(
+                          onPressed: () => _performProductOperation('discount'),
+                          child: const Text('Discount Price'),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+            ),
+            const SizedBox(height: 16),
+            
+            // AdvancedLogger Demo
+            Card(
+              child: Padding(
+                padding: const EdgeInsets.all(16),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text(
+                      'AdvancedLogger (Mixin Override)',
+                      style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                    ),
+                    const SizedBox(height: 12),
+                    Text('Logger Name: ${logger.name}'),
+                    Text('Logs: ${logger.getLogs().length}'),
+                    const SizedBox(height: 12),
+                    ElevatedButton(
+                      onPressed: _performLoggerOperation,
+                      child: const Text('Perform Logged Operation'),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+            const SizedBox(height: 16),
+            
+            // Recent Logs Display
+            Card(
+              child: Padding(
+                padding: const EdgeInsets.all(16),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text(
+                      'Recent Logs (From All Objects)',
+                      style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                    ),
+                    const SizedBox(height: 12),
+                    ExpansionTile(
+                      title: Text('User Logs (${user.getLogs().length})'),
+                      children: user.getLogs().take(5).map((log) => 
+                        Padding(
+                          padding: const EdgeInsets.symmetric(vertical: 2, horizontal: 16),
+                          child: Text(log, style: const TextStyle(fontSize: 12)),
+                        ),
+                      ).toList(),
+                    ),
+                    ExpansionTile(
+                      title: Text('Product Logs (${product.getLogs().length})'),
+                      children: product.getLogs().take(5).map((log) => 
+                        Padding(
+                          padding: const EdgeInsets.symmetric(vertical: 2, horizontal: 16),
+                          child: Text(log, style: const TextStyle(fontSize: 12)),
+                        ),
+                      ).toList(),
+                    ),
+                    ExpansionTile(
+                      title: Text('Logger Logs (${logger.getLogs().length})'),
+                      children: logger.getLogs().take(5).map((log) => 
+                        Padding(
+                          padding: const EdgeInsets.symmetric(vertical: 2, horizontal: 16),
+                          child: Text(log, style: const TextStyle(fontSize: 12)),
+                        ),
+                      ).toList(),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+            const SizedBox(height: 16),
+            
+            Card(
+              child: Padding(
+                padding: const EdgeInsets.all(16),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text(
+                      'Mixins Concepts Demonstrated',
+                      style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                    ),
+                    const SizedBox(height: 8),
+                    const Text('• Mixin declaration: mixin Loggable, mixin Validatable'),
+                    const Text('• Multiple mixin usage: class SmartUser with Loggable, Validatable'),
+                    const Text('• Mixin constraints: Cacheable<T> with generic type parameter'),
+                    const Text('• Method override in mixins: AdvancedLogger overrides log()'),
+                    const Text('• Shared functionality: Logging, validation, caching behavior'),
+                    const Text('• Selective mixin application: Different classes use different combinations'),
+                    const Text('• Linear composition: Dart resolves method conflicts using linearization'),
+                    const Text('• Code reuse: Same mixin functionality across multiple classes'),
+                  ],
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+```
+
+This example demonstrates mixins and multiple inheritance patterns in  
+Dart. Mixins provide code reuse without traditional inheritance  
+limitations, enabling composition of functionality. SmartUser combines  
+logging, validation, caching, and serialization capabilities through  
+multiple mixins, while other classes use selective combinations.
+
+## Factory Constructors and Design Patterns
+
+Implementing factory patterns and advanced constructor techniques.
+
+```dart
+import 'package:flutter/material.dart';
+
+void main() {
+  runApp(const MyApp());
+}
+
+class MyApp extends StatelessWidget {
+  const MyApp({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return MaterialApp(
+      title: 'Factory Constructors and Design Patterns',
+      theme: ThemeData.dark(),
+      home: const FactoryDemo(),
+    );
+  }
+}
+
+// Abstract base class for database connections
+abstract class DatabaseConnection {
+  String host;
+  int port;
+  String database;
+  bool isConnected;
+  
+  DatabaseConnection(this.host, this.port, this.database) : isConnected = false;
+  
+  // Factory constructor that creates appropriate implementation
+  factory DatabaseConnection.create(String type, String host, int port, String database) {
+    switch (type.toLowerCase()) {
+      case 'mysql':
+        return MySQLConnection(host, port, database);
+      case 'postgresql':
+        return PostgreSQLConnection(host, port, database);
+      case 'mongodb':
+        return MongoDBConnection(host, port, database);
+      case 'redis':
+        return RedisConnection(host, port, database);
+      default:
+        throw ArgumentError('Unsupported database type: $type');
+    }
+  }
+  
+  // Factory constructor with predefined configurations
+  factory DatabaseConnection.development(String type) {
+    return DatabaseConnection.create(type, 'localhost', _getDefaultPort(type), 'dev_db');
+  }
+  
+  factory DatabaseConnection.production(String type, String host) {
+    return DatabaseConnection.create(type, host, _getDefaultPort(type), 'prod_db');
+  }
+  
+  static int _getDefaultPort(String type) {
+    switch (type.toLowerCase()) {
+      case 'mysql': return 3306;
+      case 'postgresql': return 5432;
+      case 'mongodb': return 27017;
+      case 'redis': return 6379;
+      default: return 8080;
+    }
+  }
+  
+  // Abstract methods that must be implemented
+  Future<bool> connect();
+  Future<void> disconnect();
+  Future<Map<String, dynamic>> query(String sql);
+  String getConnectionString();
+  String getDatabaseType();
+}
+
+// Concrete MySQL implementation
+class MySQLConnection extends DatabaseConnection {
+  String username;
+  String password;
+  
+  MySQLConnection(String host, int port, String database, [this.username = 'root', this.password = '']) 
+      : super(host, port, database);
+  
+  @override
+  Future<bool> connect() async {
+    await Future.delayed(const Duration(milliseconds: 500));
+    isConnected = true;
+    return true;
+  }
+  
+  @override
+  Future<void> disconnect() async {
+    await Future.delayed(const Duration(milliseconds: 200));
+    isConnected = false;
+  }
+  
+  @override
+  Future<Map<String, dynamic>> query(String sql) async {
+    if (!isConnected) throw StateError('Not connected to database');
+    
+    await Future.delayed(const Duration(milliseconds: 300));
+    return {
+      'type': 'mysql',
+      'query': sql,
+      'rows_affected': 5,
+      'execution_time_ms': 150,
+    };
+  }
+  
+  @override
+  String getConnectionString() {
+    return 'mysql://$username:***@$host:$port/$database';
+  }
+  
+  @override
+  String getDatabaseType() => 'MySQL';
+}
+
+// Concrete PostgreSQL implementation
+class PostgreSQLConnection extends DatabaseConnection {
+  String schema;
+  
+  PostgreSQLConnection(String host, int port, String database, [this.schema = 'public']) 
+      : super(host, port, database);
+  
+  @override
+  Future<bool> connect() async {
+    await Future.delayed(const Duration(milliseconds: 600));
+    isConnected = true;
+    return true;
+  }
+  
+  @override
+  Future<void> disconnect() async {
+    await Future.delayed(const Duration(milliseconds: 300));
+    isConnected = false;
+  }
+  
+  @override
+  Future<Map<String, dynamic>> query(String sql) async {
+    if (!isConnected) throw StateError('Not connected to database');
+    
+    await Future.delayed(const Duration(milliseconds: 250));
+    return {
+      'type': 'postgresql',
+      'query': sql,
+      'rows_affected': 3,
+      'schema': schema,
+      'execution_time_ms': 120,
+    };
+  }
+  
+  @override
+  String getConnectionString() {
+    return 'postgresql://user:***@$host:$port/$database?schema=$schema';
+  }
+  
+  @override
+  String getDatabaseType() => 'PostgreSQL';
+}
+
+// Concrete MongoDB implementation
+class MongoDBConnection extends DatabaseConnection {
+  String collection;
+  
+  MongoDBConnection(String host, int port, String database, [this.collection = 'default']) 
+      : super(host, port, database);
+  
+  @override
+  Future<bool> connect() async {
+    await Future.delayed(const Duration(milliseconds: 400));
+    isConnected = true;
+    return true;
+  }
+  
+  @override
+  Future<void> disconnect() async {
+    await Future.delayed(const Duration(milliseconds: 250));
+    isConnected = false;
+  }
+  
+  @override
+  Future<Map<String, dynamic>> query(String sql) async {
+    if (!isConnected) throw StateError('Not connected to database');
+    
+    await Future.delayed(const Duration(milliseconds: 200));
+    return {
+      'type': 'mongodb',
+      'query': sql,
+      'documents_found': 12,
+      'collection': collection,
+      'execution_time_ms': 80,
+    };
+  }
+  
+  @override
+  String getConnectionString() {
+    return 'mongodb://$host:$port/$database/$collection';
+  }
+  
+  @override
+  String getDatabaseType() => 'MongoDB';
+}
+
+// Concrete Redis implementation
+class RedisConnection extends DatabaseConnection {
+  int selectedDatabase;
+  
+  RedisConnection(String host, int port, String database, [this.selectedDatabase = 0]) 
+      : super(host, port, database);
+  
+  @override
+  Future<bool> connect() async {
+    await Future.delayed(const Duration(milliseconds: 300));
+    isConnected = true;
+    return true;
+  }
+  
+  @override
+  Future<void> disconnect() async {
+    await Future.delayed(const Duration(milliseconds: 100));
+    isConnected = false;
+  }
+  
+  @override
+  Future<Map<String, dynamic>> query(String sql) async {
+    if (!isConnected) throw StateError('Not connected to database');
+    
+    await Future.delayed(const Duration(milliseconds: 100));
+    return {
+      'type': 'redis',
+      'command': sql,
+      'keys_affected': 1,
+      'database': selectedDatabase,
+      'execution_time_ms': 50,
+    };
+  }
+  
+  @override
+  String getConnectionString() {
+    return 'redis://$host:$port/$selectedDatabase';
+  }
+  
+  @override
+  String getDatabaseType() => 'Redis';
+}
+
+// Singleton pattern for connection pool manager
+class ConnectionPoolManager {
+  static ConnectionPoolManager? _instance;
+  final Map<String, DatabaseConnection> _connections = {};
+  int _maxConnections = 5;
+  
+  // Private constructor for singleton
+  ConnectionPoolManager._internal();
+  
+  // Factory constructor returns singleton instance
+  factory ConnectionPoolManager() {
+    _instance ??= ConnectionPoolManager._internal();
+    return _instance!;
+  }
+  
+  // Factory constructor with configuration
+  factory ConnectionPoolManager.withConfig(int maxConnections) {
+    final instance = ConnectionPoolManager();
+    instance._maxConnections = maxConnections;
+    return instance;
+  }
+  
+  Future<DatabaseConnection> getConnection(String type, String environment) async {
+    final key = '${type}_$environment';
+    
+    if (_connections.containsKey(key)) {
+      return _connections[key]!;
+    }
+    
+    if (_connections.length >= _maxConnections) {
+      throw StateError('Maximum connections reached');
+    }
+    
+    DatabaseConnection connection;
+    if (environment == 'development') {
+      connection = DatabaseConnection.development(type);
+    } else {
+      connection = DatabaseConnection.production(type, 'prod-server.example.com');
+    }
+    
+    await connection.connect();
+    _connections[key] = connection;
+    
+    return connection;
+  }
+  
+  Future<void> closeConnection(String type, String environment) async {
+    final key = '${type}_$environment';
+    final connection = _connections[key];
+    
+    if (connection != null) {
+      await connection.disconnect();
+      _connections.remove(key);
+    }
+  }
+  
+  Future<void> closeAllConnections() async {
+    for (var connection in _connections.values) {
+      await connection.disconnect();
+    }
+    _connections.clear();
+  }
+  
+  List<String> getActiveConnections() {
+    return _connections.keys.toList();
+  }
+  
+  int get activeConnectionCount => _connections.length;
+  int get maxConnections => _maxConnections;
+}
+
+// Builder pattern for complex query construction
+class QueryBuilder {
+  String _table = '';
+  List<String> _selectFields = [];
+  List<String> _whereConditions = [];
+  List<String> _joins = [];
+  String _orderBy = '';
+  int? _limit;
+  
+  // Factory constructors for different query types
+  factory QueryBuilder.select(String table) {
+    final builder = QueryBuilder();
+    builder._table = table;
+    return builder;
+  }
+  
+  factory QueryBuilder.insert(String table) {
+    final builder = QueryBuilder();
+    builder._table = table;
+    return builder;
+  }
+  
+  QueryBuilder fields(List<String> fields) {
+    _selectFields = fields;
+    return this;
+  }
+  
+  QueryBuilder where(String condition) {
+    _whereConditions.add(condition);
+    return this;
+  }
+  
+  QueryBuilder join(String table, String condition) {
+    _joins.add('JOIN $table ON $condition');
+    return this;
+  }
+  
+  QueryBuilder orderBy(String field, [String direction = 'ASC']) {
+    _orderBy = 'ORDER BY $field $direction';
+    return this;
+  }
+  
+  QueryBuilder limit(int count) {
+    _limit = count;
+    return this;
+  }
+  
+  String build() {
+    final query = StringBuffer();
+    
+    if (_selectFields.isEmpty) {
+      query.write('SELECT * FROM $_table');
+    } else {
+      query.write('SELECT ${_selectFields.join(', ')} FROM $_table');
+    }
+    
+    for (var join in _joins) {
+      query.write(' $join');
+    }
+    
+    if (_whereConditions.isNotEmpty) {
+      query.write(' WHERE ${_whereConditions.join(' AND ')}');
+    }
+    
+    if (_orderBy.isNotEmpty) {
+      query.write(' $_orderBy');
+    }
+    
+    if (_limit != null) {
+      query.write(' LIMIT $_limit');
+    }
+    
+    return query.toString();
+  }
+}
+
+class FactoryDemo extends StatefulWidget {
+  const FactoryDemo({super.key});
+
+  @override
+  State<FactoryDemo> createState() => _FactoryDemoState();
+}
+
+class _FactoryDemoState extends State<FactoryDemo> {
+  final ConnectionPoolManager _poolManager = ConnectionPoolManager.withConfig(3);
+  List<String> _operations = [];
+  String _queryResult = '';
+  final List<String> _databases = ['MySQL', 'PostgreSQL', 'MongoDB', 'Redis'];
+  String _selectedDatabase = 'MySQL';
+  String _selectedEnvironment = 'development';
+
+  void _addOperation(String operation) {
+    setState(() {
+      _operations.insert(0, '${DateTime.now().toString().substring(11, 19)}: $operation');
+      if (_operations.length > 10) {
+        _operations.removeLast();
+      }
+    });
+  }
+
+  Future<void> _connectToDatabase() async {
+    try {
+      final connection = await _poolManager.getConnection(_selectedDatabase, _selectedEnvironment);
+      _addOperation('Connected to ${connection.getDatabaseType()} (${connection.getConnectionString()})');
+    } catch (e) {
+      _addOperation('Connection failed: $e');
+    }
+  }
+
+  Future<void> _executeQuery() async {
+    try {
+      final connection = await _poolManager.getConnection(_selectedDatabase, _selectedEnvironment);
+      
+      // Build a sample query
+      final query = QueryBuilder.select('users')
+          .fields(['id', 'name', 'email'])
+          .where('age > 18')
+          .orderBy('name')
+          .limit(10)
+          .build();
+      
+      final result = await connection.query(query);
+      
+      setState(() {
+        _queryResult = result.toString();
+      });
+      
+      _addOperation('Executed query on ${connection.getDatabaseType()}');
+    } catch (e) {
+      _addOperation('Query failed: $e');
+      setState(() {
+        _queryResult = 'Error: $e';
+      });
+    }
+  }
+
+  Future<void> _closeConnection() async {
+    try {
+      await _poolManager.closeConnection(_selectedDatabase, _selectedEnvironment);
+      _addOperation('Closed connection to $_selectedDatabase ($_selectedEnvironment)');
+    } catch (e) {
+      _addOperation('Close failed: $e');
+    }
+  }
+
+  Future<void> _closeAllConnections() async {
+    try {
+      await _poolManager.closeAllConnections();
+      _addOperation('Closed all connections');
+    } catch (e) {
+      _addOperation('Close all failed: $e');
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text('Factory Constructors and Design Patterns'),
+      ),
+      body: SingleChildScrollView(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // Database Selection
+            Card(
+              child: Padding(
+                padding: const EdgeInsets.all(16),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text(
+                      'Factory Constructor Demo',
+                      style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                    ),
+                    const SizedBox(height: 12),
+                    Row(
+                      children: [
+                        const Text('Database: '),
+                        DropdownButton<String>(
+                          value: _selectedDatabase,
+                          items: _databases.map((db) => DropdownMenuItem(
+                            value: db,
+                            child: Text(db),
+                          )).toList(),
+                          onChanged: (value) {
+                            setState(() {
+                              _selectedDatabase = value!;
+                            });
+                          },
+                        ),
+                        const SizedBox(width: 20),
+                        const Text('Environment: '),
+                        DropdownButton<String>(
+                          value: _selectedEnvironment,
+                          items: ['development', 'production'].map((env) => DropdownMenuItem(
+                            value: env,
+                            child: Text(env),
+                          )).toList(),
+                          onChanged: (value) {
+                            setState(() {
+                              _selectedEnvironment = value!;
+                            });
+                          },
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+            ),
+            const SizedBox(height: 16),
+            
+            // Connection Operations
+            Card(
+              child: Padding(
+                padding: const EdgeInsets.all(16),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text(
+                      'Connection Pool Manager (Singleton)',
+                      style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                    ),
+                    const SizedBox(height: 12),
+                    Text('Active Connections: ${_poolManager.activeConnectionCount}/${_poolManager.maxConnections}'),
+                    if (_poolManager.getActiveConnections().isNotEmpty) ...[
+                      const SizedBox(height: 8),
+                      const Text('Active:', style: TextStyle(fontWeight: FontWeight.bold)),
+                      ..._poolManager.getActiveConnections().map((conn) => Text('  • $conn')),
+                    ],
+                    const SizedBox(height: 16),
+                    Wrap(
+                      spacing: 8,
+                      runSpacing: 8,
+                      children: [
+                        ElevatedButton(
+                          onPressed: _connectToDatabase,
+                          child: const Text('Connect'),
+                        ),
+                        ElevatedButton(
+                          onPressed: _executeQuery,
+                          child: const Text('Execute Query'),
+                        ),
+                        ElevatedButton(
+                          onPressed: _closeConnection,
+                          child: const Text('Close Connection'),
+                        ),
+                        ElevatedButton(
+                          onPressed: _closeAllConnections,
+                          child: const Text('Close All'),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+            ),
+            const SizedBox(height: 16),
+            
+            // Query Result
+            if (_queryResult.isNotEmpty) ...[
+              Card(
+                child: Padding(
+                  padding: const EdgeInsets.all(16),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Text(
+                        'Query Result (Builder Pattern)',
+                        style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                      ),
+                      const SizedBox(height: 8),
+                      Container(
+                        width: double.infinity,
+                        padding: const EdgeInsets.all(12),
+                        decoration: BoxDecoration(
+                          color: Colors.grey.shade900,
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child: Text(
+                          _queryResult,
+                          style: const TextStyle(fontFamily: 'monospace', fontSize: 12),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+              const SizedBox(height: 16),
+            ],
+            
+            // Operations Log
+            Card(
+              child: Padding(
+                padding: const EdgeInsets.all(16),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text(
+                      'Operations Log',
+                      style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                    ),
+                    const SizedBox(height: 8),
+                    Container(
+                      height: 200,
+                      width: double.infinity,
+                      padding: const EdgeInsets.all(12),
+                      decoration: BoxDecoration(
+                        color: Colors.grey.shade900,
+                        borderRadius: BorderRadius.circular(8),
+                        border: Border.all(color: Colors.grey.shade700),
+                      ),
+                      child: SingleChildScrollView(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: _operations.map((op) => Padding(
+                            padding: const EdgeInsets.only(bottom: 4),
+                            child: Text(
+                              op,
+                              style: const TextStyle(fontSize: 12, fontFamily: 'monospace'),
+                            ),
+                          )).toList(),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+            const SizedBox(height: 16),
+            
+            Card(
+              child: Padding(
+                padding: const EdgeInsets.all(16),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text(
+                      'Design Patterns Demonstrated',
+                      style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                    ),
+                    const SizedBox(height: 8),
+                    const Text('• Factory Constructor: DatabaseConnection.create() creates specific types'),
+                    const Text('• Named Constructors: .development(), .production() configurations'),
+                    const Text('• Singleton Pattern: ConnectionPoolManager single instance'),
+                    const Text('• Builder Pattern: QueryBuilder fluent interface for SQL construction'),
+                    const Text('• Polymorphism: Different database types through common interface'),
+                    const Text('• Abstract Factory: Factory methods return abstract base type'),
+                    const Text('• Object Pool: ConnectionPoolManager manages connection reuse'),
+                    const Text('• Strategy Pattern: Different database implementations'),
+                  ],
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+```
+
+This example demonstrates factory constructors and design patterns  
+through database connection management. Factory constructors create  
+appropriate implementations based on parameters, while the singleton  
+ConnectionPoolManager manages instances. The QueryBuilder shows the  
+builder pattern for fluent interface construction.
