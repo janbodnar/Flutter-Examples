@@ -333,3 +333,103 @@ class MyHomePage extends StatelessWidget {
   }
 }
 ```
+
+## Drawer wiget
+
+```dart
+import 'package:flutter/material.dart';
+
+void main() {
+  runApp(const MyApp());
+}
+
+class MyApp extends StatelessWidget {
+  const MyApp({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return MaterialApp(
+      title: 'Drawer Demo',
+      
+      theme: ThemeData.dark(),
+      home: const MyHomePage(),
+    );
+  }
+}
+
+class MyHomePage extends StatefulWidget {
+  const MyHomePage({super.key});
+
+  @override
+  State<MyHomePage> createState() => _MyHomePageState();
+}
+
+class _MyHomePageState extends State<MyHomePage> {
+  String _selectedPage = 'Home'; // Track the selected page
+
+  void _onDrawerItemTapped(String page) {
+    setState(() {
+      _selectedPage = page; // Update the selected page
+    });
+    Navigator.pop(context); // Close the drawer
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text('Drawer Demo'),
+      ),
+      drawer: Drawer(
+        child: ListView(
+          padding: EdgeInsets.zero,
+          children: [
+            const DrawerHeader(
+              decoration: BoxDecoration(
+                color: Colors.blue,
+              ),
+              child: Text(
+                'Menu',
+                style: TextStyle(
+                  color: Colors.white,
+                  fontSize: 24,
+                ),
+              ),
+            ),
+            ListTile(
+              leading: const Icon(Icons.home),
+              title: const Text('Home'),
+              onTap: () => _onDrawerItemTapped('Home'),
+              selected: _selectedPage == 'Home',
+            ),
+            ListTile(
+              leading: const Icon(Icons.person),
+              title: const Text('Profile'),
+              onTap: () => _onDrawerItemTapped('Profile'),
+              selected: _selectedPage == 'Profile',
+            ),
+            ListTile(
+              leading: const Icon(Icons.settings),
+              title: const Text('Settings'),
+              onTap: () => _onDrawerItemTapped('Settings'),
+              selected: _selectedPage == 'Settings',
+            ),
+            ListTile(
+              leading: const Icon(Icons.logout),
+              title: const Text('Logout'),
+              onTap: () => _onDrawerItemTapped('Logout'),
+              selected: _selectedPage == 'Logout',
+            ),
+          ],
+        ),
+      ),
+      body: Center(
+        child: Text(
+          'Selected: $_selectedPage',
+          style: const TextStyle(fontSize: 24),
+        ),
+      ),
+    );
+  }
+}
+```
