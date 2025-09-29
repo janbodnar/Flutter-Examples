@@ -1,4 +1,4 @@
-# Flutter Basics - 30 Essential Examples
+# Flutter Basics
 
 This collection provides 30 basic Flutter programs designed to help novice  
 programmers quickly get started with Flutter development. Each example builds  
