@@ -453,4 +453,202 @@ class ShapePainter extends CustomPainter {
 }
 ```
 
+## Command palette
+
+```dart
+import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+import 'dart:io';
+
+class ShowCommandPaletteIntent extends Intent {
+  const ShowCommandPaletteIntent();
+}
+
+class HideCommandPaletteIntent extends Intent {
+  const HideCommandPaletteIntent();
+}
+
+void main() {
+  runApp(const MyApp());
+}
+
+class MyApp extends StatelessWidget {
+  const MyApp({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return MaterialApp(
+      title: 'Command Palette App',
+      theme: ThemeData.dark(),
+      home: const MyHomePage(),
+    );
+  }
+}
+
+class MyHomePage extends StatefulWidget {
+  const MyHomePage({super.key});
+
+  @override
+  State<MyHomePage> createState() => _MyHomePageState();
+}
+
+class Command {
+  final String name;
+  final String description;
+  final VoidCallback action;
+
+  Command(this.name, this.description, this.action);
+}
+
+class _MyHomePageState extends State<MyHomePage> {
+  String statusMessage = 'Ready';
+  bool showCommandPalette = false;
+  late List<Command> commands;
+  final FocusNode _commandFocusNode = FocusNode();
+  final FocusNode _mainFocusNode = FocusNode();
+
+  @override
+  void initState() {
+    super.initState();
+    commands = [
+      Command('time', 'Show current time', () {
+        setState(() {
+          statusMessage = 'Current time: ${DateTime.now().toString()}';
+        });
+      }),
+      Command('hello', 'Display hello message', () {
+        setState(() {
+          statusMessage = 'Hello there!';
+        });
+      }),
+      Command('quit', 'Quit the app', () {
+        exit(0);
+      }),
+    ];
+  }
+
+  void _showCommandPalette() {
+    setState(() {
+      showCommandPalette = true;
+    });
+    // Request focus after the widget is built
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _commandFocusNode.requestFocus();
+    });
+  }
+
+  @override
+  void dispose() {
+    _commandFocusNode.dispose();
+    _mainFocusNode.dispose();
+    super.dispose();
+  }
+
+  void _hideCommandPalette() {
+    setState(() {
+      showCommandPalette = false;
+    });
+    // Return focus to main widget after hiding palette
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _mainFocusNode.requestFocus();
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Shortcuts(
+            shortcuts: <LogicalKeySet, Intent>{
+        LogicalKeySet(LogicalKeyboardKey.control, LogicalKeyboardKey.shift, LogicalKeyboardKey.keyP): const ShowCommandPaletteIntent(),
+        LogicalKeySet(LogicalKeyboardKey.escape): const HideCommandPaletteIntent(),
+      },
+      child: Actions(
+        actions: <Type, Action<Intent>>{
+          ShowCommandPaletteIntent: CallbackAction<ShowCommandPaletteIntent>(
+            onInvoke: (ShowCommandPaletteIntent intent) =>
+                _showCommandPalette(),
+          ),
+          HideCommandPaletteIntent: CallbackAction<HideCommandPaletteIntent>(
+            onInvoke: (HideCommandPaletteIntent intent) =>
+                _hideCommandPalette(),
+          ),
+        },
+        child: Focus(
+          focusNode: _mainFocusNode,
+          autofocus: true,
+          child: Scaffold(
+            body: GestureDetector(
+              behavior: HitTestBehavior.opaque,
+              onTap: () {
+                if (showCommandPalette) {
+                  _hideCommandPalette();
+                }
+              },
+              child: Column(
+                children: [
+                  if (showCommandPalette)
+                    GestureDetector(
+                      onTap: () {}, // Prevent tap from bubbling up
+                      child: Container(
+                        color: Theme.of(context).colorScheme.surface,
+                        padding: const EdgeInsets.all(8.0),
+                        child: TextField(
+                          focusNode: _commandFocusNode,
+                          decoration: const InputDecoration(
+                            hintText: 'Type a command...',
+                            border: OutlineInputBorder(),
+                          ),
+                          onSubmitted: (value) {
+                            _hideCommandPalette();
+                            final cmd = commands.firstWhere(
+                              (c) => c.name.toLowerCase() == value.toLowerCase(),
+                              orElse: () => Command('', '', () {}),
+                            );
+                            if (cmd.name.isNotEmpty) {
+                              cmd.action();
+                            } else {
+                              setState(() {
+                                statusMessage = 'Unknown command: $value';
+                              });
+                            }
+                          },
+                        ),
+                      ),
+                    ),
+                  Expanded(
+                    child: const Center(
+                      child: Text(
+                        'Press Ctrl + Shift + P to open command palette',
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            bottomNavigationBar: GestureDetector(
+              onTap: () {
+                if (showCommandPalette) {
+                  _hideCommandPalette();
+                }
+              },
+              child: Container(
+                height: 40,
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 8.0,
+                  vertical: 8.0,
+                ),
+                color: Theme.of(context).bottomAppBarTheme.color,
+                child: Align(
+                  alignment: Alignment.centerLeft,
+                  child: Text(statusMessage),
+                ),
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+```
+
 
