@@ -189,3 +189,156 @@ class ReflectionPage extends StatelessWidget {
 }
 ```
 
+## Painting 
+
+```dart
+import 'package:flutter/material.dart';
+import 'dart:math';
+import 'dart:ui';
+
+void main() {
+  runApp(const MyApp());
+}
+
+class MyApp extends StatelessWidget {
+  const MyApp({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return MaterialApp(
+      title: 'Flutter Paint Shapes Example',
+      theme: ThemeData.dark(),
+      home: const MyHomePage(title: 'Painted Shapes'),
+    );
+  }
+}
+
+class MyHomePage extends StatefulWidget {
+  const MyHomePage({super.key, required this.title});
+
+  final String title;
+
+  @override
+  State<MyHomePage> createState() => _MyHomePageState();
+}
+
+class _MyHomePageState extends State<MyHomePage> {
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        title: Text(widget.title),
+      ),
+      body: CustomPaint(
+        painter: ShapePainter(),
+        child: Container(),
+      ),
+    );
+  }
+}
+
+class ShapePainter extends CustomPainter {
+  @override
+  void paint(Canvas canvas, Size size) {
+    // Fill paint for filled shapes
+    final fillPaint = Paint()
+      ..style = PaintingStyle.fill;
+
+    // Stroke paint for outlines
+    final strokePaint = Paint()
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 3.0
+      ..color = Colors.white;
+
+    // Draw a white circle (filled)
+    fillPaint.color = Colors.white;
+    canvas.drawCircle(Offset(size.width / 6, size.height / 6), 40, fillPaint);
+
+    // Draw a cyan rectangle (filled)
+    fillPaint.color = Colors.cyan;
+    canvas.drawRect(Rect.fromLTWH(size.width / 3, size.height / 6 - 20, 80, 40), fillPaint);
+
+    // Draw a orange rounded rectangle (filled)
+    fillPaint.color = Colors.orange;
+    canvas.drawRRect(RRect.fromRectAndRadius(Rect.fromLTWH(size.width * 2 / 3, size.height / 6 - 20, 80, 40), const Radius.circular(10)), fillPaint);
+
+    // Draw a pink oval (filled)
+    fillPaint.color = Colors.pink;
+    canvas.drawOval(Rect.fromLTWH(30, size.height / 3, 120, 60), fillPaint);
+
+    // Draw a lime arc (filled)
+    fillPaint.color = Colors.lime;
+    canvas.drawArc(
+      Rect.fromLTWH(size.width - 150, size.height / 3, 120, 120),
+      0,
+      pi / 2,
+      true,
+      fillPaint,
+    );
+
+    // Draw a purple triangle using path (filled)
+    fillPaint.color = Colors.purple;
+    final trianglePath = Path()
+      ..moveTo(size.width / 2, size.height / 2)
+      ..lineTo(size.width / 2 - 40, size.height / 2 + 40)
+      ..lineTo(size.width / 2 + 40, size.height / 2 + 40)
+      ..close();
+    canvas.drawPath(trianglePath, fillPaint);
+
+    // Draw a yellow star using path (filled)
+    fillPaint.color = Colors.yellow;
+    final starPath = Path();
+    double centerX = size.width / 6;
+    double centerY = size.height * 2 / 3;
+    double radius = 30;
+    for (int i = 0; i < 5; i++) {
+      double angle = (i * 72 - 90) * pi / 180;
+      double x = centerX + radius * cos(angle);
+      double y = centerY + radius * sin(angle);
+      if (i == 0) {
+        starPath.moveTo(x, y);
+      } else {
+        starPath.lineTo(x, y);
+      }
+      angle = ((i + 0.5) * 72 - 90) * pi / 180;
+      x = centerX + (radius / 2) * cos(angle);
+      y = centerY + (radius / 2) * sin(angle);
+      starPath.lineTo(x, y);
+    }
+    starPath.close();
+    canvas.drawPath(starPath, fillPaint);
+
+    // Draw a line (stroke)
+    strokePaint.color = Colors.red;
+    canvas.drawLine(Offset(size.width / 3, size.height * 2 / 3), Offset(size.width / 3 + 100, size.height * 2 / 3 + 50), strokePaint);
+
+    // Draw points (stroke)
+    strokePaint.color = Colors.green;
+    canvas.drawPoints(PointMode.points, [Offset(size.width * 2 / 3, size.height * 2 / 3), Offset(size.width * 2 / 3 + 20, size.height * 2 / 3 + 20)], strokePaint);
+
+    // Draw a hexagon using path (stroke)
+    strokePaint.color = Colors.blue;
+    final hexagonPath = Path();
+    double hexCenterX = size.width * 5 / 6;
+    double hexCenterY = size.height * 2 / 3;
+    double hexRadius = 35;
+    for (int i = 0; i < 6; i++) {
+      double angle = (i * 60) * pi / 180;
+      double x = hexCenterX + hexRadius * cos(angle);
+      double y = hexCenterY + hexRadius * sin(angle);
+      if (i == 0) {
+        hexagonPath.moveTo(x, y);
+      } else {
+        hexagonPath.lineTo(x, y);
+      }
+    }
+    hexagonPath.close();
+    canvas.drawPath(hexagonPath, strokePaint);
+  }
+
+  @override
+  bool shouldRepaint(CustomPainter oldDelegate) => false;
+}
+```
+
+
