@@ -4,9 +4,9 @@ This collection provides 30 basic Flutter programs designed to help novice
 programmers quickly get started with Flutter development. Each example builds  
 on previous concepts, progressing from simple to more advanced topics.  
 
-## Hello World
+## First app
 
-A minimal Flutter application displaying "Hello World" text.  
+A minimal Flutter application displaying "Hello there" text.  
 
 ```dart
 import 'package:flutter/material.dart';
@@ -26,10 +26,10 @@ class MyApp extends StatelessWidget {
       title: 'Hello World',
       home: Scaffold(
         appBar: AppBar(
-          title: const Text('Hello World App'),
+          title: const Text('Simple App'),
         ),
         body: const Center(
-          child: Text('Hello, World!'),
+          child: Text('Hello, there!'),
         ),
       ),
     );
