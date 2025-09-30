@@ -97,6 +97,118 @@ class MyApp extends StatelessWidget {
 }
 ```
 
+## Star field
+
+```dart
+import 'package:flutter/material.dart';
+import 'dart:math';
+import 'dart:async';
+import 'dart:ui';
+
+void main() {
+  runApp(const MyApp());
+}
+
+class MyApp extends StatelessWidget {
+  const MyApp({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return MaterialApp(
+      title: 'Starfield Example',
+      theme: ThemeData.dark(),
+      home: const MyHomePage(title: 'Fading Stars'),
+    );
+  }
+}
+
+class MyHomePage extends StatefulWidget {
+  const MyHomePage({super.key, required this.title});
+
+  final String title;
+
+  @override
+  State<MyHomePage> createState() => _MyHomePageState();
+}
+
+class Star {
+  Offset position;
+  double opacity;
+
+  Star(this.position, this.opacity);
+}
+
+class _MyHomePageState extends State<MyHomePage> {
+  List<Star> stars = [];
+  Timer? timer;
+
+  @override
+  void initState() {
+    super.initState();
+    timer = Timer.periodic(const Duration(milliseconds: 100), (timer) {
+      setState(() {
+        // Add a new star at random position
+        final random = Random();
+        final x = random.nextDouble() * MediaQuery.of(context).size.width;
+        final y = random.nextDouble() * MediaQuery.of(context).size.height;
+        stars.add(Star(Offset(x, y), 1.0));
+
+        // Decrease opacity of all stars and remove faded ones
+        stars.removeWhere((star) {
+          star.opacity -= 0.05;
+          return star.opacity <= 0;
+        });
+      });
+    });
+  }
+
+  @override
+  void dispose() {
+    timer?.cancel();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      // appBar: AppBar(
+      //   title: Text(widget.title),
+      // ),
+      backgroundColor: Colors.black,
+      body: CustomPaint(
+        painter: StarPainter(stars),
+        child: Container(),
+      ),
+    );
+  }
+}
+
+class StarPainter extends CustomPainter {
+  final List<Star> stars;
+
+  StarPainter(this.stars);
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    for (final star in stars) {
+      final paint = Paint()
+        ..color = Colors.white.withValues(alpha: star.opacity)
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = 1.0;
+
+      double centerX = star.position.dx;
+      double centerY = star.position.dy;
+      // Draw a small cross
+      canvas.drawLine(Offset(centerX - 2, centerY), Offset(centerX + 2, centerY), paint);
+      canvas.drawLine(Offset(centerX, centerY - 2), Offset(centerX, centerY + 2), paint);
+    }
+  }
+
+  @override
+  bool shouldRepaint(StarPainter oldDelegate) => true;
+}
+```
+
 
 ## Water reflection
 
