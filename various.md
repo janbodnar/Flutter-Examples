@@ -1314,3 +1314,470 @@ class _MyHomePageState extends State<MyHomePage> {
   }
 }
 ```
+
+## Nord theme gallery
+
+```dart
+import 'package:flutter/material.dart';
+
+void main() {
+  runApp(const MyApp());
+}
+
+class MyApp extends StatelessWidget {
+  const MyApp({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return MaterialApp(
+      title: 'Flutter Widget Gallery - Nord Theme',
+      theme: ThemeData(
+        brightness: Brightness.dark,
+        colorScheme: const ColorScheme.dark(
+          primary: Color(0xFF81A1C1),        // Nord blue
+          onPrimary: Color(0xFF2E3440),      // Nord dark
+          secondary: Color(0xFF5E81AC),      // Nord light blue
+          onSecondary: Color(0xFF2E3440),    // Nord dark
+          surface: Color(0xFF2E3440),        // Darker Nord gray
+          onSurface: Color(0xFFECEFF4),     // Nord snow
+          surfaceContainerHighest: Color(0xFF1E222A), // Much darker Nord for background
+          onSurfaceVariant: Color(0xFFECEFF4),  // Nord snow for onBackground
+          error: Color(0xFFBF616A),          // Nord red
+          onError: Color(0xFFECEFF4),        // Nord snow
+        ),
+        useMaterial3: true,
+      ),
+      home: const WidgetGallery(),
+    );
+  }
+}
+
+class WidgetGallery extends StatefulWidget {
+  const WidgetGallery({super.key});
+
+  @override
+  State<WidgetGallery> createState() => _WidgetGalleryState();
+}
+
+class _WidgetGalleryState extends State<WidgetGallery> with SingleTickerProviderStateMixin {
+  late TabController _tabController;
+
+  @override
+  void initState() {
+    super.initState();
+    _tabController = TabController(length: 5, vsync: this);
+  }
+
+  @override
+  void dispose() {
+    _tabController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text('Flutter Widget Gallery'),
+        bottom: TabBar(
+          controller: _tabController,
+          tabs: const [
+            Tab(text: 'Basic', icon: Icon(Icons.text_fields)),
+            Tab(text: 'Layout', icon: Icon(Icons.grid_view)),
+            Tab(text: 'Input', icon: Icon(Icons.input)),
+            Tab(text: 'Material', icon: Icon(Icons.palette)),
+            Tab(text: 'Advanced', icon: Icon(Icons.extension)),
+          ],
+        ),
+      ),
+      body: TabBarView(
+        controller: _tabController,
+        children: [
+          _buildBasicWidgetsTab(),
+          _buildLayoutWidgetsTab(),
+          _buildInputWidgetsTab(),
+          _buildMaterialWidgetsTab(),
+          _buildAdvancedWidgetsTab(),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildBasicWidgetsTab() {
+    return ListView(
+      padding: const EdgeInsets.all(16),
+      children: [
+        _buildWidgetCard(
+          'Text',
+          'Displays text with various styling options',
+          const Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text('Regular Text', style: TextStyle(fontSize: 16)),
+              Text('Bold Text', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+              Text('Italic Text', style: TextStyle(fontSize: 16, fontStyle: FontStyle.italic)),
+              Text('Colored Text', style: TextStyle(fontSize: 16, color: Color(0xFF81A1C1))),
+            ],
+          ),
+        ),
+        _buildWidgetCard(
+          'Icon',
+          'Displays material design icons',
+          const Row(
+            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+            children: [
+              Icon(Icons.star, size: 32, color: Color(0xFF81A1C1)),
+              Icon(Icons.favorite, size: 32, color: Color(0xFFBF616A)),
+              Icon(Icons.thumb_up, size: 32, color: Color(0xFFA3BE8C)),
+              Icon(Icons.lightbulb, size: 32, color: Color(0xFFEBCA89)),
+            ],
+          ),
+        ),
+        _buildWidgetCard(
+          'Image',
+          'Displays images from various sources',
+          Container(
+            height: 100,
+            decoration: BoxDecoration(
+              color: Theme.of(context).colorScheme.surface,
+              borderRadius: BorderRadius.circular(8),
+            ),
+            child: const Center(
+              child: Text('Image widgets would go here\n(Network, Asset, Memory, etc.)'),
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildLayoutWidgetsTab() {
+    return ListView(
+      padding: const EdgeInsets.all(16),
+      children: [
+        _buildWidgetCard(
+          'Container',
+          'A convenience widget that combines painting and positioning',
+          Container(
+            width: 120,
+            height: 80,
+            decoration: BoxDecoration(
+              color: Theme.of(context).colorScheme.primary,
+              borderRadius: BorderRadius.circular(12),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withValues(alpha: 0.3),
+                  blurRadius: 8,
+                  offset: const Offset(2, 2),
+                ),
+              ],
+            ),
+            child: const Center(
+              child: Text('Container', style: TextStyle(color: Colors.white)),
+            ),
+          ),
+        ),
+        _buildWidgetCard(
+          'Row & Column',
+          'Layout widgets for horizontal and vertical arrangements',
+          Column(
+            children: [
+              const Text('Row Example:'),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                children: [
+                  Container(width: 60, height: 60, color: Theme.of(context).colorScheme.primary),
+                  Container(width: 60, height: 60, color: Theme.of(context).colorScheme.secondary),
+                  Container(width: 60, height: 60, color: Theme.of(context).colorScheme.surface),
+                ],
+              ),
+              const SizedBox(height: 16),
+              const Text('Column Example:'),
+              Column(
+                children: [
+                  Container(width: 60, height: 30, color: Theme.of(context).colorScheme.primary),
+                  Container(width: 60, height: 30, color: Theme.of(context).colorScheme.secondary),
+                  Container(width: 60, height: 30, color: Theme.of(context).colorScheme.surface),
+                ],
+              ),
+            ],
+          ),
+        ),
+        _buildWidgetCard(
+          'Stack',
+          'Overlays multiple children on top of each other',
+          SizedBox(
+            height: 100,
+            child: Stack(
+              alignment: Alignment.center,
+              children: [
+                Container(width: 80, height: 80, color: Theme.of(context).colorScheme.primary),
+                Container(width: 60, height: 60, color: Theme.of(context).colorScheme.secondary),
+                Container(width: 40, height: 40, color: Theme.of(context).colorScheme.surface),
+                const Text('Stack', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+              ],
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildInputWidgetsTab() {
+    return ListView(
+      padding: const EdgeInsets.all(16),
+      children: [
+        _buildWidgetCard(
+          'TextField',
+          'Input field for text entry',
+          const SizedBox(
+            width: 250,
+            child: TextField(
+              decoration: InputDecoration(
+                labelText: 'Enter text',
+                border: OutlineInputBorder(),
+              ),
+            ),
+          ),
+        ),
+        _buildWidgetCard(
+          'Buttons',
+          'Various button types for user interaction',
+          Column(
+            children: [
+              ElevatedButton(onPressed: () {}, child: const Text('Elevated')),
+              const SizedBox(height: 8),
+              OutlinedButton(onPressed: () {}, child: const Text('Outlined')),
+              const SizedBox(height: 8),
+              TextButton(onPressed: () {}, child: const Text('Text')),
+            ],
+          ),
+        ),
+        _buildWidgetCard(
+          'Selection Controls',
+          'Switches, checkboxes, and radio buttons',
+          Column(
+            children: [
+              Row(
+                children: [
+                  const Text('Switch:'),
+                  const SizedBox(width: 8),
+                  Switch(value: true, onChanged: (value) {}),
+                ],
+              ),
+              Row(
+                children: [
+                  const Text('Checkbox:'),
+                  const SizedBox(width: 8),
+                  Checkbox(value: true, onChanged: (value) {}),
+                ],
+              ),
+            ],
+          ),
+        ),
+        _buildWidgetCard(
+          'Slider',
+          'Allows selection from a range of values',
+          const SizedBox(
+            width: 250,
+            child: Slider(value: 0.5, onChanged: null),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildMaterialWidgetsTab() {
+    return ListView(
+      padding: const EdgeInsets.all(16),
+      children: [
+        _buildWidgetCard(
+          'Card',
+          'Material Design card for displaying content',
+          const Card(
+            child: Padding(
+              padding: EdgeInsets.all(16),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text('Card Title', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+                  SizedBox(height: 8),
+                  Text('This is a material design card with some content.'),
+                ],
+              ),
+            ),
+          ),
+        ),
+        _buildWidgetCard(
+          'AppBar',
+          'Top app bar with title and actions',
+          Container(
+            height: 60,
+            decoration: BoxDecoration(
+              color: Theme.of(context).colorScheme.surface,
+              borderRadius: BorderRadius.circular(8),
+            ),
+            child: const Row(
+              children: [
+                SizedBox(width: 16),
+                Text('App Bar', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+                Spacer(),
+                Icon(Icons.search),
+                SizedBox(width: 8),
+                Icon(Icons.more_vert),
+                SizedBox(width: 16),
+              ],
+            ),
+          ),
+        ),
+        _buildWidgetCard(
+          'BottomNavigationBar',
+          'Navigation bar at the bottom of the screen',
+          Container(
+            height: 60,
+            decoration: BoxDecoration(
+              color: Theme.of(context).colorScheme.surface,
+              borderRadius: BorderRadius.circular(8),
+            ),
+            child: const Row(
+              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+              children: [
+                Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [Icon(Icons.home), Text('Home')],
+                ),
+                Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [Icon(Icons.search), Text('Search')],
+                ),
+                Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [Icon(Icons.person), Text('Profile')],
+                ),
+              ],
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildAdvancedWidgetsTab() {
+    return ListView(
+      padding: const EdgeInsets.all(16),
+      children: [
+        _buildWidgetCard(
+          'ListView',
+          'Scrollable list of widgets',
+          SizedBox(
+            height: 150,
+            child: ListView.builder(
+              itemCount: 5,
+              itemBuilder: (context, index) {
+                return ListTile(
+                  leading: CircleAvatar(
+                    backgroundColor: Theme.of(context).colorScheme.primary,
+                    child: Text('${index + 1}'),
+                  ),
+                  title: Text('List Item ${index + 1}'),
+                  subtitle: Text('Subtitle for item ${index + 1}'),
+                );
+              },
+            ),
+          ),
+        ),
+        _buildWidgetCard(
+          'GridView',
+          'Grid layout for displaying items',
+          SizedBox(
+            height: 150,
+            child: GridView.count(
+              crossAxisCount: 3,
+              children: List.generate(
+                6,
+                (index) => Container(
+                  margin: const EdgeInsets.all(4),
+                  decoration: BoxDecoration(
+                    color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.7),
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: Center(
+                    child: Text(
+                      '${index + 1}',
+                      style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          ),
+        ),
+        _buildWidgetCard(
+          'TabBar & TabBarView',
+          'Tabbed interface for organizing content',
+          DefaultTabController(
+            length: 3,
+            child: Column(
+              children: [
+                Container(
+                  height: 40,
+                  decoration: BoxDecoration(
+                    color: Theme.of(context).colorScheme.surface,
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: const TabBar(
+                    tabs: [
+                      Tab(text: 'Tab 1'),
+                      Tab(text: 'Tab 2'),
+                      Tab(text: 'Tab 3'),
+                    ],
+                  ),
+                ),
+                SizedBox(
+                  height: 80,
+                  child: TabBarView(
+                    children: [
+                      const Center(child: Text('Content 1')),
+                      const Center(child: Text('Content 2')),
+                      const Center(child: Text('Content 3')),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildWidgetCard(String title, String description, Widget demoWidget) {
+    return Card(
+      margin: const EdgeInsets.only(bottom: 16),
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              title,
+              style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+            ),
+            const SizedBox(height: 4),
+            Text(
+              description,
+              style: TextStyle(
+                color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.7),
+                fontSize: 14,
+              ),
+            ),
+            const SizedBox(height: 16),
+            Center(child: demoWidget),
+          ],
+        ),
+      ),
+    );
+  }
+}
+```
+
