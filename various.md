@@ -97,6 +97,215 @@ class MyApp extends StatelessWidget {
 }
 ```
 
+## Intent and actions
+
+```dart
+import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+
+void main() {
+  runApp(const MyApp());
+}
+
+class MyApp extends StatelessWidget {
+  const MyApp({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return MaterialApp(
+      title: 'Flutter Actions Binding Demo',
+      theme: ThemeData.dark(
+        useMaterial3: true,
+      ),
+      home: const MyHomePage(),
+    );
+  }
+}
+
+class IncrementIntent extends Intent {
+  const IncrementIntent();
+}
+
+class DecrementIntent extends Intent {
+  const DecrementIntent();
+}
+
+class ResetIntent extends Intent {
+  const ResetIntent();
+}
+
+class MyHomePage extends StatefulWidget {
+  const MyHomePage({super.key});
+
+  @override
+  State<MyHomePage> createState() => _MyHomePageState();
+}
+
+class _MyHomePageState extends State<MyHomePage> {
+  int _counter = 0;
+  String _lastAction = 'None';
+
+  void _increment() {
+    setState(() {
+      _counter++;
+      _lastAction = 'Incremented';
+    });
+  }
+
+  void _decrement() {
+    setState(() {
+      _counter--;
+      _lastAction = 'Decremented';
+    });
+  }
+
+  void _reset() {
+    setState(() {
+      _counter = 0;
+      _lastAction = 'Reset';
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Shortcuts(
+      shortcuts: <LogicalKeySet, Intent>{
+        LogicalKeySet(LogicalKeyboardKey.arrowUp): const IncrementIntent(),
+        LogicalKeySet(LogicalKeyboardKey.arrowDown): const DecrementIntent(),
+        LogicalKeySet(LogicalKeyboardKey.keyR): const ResetIntent(),
+      },
+      child: Actions(
+        actions: <Type, Action<Intent>>{
+          IncrementIntent: CallbackAction<IncrementIntent>(
+            onInvoke: (IncrementIntent intent) => _increment(),
+          ),
+          DecrementIntent: CallbackAction<DecrementIntent>(
+            onInvoke: (DecrementIntent intent) => _decrement(),
+          ),
+          ResetIntent: CallbackAction<ResetIntent>(
+            onInvoke: (ResetIntent intent) => _reset(),
+          ),
+        },
+        child: Focus(
+          autofocus: true,
+          child: Scaffold(
+            appBar: AppBar(
+              title: const Text('Actions Binding Demo'),
+            ),
+            body: Padding(
+              padding: const EdgeInsets.all(16.0),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'Counter: $_counter',
+                    style: Theme.of(context).textTheme.headlineMedium,
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    'Last Action: $_lastAction',
+                    style: Theme.of(context).textTheme.bodyLarge,
+                  ),
+                  const SizedBox(height: 32),
+                  const Text(
+                    '1. Button Binding (onPressed):',
+                    style: TextStyle(fontWeight: FontWeight.bold),
+                  ),
+                  const SizedBox(height: 8),
+                  Row(
+                    children: [
+                      ElevatedButton(
+                        onPressed: _increment,
+                        child: const Text('+'),
+                      ),
+                      const SizedBox(width: 8),
+                      ElevatedButton(
+                        onPressed: _decrement,
+                        child: const Text('-'),
+                      ),
+                      const SizedBox(width: 8),
+                      ElevatedButton(
+                        onPressed: _reset,
+                        child: const Text('Reset'),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 32),
+                  const Text(
+                    '2. Gesture Binding (onTap):',
+                    style: TextStyle(fontWeight: FontWeight.bold),
+                  ),
+                  const SizedBox(height: 8),
+                  Row(
+                    children: [
+                      GestureDetector(
+                        onTap: _increment,
+                        child: Container(
+                          padding: const EdgeInsets.all(12),
+                          decoration: BoxDecoration(
+                            color: Colors.green,
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          child: const Text(
+                            'Tap to +',
+                            style: TextStyle(color: Colors.white),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      GestureDetector(
+                        onDoubleTap: _decrement,
+                        child: Container(
+                          padding: const EdgeInsets.all(12),
+                          decoration: BoxDecoration(
+                            color: Colors.red,
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          child: const Text(
+                            'Double Tap to -',
+                            style: TextStyle(color: Colors.white),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 32),
+                  const Text(
+                    '3. Keyboard Shortcuts (Actions/Shortcuts):',
+                    style: TextStyle(fontWeight: FontWeight.bold),
+                  ),
+                  const SizedBox(height: 8),
+                  const Text(
+                    '• Press ↑ (Up Arrow) to increment\n'
+                    '• Press ↓ (Down Arrow) to decrement\n'
+                    '• Press R to reset',
+                    style: TextStyle(fontSize: 14),
+                  ),
+                  const Spacer(),
+                  const Text(
+                    'Try all three binding methods!',
+                    style: TextStyle(
+                      fontStyle: FontStyle.italic,
+                      color: Colors.grey,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            floatingActionButton: FloatingActionButton(
+              onPressed: _increment,
+              tooltip: 'Increment',
+              child: const Icon(Icons.add),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+```
+
+
 ## Star field
 
 ```dart
