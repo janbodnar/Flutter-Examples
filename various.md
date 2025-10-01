@@ -860,4 +860,182 @@ class _MyHomePageState extends State<MyHomePage> {
 }
 ```
 
+## Reactive patterns
+
+```dart
+import 'package:flutter/material.dart';
+import 'dart:async';
+
+void main() {
+  runApp(const MyApp());
+}
+
+class MyApp extends StatelessWidget {
+  const MyApp({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return MaterialApp(
+      title: 'Flutter Reactivity Demo',
+      theme: ThemeData.dark(
+        
+        useMaterial3: true,
+      ),
+      home: const MyHomePage(),
+    );
+  }
+}
+
+class CounterNotifier extends ChangeNotifier {
+  int _count = 0;
+  int get count => _count;
+
+  void increment() {
+    _count++;
+    notifyListeners();
+  }
+
+  void decrement() {
+    _count--;
+    notifyListeners();
+  }
+}
+
+class MyHomePage extends StatefulWidget {
+  const MyHomePage({super.key});
+
+  @override
+  State<MyHomePage> createState() => _MyHomePageState();
+}
+
+class _MyHomePageState extends State<MyHomePage> {
+  // 1. Basic state
+  int _basicCounter = 0;
+
+  // 2. Stream
+  final StreamController<int> _streamController = StreamController<int>();
+  int _streamValue = 0;
+
+  // 3. ValueNotifier
+  final ValueNotifier<int> _valueNotifier = ValueNotifier<int>(0);
+
+  // 4. ChangeNotifier
+  final CounterNotifier _counterNotifier = CounterNotifier();
+
+  // 5. Timer
+  Timer? _timer;
+  int _timerCount = 0;
+
+  @override
+  void initState() {
+    super.initState();
+    _timer = Timer.periodic(const Duration(seconds: 1), (timer) {
+      setState(() => _timerCount++);
+      _streamController.add(_streamValue++);
+    });
+  }
+
+  @override
+  void dispose() {
+    _timer?.cancel();
+    _streamController.close();
+    _valueNotifier.dispose();
+    _counterNotifier.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(title: const Text('Flutter Reactivity Demo')),
+      body: SingleChildScrollView(
+        padding: const EdgeInsets.all(16.0),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text('Flutter Reactivity Patterns', style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold)),
+            const SizedBox(height: 24),
+
+            // 1. setState
+            _buildSection('1. setState() - Basic State',
+              Text('Counter: $_basicCounter', style: const TextStyle(fontSize: 18)),
+              Row(children: [
+                ElevatedButton(onPressed: () => setState(() => _basicCounter++), child: const Text('+')),
+                ElevatedButton(onPressed: () => setState(() => _basicCounter--), child: const Text('-')),
+              ]),
+            ),
+
+            // 2. StreamBuilder
+            _buildSection('2. StreamBuilder - Stream Reactivity',
+              StreamBuilder<int>(
+                stream: _streamController.stream,
+                initialData: 0,
+                builder: (context, snapshot) => Text('Stream: ${snapshot.data}', style: const TextStyle(fontSize: 18)),
+              ),
+              const Text('Updates automatically from stream'),
+            ),
+
+            // 3. ValueListenableBuilder
+            _buildSection('3. ValueListenableBuilder - ValueNotifier',
+              ValueListenableBuilder<int>(
+                valueListenable: _valueNotifier,
+                builder: (context, value, child) => Text('Notifier: $value', style: const TextStyle(fontSize: 18)),
+              ),
+              ElevatedButton(onPressed: () => _valueNotifier.value++, child: const Text('Increment Notifier')),
+            ),
+
+            // 4. ChangeNotifier
+            _buildSection('4. ChangeNotifier - Complex State',
+              ListenableBuilder(
+                listenable: _counterNotifier,
+                builder: (context, child) => Text('ChangeNotifier: ${_counterNotifier.count}', style: const TextStyle(fontSize: 18)),
+              ),
+              Row(children: [
+                ElevatedButton(onPressed: _counterNotifier.increment, child: const Text('+')),
+                ElevatedButton(onPressed: _counterNotifier.decrement, child: const Text('-')),
+              ]),
+            ),
+
+            // 5. Timer reactivity
+            _buildSection('5. Timer - Periodic Updates',
+              Text('Timer: $_timerCount (auto-updates)', style: const TextStyle(fontSize: 18)),
+              const Text('No user interaction needed!'),
+            ),
+
+            const SizedBox(height: 32),
+            const Card(
+              child: Padding(
+                padding: EdgeInsets.all(16.0),
+                child: Text(
+                  'Flutter\'s reactivity means UI automatically updates when state changes. No manual DOM manipulation!',
+                  style: TextStyle(fontStyle: FontStyle.italic),
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildSection(String title, Widget content, dynamic controls) {
+    return Card(
+      margin: const EdgeInsets.only(bottom: 16),
+      child: Padding(
+        padding: const EdgeInsets.all(16.0),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(title, style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
+            const SizedBox(height: 8),
+            content,
+            const SizedBox(height: 8),
+            controls is Widget ? controls : const SizedBox(),
+          ],
+        ),
+      ),
+    );
+  }
+}
+```
 
