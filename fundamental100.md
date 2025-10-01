@@ -598,8 +598,8 @@ A constructor is a special function that creates an instance of a class.
 
 ```dart
 class Person {
-  String name;
-  int age;
+  late String name;
+  late int age;
 
   // Constructor
   Person(String name, int age) {
