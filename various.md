@@ -1,5 +1,522 @@
 # Various
 
+## Theme switcher
+
+```dart
+import 'package:flutter/material.dart';
+
+void main() {
+  runApp(const ThemeSwitcherApp());
+}
+
+enum ThemeType { nord, iceberg, miasma, marduk, materialVim, solarizedVim, sarnaiKhavar, mocha }
+
+class ThemeSwitcherApp extends StatefulWidget {
+  const ThemeSwitcherApp({super.key});
+
+  @override
+  State<ThemeSwitcherApp> createState() => _ThemeSwitcherAppState();
+}
+
+class _ThemeSwitcherAppState extends State<ThemeSwitcherApp> {
+  ThemeType _currentTheme = ThemeType.nord;
+
+  ThemeData get _currentThemeData {
+    switch (_currentTheme) {
+      case ThemeType.nord:
+        return _nordTheme;
+      case ThemeType.iceberg:
+        return _icebergTheme;
+      case ThemeType.miasma:
+        return _miasmaTheme;
+      case ThemeType.marduk:
+        return _mardukTheme;
+      case ThemeType.materialVim:
+        return _materialVimTheme;
+      case ThemeType.solarizedVim:
+        return _solarizedVimTheme;
+      case ThemeType.sarnaiKhavar:
+        return _sarnaiKhavarTheme;
+      case ThemeType.mocha:
+        return _mochaTheme;
+    }
+  }
+
+  static final ThemeData _nordTheme = ThemeData(
+    brightness: Brightness.dark,
+    colorScheme: const ColorScheme.dark(
+      primary: Color(0xFF81A1C1),        // Nord blue
+      onPrimary: Color(0xFF2E3440),      // Nord dark
+      secondary: Color(0xFF5E81AC),      // Nord light blue
+      onSecondary: Color(0xFF2E3440),    // Nord dark
+      surface: Color(0xFF2E3440),        // Darker Nord gray
+      onSurface: Color(0xFFECEFF4),     // Nord snow
+      surfaceContainerHighest: Color(0xFF1E222A), // Much darker Nord for background
+      onSurfaceVariant: Color(0xFFECEFF4),  // Nord snow for onBackground
+      error: Color(0xFFBF616A),          // Nord red
+      onError: Color(0xFFECEFF4),        // Nord snow
+    ),
+    useMaterial3: true,
+  );
+
+  static final ThemeData _icebergTheme = ThemeData(
+    brightness: Brightness.dark,
+    colorScheme: const ColorScheme.dark(
+      primary: Color(0xFF84A0C6),        // Iceberg blue
+      onPrimary: Color(0xFF161821),      // Iceberg background
+      secondary: Color(0xFF89B8C2),      // Iceberg cyan
+      onSecondary: Color(0xFF161821),    // Iceberg background
+      surface: Color(0xFF161821),        // Iceberg background
+      onSurface: Color(0xFFC6C8D1),     // Iceberg foreground
+      surfaceContainerHighest: Color(0xFF1E2132), // Slightly lighter Iceberg background
+      onSurfaceVariant: Color(0xFFC6C8D1),  // Iceberg foreground
+      error: Color(0xFFE27878),          // Iceberg red
+      onError: Color(0xFFC6C8D1),        // Iceberg foreground
+    ),
+    useMaterial3: true,
+  );
+
+  static final ThemeData _miasmaTheme = ThemeData(
+    brightness: Brightness.dark,
+    colorScheme: const ColorScheme.dark(
+      primary: Color(0xFF5FAFD7),        // Miasma blue (functions)
+      onPrimary: Color(0xFF2B2B2B),      // Miasma background
+      secondary: Color(0xFFAF87FF),      // Miasma purple (keywords)
+      onSecondary: Color(0xFF2B2B2B),    // Miasma background
+      surface: Color(0xFF2B2B2B),        // Miasma background
+      onSurface: Color(0xFFD3D3D3),     // Miasma foreground
+      surfaceContainerHighest: Color(0xFF1C1C1C), // Darker Miasma background
+      onSurfaceVariant: Color(0xFF888888),  // Miasma comments
+      error: Color(0xFFFF5F5F),          // Miasma red
+      onError: Color(0xFFD3D3D3),        // Miasma foreground
+    ),
+    useMaterial3: true,
+  );
+
+  static final ThemeData _mardukTheme = ThemeData(
+    brightness: Brightness.dark,
+    colorScheme: const ColorScheme.dark(
+      primary: Color(0xFF5FD7FF),        // Marduk bright cyan (functions)
+      onPrimary: Color(0xFF1A1A1A),      // Marduk dark background
+      secondary: Color(0xFF87D7FF),      // Marduk cyan (keywords)
+      onSecondary: Color(0xFF1A1A1A),    // Marduk dark background
+      surface: Color(0xFF1A1A1A),        // Marduk background
+      onSurface: Color(0xFFDADADA),     // Marduk light foreground
+      surfaceContainerHighest: Color(0xFF0F0F0F), // Darker Marduk background
+      onSurfaceVariant: Color(0xFF6C6C6C),  // Marduk comments
+      error: Color(0xFFFF8787),          // Marduk red
+      onError: Color(0xFFDADADA),        // Marduk foreground
+    ),
+    useMaterial3: true,
+  );
+
+  static final ThemeData _materialVimTheme = ThemeData(
+    brightness: Brightness.dark,
+    colorScheme: const ColorScheme.dark(
+      primary: Color(0xFF82B1FF),        // Material blue (functions)
+      onPrimary: Color(0xFF263238),      // Material dark background
+      secondary: Color(0xFF80DEEA),      // Material cyan (keywords)
+      onSecondary: Color(0xFF263238),    // Material dark background
+      surface: Color(0xFF263238),        // Material background
+      onSurface: Color(0xFFEEFFFF),     // Material light foreground
+      surfaceContainerHighest: Color(0xFF37474F), // Material surface container
+      onSurfaceVariant: Color(0xFF546E7A),  // Material comments
+      error: Color(0xFFFF5370),          // Material red
+      onError: Color(0xFFEEFFFF),        // Material foreground
+    ),
+    useMaterial3: true,
+  );
+
+  static final ThemeData _solarizedVimTheme = ThemeData(
+    brightness: Brightness.dark,
+    colorScheme: const ColorScheme.dark(
+      primary: Color(0xFF268BD2),        // Solarized blue
+      onPrimary: Color(0xFF002B36),      // Solarized dark background
+      secondary: Color(0xFF2AA198),      // Solarized cyan
+      onSecondary: Color(0xFF002B36),    // Solarized dark background
+      surface: Color(0xFF002B36),        // Solarized background
+      onSurface: Color(0xFF839496),     // Solarized foreground
+      surfaceContainerHighest: Color(0xFF073642), // Solarized background highlights
+      onSurfaceVariant: Color(0xFF586E75),  // Solarized comments
+      error: Color(0xFFDC322F),          // Solarized red
+      onError: Color(0xFF839496),        // Solarized foreground
+    ),
+    useMaterial3: true,
+  );
+
+  static final ThemeData _sarnaiKhavarTheme = ThemeData(
+    brightness: Brightness.dark,
+    colorScheme: const ColorScheme.dark(
+      primary: Color(0xFFF0C3CB),        // Sarnai Khavar pink (functions)
+      onPrimary: Color(0xFF172620),      // Sarnai Khavar base background
+      secondary: Color(0xFF2B879E),      // Sarnai Khavar blue (keywords)
+      onSecondary: Color(0xFF172620),    // Sarnai Khavar base background
+      surface: Color(0xFF172620),        // Sarnai Khavar background
+      onSurface: Color(0xFFDFECE7),     // Sarnai Khavar text
+      surfaceContainerHighest: Color(0xFF21362D), // Sarnai Khavar surface
+      onSurfaceVariant: Color(0xFF4E7E6B),  // Sarnai Khavar muted (comments)
+      error: Color(0xFFFF6B6B),          // Sarnai Khavar anis (red)
+      onError: Color(0xFFDFECE7),        // Sarnai Khavar text
+    ),
+    useMaterial3: true,
+  );
+
+  static final ThemeData _mochaTheme = ThemeData(
+    brightness: Brightness.dark,
+    colorScheme: const ColorScheme.dark(
+      primary: Color(0xFFDEB887),        // Mocha burlywood (functions)
+      onPrimary: Color(0xFF161616),      // Mocha dark background
+      secondary: Color(0xFFCD853F),      // Mocha peru (keywords)
+      onSecondary: Color(0xFF161616),    // Mocha dark background
+      surface: Color(0xFF161616),        // Mocha background
+      onSurface: Color(0xFFD0D0D0),     // Mocha light foreground
+      surfaceContainerHighest: Color(0xFF2A2A2A), // Slightly lighter Mocha background
+      onSurfaceVariant: Color(0xFF6C6C6C),  // Mocha comments
+      error: Color(0xFFCD5C5C),          // Mocha indian red
+      onError: Color(0xFFD0D0D0),        // Mocha foreground
+    ),
+    useMaterial3: true,
+  );
+
+  void _changeTheme(ThemeType newTheme) {
+    setState(() {
+      _currentTheme = newTheme;
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return MaterialApp(
+      title: 'Theme Switcher - Nord vs Iceberg vs Miasma vs Marduk',
+      theme: _currentThemeData,
+      home: ThemeSwitcherHome(
+        currentTheme: _currentTheme,
+        onThemeChanged: _changeTheme,
+      ),
+    );
+  }
+}
+
+class ThemeSwitcherHome extends StatefulWidget {
+  final ThemeType currentTheme;
+  final ValueChanged<ThemeType> onThemeChanged;
+
+  const ThemeSwitcherHome({
+    super.key,
+    required this.currentTheme,
+    required this.onThemeChanged,
+  });
+
+  @override
+  State<ThemeSwitcherHome> createState() => _ThemeSwitcherHomeState();
+}
+
+class _ThemeSwitcherHomeState extends State<ThemeSwitcherHome> {
+  int _counter = 0;
+
+  void _incrementCounter() {
+    setState(() {
+      _counter++;
+    });
+  }
+
+  String get _themeName {
+    switch (widget.currentTheme) {
+      case ThemeType.nord:
+        return 'Nord';
+      case ThemeType.iceberg:
+        return 'Iceberg';
+      case ThemeType.miasma:
+        return 'Miasma';
+      case ThemeType.marduk:
+        return 'Marduk';
+      case ThemeType.materialVim:
+        return 'Material Vim';
+      case ThemeType.solarizedVim:
+        return 'Solarized Vim';
+      case ThemeType.sarnaiKhavar:
+        return 'Sarnai Khavar';
+      case ThemeType.mocha:
+        return 'Mocha';
+    }
+  }
+
+  void _changeTheme(ThemeType newTheme) {
+    setState(() {
+      widget.onThemeChanged(newTheme);
+    });
+  }
+
+  String _getThemeDisplayName(ThemeType theme) {
+    switch (theme) {
+      case ThemeType.nord:
+        return 'Nord';
+      case ThemeType.iceberg:
+        return 'Iceberg';
+      case ThemeType.miasma:
+        return 'Miasma';
+      case ThemeType.marduk:
+        return 'Marduk';
+      case ThemeType.materialVim:
+        return 'Material Vim';
+      case ThemeType.solarizedVim:
+        return 'Solarized Vim';
+      case ThemeType.sarnaiKhavar:
+        return 'Sarnai Khavar';
+      case ThemeType.mocha:
+        return 'Mocha';
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        title: Text('Theme: $_themeName'),
+      ),
+      body: Padding(
+        padding: const EdgeInsets.all(16.0),
+
+        child: SingleChildScrollView(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // Theme Switcher Card
+              Card(
+                child: Padding(
+                  padding: const EdgeInsets.all(16.0),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'Theme Selector',
+                        style: Theme.of(context).textTheme.headlineSmall,
+                      ),
+                      const SizedBox(height: 16),
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: ThemeType.values.map((theme) {
+                          final isSelected = theme == widget.currentTheme;
+                          return Padding(
+                            padding: const EdgeInsets.symmetric(horizontal: 4.0),
+                            child: ElevatedButton(
+                              onPressed: () => _changeTheme(theme),
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: isSelected
+                                    ? Theme.of(context).colorScheme.primary
+                                    : Theme.of(context).colorScheme.surface,
+                                foregroundColor: isSelected
+                                    ? Theme.of(context).colorScheme.onPrimary
+                                    : Theme.of(context).colorScheme.onSurface,
+                                elevation: isSelected ? 4 : 1,
+                              ),
+                              child: Text(_getThemeDisplayName(theme)),
+                            ),
+                          );
+                        }).toList(),
+                      ),
+                      const SizedBox(height: 12),
+                      Text(
+                        'Current: $_themeName',
+                        style: Theme.of(context).textTheme.bodyMedium,
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+
+              const SizedBox(height: 24),
+
+              // Sample Widgets
+              Text(
+                'Sample Widgets',
+                style: Theme.of(context).textTheme.headlineMedium,
+              ),
+
+              const SizedBox(height: 16),
+
+              // Text Examples
+              Card(
+                child: Padding(
+                  padding: const EdgeInsets.all(16.0),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'Text Styles',
+                        style: Theme.of(context).textTheme.titleLarge,
+                      ),
+                      const SizedBox(height: 12),
+                      Text(
+                        'Regular body text with the current theme colors.',
+                        style: Theme.of(context).textTheme.bodyLarge,
+                      ),
+                      Text(
+                        'Secondary text appears slightly muted.',
+                        style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                          color: Theme.of(
+                            context,
+                          ).colorScheme.onSurface.withValues(alpha: 0.7),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+
+              const SizedBox(height: 16),
+
+              // Button Examples
+              Card(
+                child: Padding(
+                  padding: const EdgeInsets.all(16.0),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'Buttons',
+                        style: Theme.of(context).textTheme.titleLarge,
+                      ),
+                      const SizedBox(height: 12),
+                      Row(
+                        children: [
+                          ElevatedButton(
+                            onPressed: _incrementCounter,
+                            child: Text('Count: $_counter'),
+                          ),
+                          const SizedBox(width: 12),
+                          OutlinedButton(
+                            onPressed: () {},
+                            child: const Text('Outlined'),
+                          ),
+                          const SizedBox(width: 12),
+                          TextButton(
+                            onPressed: () {},
+                            child: const Text('Text'),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+
+              const SizedBox(height: 16),
+
+              // Progress and Controls
+              Card(
+                child: Padding(
+                  padding: const EdgeInsets.all(16.0),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'Controls & Progress',
+                        style: Theme.of(context).textTheme.titleLarge,
+                      ),
+                      const SizedBox(height: 12),
+                      LinearProgressIndicator(value: (_counter % 10) / 10.0),
+                      const SizedBox(height: 12),
+                      Row(
+                        children: [
+                          const Text('Switch:'),
+                          const SizedBox(width: 8),
+                          Switch(
+                            value: _counter % 2 == 0,
+                            onChanged: (value) => _incrementCounter(),
+                          ),
+                          const SizedBox(width: 16),
+                          const Text('Checkbox:'),
+                          const SizedBox(width: 8),
+                          Checkbox(
+                            value: _counter % 3 == 0,
+                            onChanged: (value) => _incrementCounter(),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+
+              const SizedBox(height: 16),
+
+              // Color Palette
+              Card(
+                child: Padding(
+                  padding: const EdgeInsets.all(16.0),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'Theme Colors',
+                        style: Theme.of(context).textTheme.titleLarge,
+                      ),
+                      const SizedBox(height: 12),
+                      Row(
+                        children: [
+                          _colorSwatch(
+                            'Primary',
+                            Theme.of(context).colorScheme.primary,
+                          ),
+                          const SizedBox(width: 12),
+                          _colorSwatch(
+                            'Secondary',
+                            Theme.of(context).colorScheme.secondary,
+                          ),
+                          const SizedBox(width: 12),
+                          _colorSwatch(
+                            'Surface',
+                            Theme.of(context).colorScheme.surface,
+                          ),
+                          const SizedBox(width: 12),
+                          _colorSwatch(
+                            'Error',
+                            Theme.of(context).colorScheme.error,
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+      floatingActionButton: FloatingActionButton(
+        onPressed: _incrementCounter,
+        tooltip: 'Increment',
+        child: const Icon(Icons.add),
+      ),
+    );
+  }
+
+  Widget _colorSwatch(String label, Color color) {
+    return Column(
+      children: [
+        Container(
+          width: 40,
+          height: 40,
+          decoration: BoxDecoration(
+            color: color,
+            borderRadius: BorderRadius.circular(8),
+            border: Border.all(
+              color: Theme.of(
+                context,
+              ).colorScheme.onSurface.withValues(alpha: 0.2),
+              width: 1,
+            ),
+          ),
+        ),
+        const SizedBox(height: 4),
+        Text(label, style: Theme.of(context).textTheme.bodySmall),
+      ],
+    );
+  }
+}
+```
+
 
 ## Widget alignments
 
