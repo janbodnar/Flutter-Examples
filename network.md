@@ -181,6 +181,15 @@ class _JsonParsingPageState extends State<JsonParsingPage> {
     try {
       final response = await http.get(
         Uri.parse('https://jsonplaceholder.typicode.com/posts/1'),
+        headers: {
+          'User-Agent':
+              'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36',
+          'Accept': 'application/json, text/plain, */*',
+          'Accept-Language': 'en-US,en;q=0.9',
+          'Accept-Encoding': 'gzip, deflate',
+          'Cache-Control': 'no-cache',
+          'Pragma': 'no-cache',
+        },
       );
 
       if (response.statusCode == 200) {
@@ -190,6 +199,7 @@ class _JsonParsingPageState extends State<JsonParsingPage> {
         });
       } else {
         setState(() {
+          print(response.body);
           _error = 'HTTP ${response.statusCode}: ${response.reasonPhrase}';
         });
       }
