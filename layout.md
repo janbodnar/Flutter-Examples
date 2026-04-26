@@ -70,31 +70,43 @@ widgets.
 ```dart
 import 'package:flutter/material.dart';
 
+void main() {
+  runApp(const MaterialApp(home: ColumnLayoutExample()));
+}
+
 class ColumnLayoutExample extends StatelessWidget {
+  const ColumnLayoutExample({super.key});
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(title: Text('Column Layout')),
-      body: Column(
-        mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-        crossAxisAlignment: CrossAxisAlignment.center,
-        children: [
-          Container(
-            padding: EdgeInsets.all(16),
-            color: Colors.red[200],
-            child: Text('First Item'),
-          ),
-          Container(
-            padding: EdgeInsets.all(16),
-            color: Colors.green[200],
-            child: Text('Second Item'),
-          ),
-          Container(
-            padding: EdgeInsets.all(16),
-            color: Colors.blue[200],
-            child: Text('Third Item'),
-          ),
-        ],
+
+      body: Padding(
+        padding: EdgeInsets.all(5),
+        child: Column(
+          spacing: 20,
+
+          mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+          crossAxisAlignment: CrossAxisAlignment.center,
+          children: [
+            Container(
+              padding: EdgeInsets.all(16),
+              color: Colors.red[200],
+              child: Text('First Item'),
+            ),
+            Container(
+              padding: EdgeInsets.all(16),
+              color: Colors.green[200],
+              child: Text('Second Item'),
+            ),
+            Container(
+              padding: EdgeInsets.all(16),
+              color: Colors.blue[200],
+              child: Text('Third Item'),
+            ),
+          ],
+        ),
       ),
     );
   }
